@@ -86,7 +86,8 @@ def trading_loop():
     print("\n💰 RÉCUPÉRATION DU COMPTE")
     try:
         kf = KrakenFuturesClient()
-        account_summary = kf.get_account_summary()
+        current_price = float(last_candle['close'])
+        account_summary = kf.get_account_summary(current_price)
         
         # Initialisation du gestionnaire de trades et de l'état
         tm = TradeManager(kf.api_key, kf.api_secret)

@@ -126,29 +126,7 @@ class KrakenFuturesClient:
             self.logger.error(f"Erreur lors du calcul de la taille max : {e}")
             return {'max_btc_size': 0.0001, 'max_usd_value': 0, 'available_margin': 0, 'leverage_used': 10}
 
-    @handle_network_errors(max_retries=3, timeout=10.0)
-    def get_current_btc_price(self):
-        """
-        Récupère le prix actuel du BTC pour des calculs précis
-        """
-        try:
-            # Utiliser l'endpoint ticker pour avoir le prix actuel
-            ticker = self.market.get_tick_types()
-            # Ou utiliser les bougies les plus récentes
-            import time
-            current_time = int(time.time())
-            one_minute_ago = current_time - 60
-            ohlc = self.market.get_ohlc(tick_type="trade", symbol="PI_XBTUSD", resolution=60, from_=one_minute_ago, to=current_time)
-            if ohlc and 'candles' in ohlc and len(ohlc['candles']) > 0:
-                price = float(ohlc['candles'][0]['close'])
-                self.logger.debug(f"Prix BTC actuel: ${price:,.2f}")
-                return price
-            return 40000  # Prix par défaut si pas de données
-        except Exception as e:
-            self.logger.error(f"Erreur lors de la récupération du prix BTC : {e}")
-            return 40000
-
-    def get_account_summary(self):
+    def get_account_summary(self, current_price):
         """
         Récupère un résumé complet du compte pour debug/affichage
         """
@@ -156,7 +134,6 @@ class KrakenFuturesClient:
             wallet_info = self.get_wallet_info()
             open_positions = self.get_open_positions()
             max_size_info = self.calculate_max_position_size()
-            current_price = self.get_current_btc_price()
             
             result = {
                 'wallet': wallet_info,
