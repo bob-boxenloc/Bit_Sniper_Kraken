@@ -62,7 +62,7 @@ class KrakenFuturesClient:
         Endpoint: /get_open_positions
         """
         try:
-            positions = self.trade.get_open_positions()
+            positions = self.user.get_open_positions()
             open_positions = positions.get('openPositions', [])
             
             # Filtrer pour ne garder que les positions BTC (PI_XBTUSD)
