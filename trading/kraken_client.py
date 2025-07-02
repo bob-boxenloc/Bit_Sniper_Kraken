@@ -135,7 +135,10 @@ class KrakenFuturesClient:
             # Utiliser l'endpoint ticker pour avoir le prix actuel
             ticker = self.market.get_tick_types()
             # Ou utiliser les bougies les plus récentes
-            ohlc = self.market.get_ohlc(tick_type="trade", symbol="PI_XBTUSD", resolution="1m", limit=1)
+            import time
+            current_time = int(time.time())
+            one_minute_ago = current_time - 60
+            ohlc = self.market.get_ohlc(tick_type="trade", symbol="PI_XBTUSD", resolution=60, from_=one_minute_ago, to=current_time)
             if ohlc and 'candles' in ohlc and len(ohlc['candles']) > 0:
                 price = float(ohlc['candles'][0]['close'])
                 self.logger.debug(f"Prix BTC actuel: ${price:,.2f}")
