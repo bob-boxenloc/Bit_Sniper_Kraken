@@ -1,0 +1,2 @@
+python-kraken-sdk
+psutil>=5.9.0 
