@@ -14,6 +14,13 @@ def decide_action(analysis, conditions_check, account_summary, state_manager=Non
     :return: dict avec la décision prise
     """
     
+    # TEMPORAIRE: Bloquer tous les trades pour debug
+    return {
+        'action': 'hold',
+        'reason': 'Trading temporairement désactivé pour debug RSI/Volume',
+        'details': 'En attente de validation des données RSI et volume'
+    }
+    
     # Vérifications de base
     if not conditions_check['trading_allowed']:
         return {
