@@ -53,7 +53,7 @@ def analyze_candles(candles, rsi_series):
         
         # Conditions pour long1
         'long1_conditions': {
-            'volume_sufficient': volume_n1 >= 1000,  # Seuil ajusté pour contrats USD
+            'volume_sufficient': volume_n1 >= 90,
             'rsi_n2_in_range': 10 <= rsi_n2 <= 26,
             'rsi_increasing': rsi_change >= 4,
             'rsi_n1_below_40': rsi_n1 < 40,
@@ -62,7 +62,7 @@ def analyze_candles(candles, rsi_series):
         
         # Conditions pour long2
         'long2_conditions': {
-            'volume_sufficient': volume_n1 >= 1000,  # Seuil ajusté pour contrats USD
+            'volume_sufficient': volume_n1 >= 90,
             'volume_increasing': volume_n1 > volume_n2,
             'delta_volume_in_range': delta_volume > 1,
             'rsi_n2_in_range': 72 <= rsi_n2 <= 86,
@@ -71,7 +71,7 @@ def analyze_candles(candles, rsi_series):
         
         # Conditions pour short
         'short_conditions': {
-            'volume_sufficient': volume_n1 >= 1000,  # Seuil ajusté pour contrats USD
+            'volume_sufficient': volume_n1 >= 90,
             'volume_decreasing': volume_n1 < volume_n2,
             'delta_volume_in_range': 0.7 <= delta_volume < 1,
             'rsi_n2_in_range': 72 <= rsi_n2 <= 83,
@@ -147,8 +147,8 @@ def get_analysis_summary(analysis, conditions_check):
     summary.append(f"   RSI N-2: {analysis['rsi_n2']:.2f}")
     summary.append(f"   RSI N-1: {analysis['rsi_n1']:.2f}")
     summary.append(f"   Variation RSI: {analysis['rsi_change']:+.2f}")
-    summary.append(f"   Volume N-2: {analysis['volume_n2']:,.0f} contrats USD")
-    summary.append(f"   Volume N-1: {analysis['volume_n1']:,.0f} contrats USD")
+    summary.append(f"   Volume N-2: {analysis['volume_n2']:.4f} BTC")
+    summary.append(f"   Volume N-1: {analysis['volume_n1']:.4f} BTC")
     summary.append(f"   Delta Volume: {analysis['delta_volume']:.3f}")
     
     if not conditions_check['trading_allowed']:
