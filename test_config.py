@@ -56,8 +56,16 @@ def test_kraken_connection():
         if client.test_connection():
             print("✅ Connexion à Kraken Futures réussie!")
             
+            from data.market_data import MarketData
+
+            # Récupérer la dernière bougie 15m
+            md = MarketData()
+            candles = md.get_ohlcv_15m(limit=2)
+            last_candle = candles[-1]
+            current_price = float(last_candle['close'])
+            
             # Test de récupération du compte
-            account = client.get_account_summary()
+            account = client.get_account_summary(current_price)
             if account:
                 print("✅ Récupération du compte réussie!")
                 print(f"   Solde USD: ${account['wallet']['usd_balance']:.2f}")
