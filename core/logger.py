@@ -113,7 +113,22 @@ class BitSniperLogger:
             'long2_ready': conditions_check['long2_ready'],
             'short_ready': conditions_check['short_ready']
         })
-    
+        # Log détaillé en JSON pour analyse technique
+        self.logger.info(
+            "DÉTAIL ANALYSE TECHNIQUE " + json.dumps({
+            'event': 'technical_analysis',
+            'rsi_n1': analysis['rsi_n1'],
+            'rsi_n2': analysis['rsi_n2'],
+            'rsi_change': analysis['rsi_change'],
+            'volume_n1': analysis['volume_n1'],
+            'volume_n2': analysis['volume_n2'],
+            'delta_volume': analysis['delta_volume'],
+            'trading_allowed': conditions_check['trading_allowed'],
+            'long1_ready': conditions_check['long1_ready'],
+            'long2_ready': conditions_check['long2_ready'],
+            'short_ready': conditions_check['short_ready']
+        })
+        )
     def log_trading_decision(self, decision):
         """Log la décision de trading."""
         self.logger.info("Décision trading", extra={
