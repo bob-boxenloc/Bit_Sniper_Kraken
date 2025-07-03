@@ -56,14 +56,15 @@ def analyze_candles(candles, rsi_series):
             'volume_sufficient': volume_n1 >= 90,
             'rsi_n2_in_range': 10 <= rsi_n2 <= 26,
             'rsi_increasing': rsi_change >= 4,
-            'rsi_n1_below_40': rsi_n1 < 40
+            'rsi_n1_below_40': rsi_n1 < 40,
+            'delta_volume_in_range': 0.3 <= delta_volume <= 1.8
         },
         
         # Conditions pour long2
         'long2_conditions': {
             'volume_sufficient': volume_n1 >= 90,
             'volume_increasing': volume_n1 > volume_n2,
-            'delta_volume_in_range': 1 < delta_volume <= 1.8,
+            'delta_volume_in_range': delta_volume > 1,
             'rsi_n2_in_range': 72 <= rsi_n2 <= 86,
             'rsi_decreasing': rsi_change <= -2.5
         },
