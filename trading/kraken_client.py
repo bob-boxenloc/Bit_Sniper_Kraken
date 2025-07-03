@@ -37,13 +37,12 @@ class KrakenFuturesClient:
             wallets = self.user.get_wallets()
             # Le compte principal est généralement 'flex' pour Kraken Futures
             flex_account = wallets.get('accounts', {}).get('flex', {})
-            balances = flex_account.get('balances', {})
             
-            # Récupérer le solde en USD (ou la devise de base)
-            usd_balance = balances.get('USD', {}).get('available', 0)
+            # Récupérer la marge disponible en USD (ou la devise de base)
+            available_margin = flex_account.get('availableMargin', 0)
             
             result = {
-                'usd_balance': float(usd_balance),
+                'usd_balance': float(available_margin),
                 'total_balance': flex_account.get('totalBalance', 0),
                 'raw_response': wallets  # Garder la réponse complète pour debug
             }
