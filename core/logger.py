@@ -64,25 +64,54 @@ class BitSniperLogger:
         self.logger.addHandler(console_handler)
     
     def log_candle_analysis(self, candles, rsi_success, rsi_message):
-        """Log l'analyse des bougies."""
-        if rsi_success:
-            last_candle = candles[-1]
-            prev_candle = candles[-2]
-            self.logger.info("Analyse bougies", extra={
-                'event': 'candle_analysis',
-                'rsi_success': True,
-                'last_candle_time': last_candle['datetime'].isoformat(),
-                'last_close': float(last_candle['close']),
-                'last_volume': float(last_candle['volume']),
-                'prev_close': float(prev_candle['close']),
-                'prev_volume': float(prev_candle['volume'])
+        """
+        Log l'analyse des bougies avec validation RSI.
+        """
+        try:
+            # Log des dernières bougies pour debug
+            if len(candles) >= 2:
+                last_candle = candles[-1]
+                prev_candle = candles[-2]
+                
+                candle_debug = {
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'rsi_validation': {
+                        'success': rsi_success,
+                        'message': rsi_message
+                    },
+                    'last_candles': {
+                        'candle_n1': {
+                            'time': last_candle['time'],
+                            'datetime': last_candle['datetime'].isoformat() if hasattr(last_candle['datetime'], 'isoformat') else str(last_candle['datetime']),
+                            'open': last_candle['open'],
+                            'high': last_candle['high'],
+                            'low': last_candle['low'],
+                            'close': last_candle['close'],
+                            'volume': last_candle['volume']
+                        },
+                        'candle_n2': {
+                            'time': prev_candle['time'],
+                            'datetime': prev_candle['datetime'].isoformat() if hasattr(prev_candle['datetime'], 'isoformat') else str(prev_candle['datetime']),
+                            'open': prev_candle['open'],
+                            'high': prev_candle['high'],
+                            'low': prev_candle['low'],
+                            'close': prev_candle['close'],
+                            'volume': prev_candle['volume']
+                        }
+                    },
+                    'total_candles': len(candles)
+                }
+                
+                self.logger.info(f"CANDLES_DEBUG_JSON: {json.dumps(candle_debug, indent=2)}")
+            
+            self.logger.info("Analyse des bougies effectuée", extra={
+                'rsi_success': rsi_success,
+                'rsi_message': rsi_message,
+                'candles_count': len(candles)
             })
-        else:
-            self.logger.warning("Échec analyse bougies", extra={
-                'event': 'candle_analysis',
-                'rsi_success': False,
-                'error': rsi_message
-            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de l'analyse des bougies: {e}")
     
     def log_account_status(self, account_summary):
         """Log le statut du compte."""
@@ -99,36 +128,81 @@ class BitSniperLogger:
             self.logger.error("Impossible de récupérer le statut du compte")
     
     def log_technical_analysis(self, analysis, conditions_check):
-        """Log l'analyse technique."""
-        self.logger.info("Analyse technique", extra={
-            'event': 'technical_analysis',
-            'rsi_n1': analysis['rsi_n1'],
-            'rsi_n2': analysis['rsi_n2'],
-            'rsi_change': analysis['rsi_change'],
-            'volume_n1': analysis['volume_n1'],
-            'volume_n2': analysis['volume_n2'],
-            'delta_volume': analysis['delta_volume'],
-            'trading_allowed': conditions_check['trading_allowed'],
-            'long1_ready': conditions_check['long1_ready'],
-            'long2_ready': conditions_check['long2_ready'],
-            'short_ready': conditions_check['short_ready']
-        })
-        # Log détaillé en JSON pour analyse technique
-        self.logger.info(
-            "DÉTAIL ANALYSE TECHNIQUE " + json.dumps({
-            'event': 'technical_analysis',
-            'rsi_n1': analysis['rsi_n1'],
-            'rsi_n2': analysis['rsi_n2'],
-            'rsi_change': analysis['rsi_change'],
-            'volume_n1': analysis['volume_n1'],
-            'volume_n2': analysis['volume_n2'],
-            'delta_volume': analysis['delta_volume'],
-            'trading_allowed': conditions_check['trading_allowed'],
-            'long1_ready': conditions_check['long1_ready'],
-            'long2_ready': conditions_check['long2_ready'],
-            'short_ready': conditions_check['short_ready']
-        })
-        )
+        """
+        Log l'analyse technique avec les conditions de trading.
+        """
+        try:
+            # Log de base
+            self.logger.info("Analyse technique effectuée", extra={
+                'rsi_n1': analysis['rsi_n1'],
+                'rsi_n2': analysis['rsi_n2'],
+                'rsi_change': analysis['rsi_change'],
+                'volume_n1': analysis['volume_n1'],
+                'volume_n2': analysis['volume_n2'],
+                'delta_volume': analysis['delta_volume'],
+                'trading_allowed': conditions_check['trading_allowed'],
+                'long1_ready': conditions_check['long1_ready'],
+                'long2_ready': conditions_check['long2_ready'],
+                'short_ready': conditions_check['short_ready']
+            })
+            
+            # Log JSON détaillé pour debug
+            detailed_analysis = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'candles_data': {
+                    'candle_n1': {
+                        'time': analysis['candle_n1']['time'],
+                        'datetime': analysis['candle_n1']['datetime'].isoformat() if hasattr(analysis['candle_n1']['datetime'], 'isoformat') else str(analysis['candle_n1']['datetime']),
+                        'open': analysis['candle_n1']['open'],
+                        'high': analysis['candle_n1']['high'],
+                        'low': analysis['candle_n1']['low'],
+                        'close': analysis['candle_n1']['close'],
+                        'volume': analysis['candle_n1']['volume']
+                    },
+                    'candle_n2': {
+                        'time': analysis['candle_n2']['time'],
+                        'datetime': analysis['candle_n2']['datetime'].isoformat() if hasattr(analysis['candle_n2']['datetime'], 'isoformat') else str(analysis['candle_n2']['datetime']),
+                        'open': analysis['candle_n2']['open'],
+                        'high': analysis['candle_n2']['high'],
+                        'low': analysis['candle_n2']['low'],
+                        'close': analysis['candle_n2']['close'],
+                        'volume': analysis['candle_n2']['volume']
+                    }
+                },
+                'rsi_data': {
+                    'rsi_n1': analysis['rsi_n1'],
+                    'rsi_n2': analysis['rsi_n2'],
+                    'rsi_change': analysis['rsi_change']
+                },
+                'volume_data': {
+                    'volume_n1': analysis['volume_n1'],
+                    'volume_n2': analysis['volume_n2'],
+                    'delta_volume': analysis['delta_volume']
+                },
+                'price_data': {
+                    'close_n1': analysis['close_n1'],
+                    'close_n2': analysis['close_n2']
+                },
+                'conditions': {
+                    'long1': analysis['long1_conditions'],
+                    'long2': analysis['long2_conditions'],
+                    'short': analysis['short_conditions'],
+                    'safety': analysis['safety_rule']
+                },
+                'trading_decision': {
+                    'trading_allowed': conditions_check['trading_allowed'],
+                    'reason': conditions_check.get('reason', 'N/A'),
+                    'long1_ready': conditions_check['long1_ready'],
+                    'long2_ready': conditions_check['long2_ready'],
+                    'short_ready': conditions_check['short_ready']
+                }
+            }
+            
+            # Log en JSON pour debug
+            self.logger.info(f"ANALYSE_DETAILLEE_JSON: {json.dumps(detailed_analysis, indent=2)}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de l'analyse technique: {e}")
     def log_trading_decision(self, decision):
         """Log la décision de trading."""
         self.logger.info("Décision trading", extra={

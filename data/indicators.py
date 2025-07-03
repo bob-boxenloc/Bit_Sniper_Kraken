@@ -1,4 +1,5 @@
 import pandas as pd
+import logging
 
 def compute_rsi(closes, period=12):
     """
@@ -7,14 +8,53 @@ def compute_rsi(closes, period=12):
     :param period: période du RSI (par défaut 12)
     :return: Series du RSI
     """
+    logger = logging.getLogger(__name__)
+    
     closes = pd.Series(closes)
+    
+    # Log des données d'entrée pour debug
+    logger.debug(f"Calcul RSI({period}) - {len(closes)} prix de clôture")
+    logger.debug(f"Prix de clôture: {closes.tolist()}")
+    
     delta = closes.diff()
     gain = delta.where(delta > 0, 0.0)
     loss = -delta.where(delta < 0, 0.0)
+    
+    # Log des variations pour debug
+    logger.debug(f"Variations (delta): {delta.tolist()}")
+    logger.debug(f"Gains: {gain.tolist()}")
+    logger.debug(f"Pertes: {loss.tolist()}")
+    
     avg_gain = gain.rolling(window=period, min_periods=period).mean()
     avg_loss = loss.rolling(window=period, min_periods=period).mean()
+    
+    # Log des moyennes pour debug
+    logger.debug(f"Moyenne gains: {avg_gain.tolist()}")
+    logger.debug(f"Moyenne pertes: {avg_loss.tolist()}")
+    
     rs = avg_gain / avg_loss
     rsi = 100 - (100 / (1 + rs))
+    
+    # Log du RSI final pour debug
+    logger.debug(f"RS final: {rs.tolist()}")
+    logger.debug(f"RSI final: {rsi.tolist()}")
+    
+    # Log JSON détaillé pour debug
+    rsi_debug = {
+        'period': period,
+        'input_closes': closes.tolist(),
+        'deltas': delta.tolist(),
+        'gains': gain.tolist(),
+        'losses': loss.tolist(),
+        'avg_gains': avg_gain.tolist(),
+        'avg_losses': avg_loss.tolist(),
+        'rs_values': rs.tolist(),
+        'rsi_values': rsi.tolist(),
+        'last_5_rsi': rsi.tail(5).tolist() if len(rsi) >= 5 else rsi.tolist()
+    }
+    
+    logger.info(f"RSI_CALCULATION_DEBUG: {rsi_debug}")
+    
     return rsi
 
 def has_sufficient_history_for_rsi(candles, period=12):
