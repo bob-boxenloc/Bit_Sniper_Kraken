@@ -39,10 +39,10 @@ def trading_loop():
     print("\n📊 RÉCUPÉRATION DES DONNÉES DE MARCHÉ")
     try:
         md = MarketData()
-        candles = md.get_ohlcv_15m(limit=30)  # On prend 30 bougies pour avoir assez d'historique pour le RSI(12)
+        candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour le RSI(14)
         
         # Validation de l'historique pour le RSI
-        rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=12)
+        rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=14)
         
         if not rsi_success:
             logger.log_warning(f"Trading impossible: {rsi_message}")
@@ -65,8 +65,9 @@ def trading_loop():
     last_rsi = rsi.iloc[-1]
     prev_rsi = rsi.iloc[-2]
     
-    print(f"Bougie N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle['volume']}, RSI={prev_rsi:.2f}")
-    print(f"Bougie N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle['volume']}, RSI={last_rsi:.2f}")
+    # Affichage avec clarification des unités
+    print(f"Bougie N-2 ({prev_candle['datetime']}): Close=${prev_candle['close']}, Volume={prev_candle['volume']} contrats USD, RSI={prev_rsi:.2f}")
+    print(f"Bougie N-1 ({last_candle['datetime']}): Close=${last_candle['close']}, Volume={last_candle['volume']} contrats USD, RSI={last_rsi:.2f}")
     
     # Calculs pour la stratégie
     volume_n2 = float(prev_candle['volume'])

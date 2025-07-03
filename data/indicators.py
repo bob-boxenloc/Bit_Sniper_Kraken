@@ -1,10 +1,10 @@
 import pandas as pd
 
-def compute_rsi(closes, period=12):
+def compute_rsi(closes, period=14):
     """
     Calcule le RSI sur une liste de prix de clôture.
     :param closes: liste ou Series de prix de clôture
-    :param period: période du RSI (par défaut 12)
+    :param period: période du RSI (par défaut 14 pour correspondre aux seuils de la stratégie)
     :return: Series du RSI
     """
     closes = pd.Series(closes)
@@ -17,11 +17,11 @@ def compute_rsi(closes, period=12):
     rsi = 100 - (100 / (1 + rs))
     return rsi
 
-def has_sufficient_history_for_rsi(candles, period=12):
+def has_sufficient_history_for_rsi(candles, period=14):
     """
     Vérifie qu'on a assez d'historique pour calculer le RSI de manière fiable.
     :param candles: liste des bougies
-    :param period: période du RSI (par défaut 12)
+    :param period: période du RSI (par défaut 14)
     :return: (bool, str) - (suffisant, message d'erreur)
     """
     if len(candles) < period + 1:
@@ -37,11 +37,11 @@ def has_sufficient_history_for_rsi(candles, period=12):
     
     return True, "Historique suffisant pour le trading"
 
-def get_rsi_with_validation(candles, period=12):
+def get_rsi_with_validation(candles, period=14):
     """
     Calcule le RSI avec validation de l'historique.
     :param candles: liste des bougies
-    :param period: période du RSI (par défaut 12)
+    :param period: période du RSI (par défaut 14)
     :return: (bool, rsi_series, message) - (succès, RSI, message)
     """
     is_valid, message = has_sufficient_history_for_rsi(candles, period)
@@ -56,11 +56,11 @@ def get_rsi_with_validation(candles, period=12):
 if __name__ == "__main__":
     # Données fictives pour test
     closes = [100, 102, 101, 105, 107, 110, 108, 109, 111, 115, 117, 120, 119, 121, 123, 125]
-    rsi = compute_rsi(closes, period=12)
-    print("RSI(12) :")
+    rsi = compute_rsi(closes, period=14)
+    print("RSI(14) :")
     print(rsi)
     
     # Test de validation
     candles = [{'close': c} for c in closes]
-    is_valid, message = has_sufficient_history_for_rsi(candles, 12)
+    is_valid, message = has_sufficient_history_for_rsi(candles, 14)
     print(f"\nValidation: {is_valid} - {message}") 
