@@ -3,6 +3,8 @@ Module d'analyse technique pour BitSniper
 Calcule tous les indicateurs nécessaires pour la stratégie de trading
 """
 
+from data.indicators import compute_normalized_volume
+
 def analyze_candles(candles, rsi_series):
     """
     Analyse complète des bougies pour la stratégie de trading.
@@ -23,9 +25,17 @@ def analyze_candles(candles, rsi_series):
     rsi_n1 = float(rsi_series.iloc[-1])
     rsi_n2 = float(rsi_series.iloc[-2])
     
-    # Volumes
-    volume_n1 = float(candle_n1['volume'])
-    volume_n2 = float(candle_n2['volume'])
+    # Volumes bruts
+    volume_n1_raw = float(candle_n1['volume'])
+    volume_n2_raw = float(candle_n2['volume'])
+    
+    # Calculer le volume normalisé (comme Kraken)
+    volumes_raw = [float(c['volume']) for c in candles]
+    volume_normalized = compute_normalized_volume(volumes_raw, ma_length=20, smoothing_period=9)
+    
+    # Volumes normalisés N-1 et N-2
+    volume_n1 = float(volume_normalized.iloc[-1])
+    volume_n2 = float(volume_normalized.iloc[-2])
     
     # Prix de clôture
     close_n1 = float(candle_n1['close'])
@@ -42,6 +52,8 @@ def analyze_candles(candles, rsi_series):
         'candle_n2': candle_n2,
         'rsi_n1': rsi_n1,
         'rsi_n2': rsi_n2,
+        'volume_n1_raw': volume_n1_raw,
+        'volume_n2_raw': volume_n2_raw,
         'volume_n1': volume_n1,
         'volume_n2': volume_n2,
         'close_n1': close_n1,

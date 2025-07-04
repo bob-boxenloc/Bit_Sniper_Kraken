@@ -39,7 +39,7 @@ def trading_loop():
     print("\n📊 RÉCUPÉRATION DES DONNÉES DE MARCHÉ")
     try:
         md = MarketData()
-        candles = md.get_ohlcv_15m(limit=30)  # On prend 30 bougies pour avoir assez d'historique pour le RSI(12)
+        candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour RSI(12)+SMA(14) et Volume MA(20)+SMA(9)
         
         # Validation de l'historique pour le RSI
         rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=12)
