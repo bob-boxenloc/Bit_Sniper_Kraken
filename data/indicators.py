@@ -137,6 +137,9 @@ def compute_normalized_volume(volumes, ma_length=20, smoothing_period=9):
     # 3. Appliquer le lissage SMA sur le ratio
     volume_normalized = volume_ratio.rolling(window=smoothing_period, min_periods=smoothing_period).mean()
     
+    # 4. Multiplier par 100 pour correspondre à l'affichage Kraken
+    volume_normalized = volume_normalized * 100
+    
     logger.debug(f"Volume normalisé SMA({smoothing_period}): {volume_normalized.tolist()}")
     
     # Log JSON détaillé pour debug
