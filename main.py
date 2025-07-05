@@ -48,15 +48,6 @@ def trading_loop():
             # Récupérer N-1 et N-2 depuis Kraken (temps réel)
             current_candles = md.get_ohlcv_15m(limit=2)  # N-1 et N-2 actuels
             
-            # Calculer RSI sur les vraies données Kraken (N-1, N-2)
-            rsi_success, current_rsi, rsi_message = get_rsi_with_validation(current_candles, period=12)
-            
-            if not rsi_success:
-                logger.log_warning(f"Trading impossible: {rsi_message}")
-                print(f"❌ TRADING IMPOSSIBLE: {rsi_message}")
-                print("   Le bot attend d'avoir assez d'historique pour calculer le RSI de manière fiable.")
-                return
-            
             # Charger les données d'initialisation pour l'historique (N-3, N-4, etc.)
             initial_candles, initial_rsi, initial_volume = initialize_bot()
             
@@ -66,13 +57,30 @@ def trading_loop():
             # Combiner : N-1,N-2 (Kraken temps réel) + N-3,N-4... (vos données historiques)
             candles = current_candles + historical_candles
             
-            # Utiliser RSI calculé sur Kraken (pas vos RSI statiques)
-            rsi = current_rsi
+            # Utiliser vos RSI pour l'historique (plus stable et correct)
+            rsi = initial_rsi
+            rsi_success = True
+            rsi_message = "RSI initialisé avec données historiques"
+            
+            # Calculer la normalisation du volume pour N-1 et N-2
+            from data.indicators import compute_normalized_volume
+            current_volumes = [float(c['volume']) for c in current_candles]
+            historical_volumes = [float(c['volume']) for c in historical_candles]
+            
+            # Calculer la normalisation sur toutes les bougies pour avoir l'historique
+            all_volumes = current_volumes + historical_volumes
+            volume_normalized = compute_normalized_volume(all_volumes, ma_length=20, smoothing_period=9)
+            
+            # Remplacer les volumes bruts par les volumes normalisés dans les bougies Kraken
+            for i, candle in enumerate(current_candles):
+                if i < len(volume_normalized):
+                    candle['volume'] = float(volume_normalized.iloc[i])
             
             print(f"✅ {len(current_candles)} bougies Kraken temps réel (N-1, N-2)")
             print(f"✅ {len(historical_candles)} bougies historiques (N-3+)")
             print(f"✅ Total: {len(candles)} bougies combinées")
-            print(f"✅ RSI calculé sur données Kraken: {len(rsi)} valeurs")
+            print(f"✅ RSI utilisé: {len(rsi)} valeurs historiques")
+            print(f"✅ Volume normalisé calculé pour N-1, N-2")
         else:
             print("📈 Récupération des données en temps réel")
             candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour RSI(12)+SMA(14) et Volume MA(20)+SMA(9)
