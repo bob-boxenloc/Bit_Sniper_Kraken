@@ -43,15 +43,28 @@ def trading_loop():
         
         # Vérifier si on a des données d'initialisation
         if is_initialization_ready():
-            print("🔄 Utilisation des données d'initialisation historiques")
+            print("🔄 Mode hybride : Kraken temps réel + données historiques")
+            
+            # Récupérer les nouvelles bougies Kraken (temps réel)
+            current_candles = md.get_ohlcv_15m(limit=2)  # N-1 et N-2 actuels
+            
+            # Charger les données d'initialisation pour l'historique
             initial_candles, initial_rsi, initial_volume = initialize_bot()
-            candles = initial_candles
+            
+            # Combiner : N-1,N-2 (Kraken) + N-3,N-4... (vos données historiques)
+            # Exclure les 2 dernières bougies de vos données pour éviter les doublons
+            historical_candles = initial_candles[:-2]  # N-3, N-4, etc.
+            candles = current_candles + historical_candles
+            
+            # Utiliser vos données pour RSI et volume (historique)
             rsi = initial_rsi
             rsi_success = True
             rsi_message = "RSI initialisé avec données historiques"
-            print(f"✅ {len(candles)} bougies historiques chargées")
+            
+            print(f"✅ {len(current_candles)} bougies Kraken temps réel")
+            print(f"✅ {len(historical_candles)} bougies historiques")
+            print(f"✅ Total: {len(candles)} bougies combinées")
             print(f"✅ RSI initialisé: {len(rsi)} valeurs")
-            print(f"✅ Volume initialisé: {len(initial_volume)} valeurs")
         else:
             print("📈 Récupération des données en temps réel")
             candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour RSI(12)+SMA(14) et Volume MA(20)+SMA(9)
