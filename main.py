@@ -54,13 +54,13 @@ def trading_loop():
             total_required = 80  # Total requis pour la transition complète
             
             # Calculer combien de bougies Kraken récupérer cette fois
-            # On récupère progressivement plus de bougies Kraken
+            # On récupère progressivement plus de bougies Kraken (+1 à chaque bougie)
             kraken_to_fetch = min(2 + kraken_count, total_required)
             
             print(f"📈 Progression: {kraken_count}/{total_required} bougies Kraken récupérées")
             print(f"🔄 Récupération de {kraken_to_fetch} bougies Kraken cette fois")
             
-            # Récupérer les bougies Kraken temps réel
+            # Récupérer les bougies Kraken temps réel (les plus récentes)
             current_candles = md.get_ohlcv_15m(limit=kraken_to_fetch)
             
             # Charger les données d'initialisation pour l'historique
@@ -78,7 +78,8 @@ def trading_loop():
             rsi_message = f"RSI et volume depuis données historiques + {kraken_to_fetch} bougies Kraken"
             
             # Combiner les données : Kraken temps réel + historiques
-            candles = current_candles + historical_candles
+            # IMPORTANT: Les bougies Kraken sont les plus récentes, donc à la fin
+            candles = historical_candles + current_candles
             
             print(f"✅ {len(current_candles)} bougies Kraken temps réel")
             print(f"✅ {len(historical_candles)} bougies historiques")
@@ -122,9 +123,9 @@ def trading_loop():
     # IMPORTANT: Utiliser les bougies Kraken temps réel pour les décisions
     # Les 2 dernières bougies de la liste sont les bougies Kraken temps réel
     if is_initialization_ready():
-        # En mode hybride, les bougies Kraken sont au début de la liste
-        kraken_count = sm.get_kraken_candles_count()
-        last_candle = current_candles[-1]  # Dernière bougie Kraken
+        # En mode hybride, les bougies Kraken sont à la fin de la liste (les plus récentes)
+        # Utiliser explicitement les 2 dernières bougies Kraken récupérées
+        last_candle = current_candles[-1]  # Dernière bougie Kraken (la plus récente)
         prev_candle = current_candles[-2]  # Avant-dernière bougie Kraken
     else:
         # En mode normal, utiliser les bougies de la liste combinée

@@ -4,18 +4,6 @@
   "required_periods": 78,
   "data": [
     {
-      "datetime": "2025-07-04T21:15:00",
-      "close": "107901.0",
-      "rsi": "53.75",
-      "volume_normalized": "9"
-    },
-    {
-      "datetime": "2025-07-04T21:30:00",
-      "close": "107921.0",
-      "rsi": "54.55",
-      "volume_normalized": "11"
-    },
-    {
       "datetime": "2025-07-04T21:45:00",
       "close": "107976.0",
       "rsi": "56.79",
@@ -470,6 +458,18 @@
       "close": "107991.0",
       "rsi": "33.34",
       "volume_normalized": "48"
+    },
+    {
+      "datetime": "2025-07-05T16:45:00",
+      "close": "108147.0",
+      "rsi": "51.30",
+      "volume_normalized": "14"
+    },
+    {
+      "datetime": "2025-07-05T17:00:00",
+      "close": "108052.0",
+      "rsi": "43.78",
+      "volume_normalized": "7"
     }
   ]
 } 
