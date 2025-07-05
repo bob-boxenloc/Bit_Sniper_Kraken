@@ -114,7 +114,9 @@ def trading_loop():
         print("   Le bot attendra la prochaine bougie pour réessayer.")
         return
     
-    logger.log_candle_analysis(candles, rsi_success, rsi_message, sm.get_data_progression())
+    # Logger l'analyse des bougies avec progression (si disponible)
+    data_progression = sm.get_data_progression() if is_initialization_ready() else None
+    logger.log_candle_analysis(candles, rsi_success, rsi_message, data_progression)
     print(f"✅ {rsi_message}")
     
     # IMPORTANT: Utiliser les bougies Kraken temps réel pour les décisions
