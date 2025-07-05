@@ -1,7 +1,7 @@
 {
   "description": "Template simplifié pour les données d'initialisation du bot BitSniper",
   "instructions": "Remplacer les valeurs d'exemple par tes vraies données Kraken. Format: YYYY-MM-DDTHH:MM:SS",
-  "required_periods": 40,
+  "required_periods": 72,
   "data": [
     {
       "datetime": "2025-07-04T20:00:00",
@@ -428,6 +428,12 @@
       "close": "108213.0",
       "rsi": "54.79",
       "volume_normalized": "8"
+    },
+    {
+      "datetime": "2025-07-05T13:45:00",
+      "close": "108161.0",
+      "rsi": "50.33",
+      "volume_normalized": "3"
     }
   ]
 } 
