@@ -102,8 +102,16 @@ def trading_loop():
     print(f"✅ {rsi_message}")
     
     # Dernière bougie (N-1) et avant-dernière (N-2)
-    last_candle = candles[-1]
-    prev_candle = candles[-2]
+    # IMPORTANT: Utiliser les bougies Kraken temps réel, pas les données historiques
+    if is_initialization_ready():
+        # En mode hybride, utiliser les bougies Kraken temps réel
+        last_candle = current_candles[-1]  # N-1 Kraken temps réel
+        prev_candle = current_candles[-2]  # N-2 Kraken temps réel
+    else:
+        # En mode normal, utiliser les bougies de la liste combinée
+        last_candle = candles[-1]
+        prev_candle = candles[-2]
+    
     last_rsi = rsi.iloc[-1]
     prev_rsi = rsi.iloc[-2]
     
