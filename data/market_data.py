@@ -4,7 +4,7 @@ from kraken.futures import Market
 from datetime import datetime
 from core.error_handler import handle_network_errors
 
-class MarketData:
+class MarketDataManager:
     def __init__(self):
         self.api_key = os.getenv("KRAKEN_API_KEY")
         self.api_secret = os.getenv("KRAKEN_API_SECRET")
@@ -55,7 +55,7 @@ class MarketData:
             raise
 
 if __name__ == "__main__":
-    md = MarketData()
+    md = MarketDataManager()
     candles = md.get_ohlcv_15m(limit=5)
     print("5 dernières bougies 15m (UTC) :")
     for c in candles:
