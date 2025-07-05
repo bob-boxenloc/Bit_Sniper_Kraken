@@ -3,7 +3,7 @@ Module d'analyse technique pour BitSniper
 Calcule tous les indicateurs nécessaires pour la stratégie de trading
 """
 
-from data.indicators import compute_normalized_volume
+from data.indicators import compute_normalized_volume, get_volume_with_validation
 
 def analyze_candles(candles, rsi_series):
     """
@@ -29,9 +29,11 @@ def analyze_candles(candles, rsi_series):
     volume_n1_raw = float(candle_n1['volume'])
     volume_n2_raw = float(candle_n2['volume'])
     
-    # Calculer le volume normalisé (comme Kraken)
-    volumes_raw = [float(c['volume']) for c in candles]
-    volume_normalized = compute_normalized_volume(volumes_raw, ma_length=20, smoothing_period=9)
+    # Calculer le volume normalisé (comme Kraken) avec validation
+    volume_success, volume_normalized, volume_message = get_volume_with_validation(candles, ma_length=20, smoothing_period=9)
+    
+    if not volume_success:
+        raise ValueError(f"Impossible de calculer le volume normalisé: {volume_message}")
     
     # Volumes normalisés N-1 et N-2
     volume_n1 = float(volume_normalized.iloc[-1])

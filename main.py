@@ -1,129 +1,247 @@
-#!/usr/bin/env python3
-"""
-BitSniper - Bot de trading automatisé pour Kraken Futures
-Utilise RSI(12) avec smoothing SMA(14) et volume normalisé pour les décisions de trading
-"""
-
-import time
-import sys
-from datetime import datetime
-from core.logger import get_logger
+from core.scheduler import run_every_15min
 from core.state_manager import StateManager
-from core.scheduler import Scheduler
-from data.market_data import MarketDataManager
-from data.indicators import TechnicalIndicators
-from signals.decision import DecisionEngine
+from core.logger import logger
+from core.monitor import system_monitor
+from core.error_handler import error_handler
+from data.market_data import MarketData
+from data.indicators import get_rsi_with_validation
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
+from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
+from signals.decision import decide_action, get_decision_summary
+from core.initialization import initialize_bot, is_initialization_ready
 
-logger = get_logger(__name__)
-
-def initialize_bot_with_historical_data():
-    """Initialise le bot avec les données historiques"""
-    logger.info("=== INITIALISATION DU BOT AVEC DONNÉES HISTORIQUES ===")
+def trading_loop():
+    logger.log_scheduler_tick()
     
-    # Charger le gestionnaire d'état
-    state_manager = StateManager()
-    
-    # Vérifier si déjà initialisé
-    if state_manager.is_initialized():
-        logger.info("Bot déjà initialisé avec données historiques")
-        return True
-    
-    # Charger les données d'initialisation
-    initial_data = state_manager.load_initial_data()
-    if not initial_data:
-        logger.error("Impossible de charger les données d'initialisation")
-        return False
-    
-    # Initialiser les indicateurs techniques
-    indicators = TechnicalIndicators()
-    if not indicators.initialize_with_historical_data(initial_data):
-        logger.error("Échec de l'initialisation des indicateurs")
-        return False
-    
-    # Marquer comme initialisé
-    state_manager.mark_initialized()
-    
-    logger.info("=== INITIALISATION TERMINÉE AVEC SUCCÈS ===")
-    return True
-
-def main():
-    """Fonction principale du bot"""
-    logger.info("=== DÉMARRAGE DE BITSNIPER ===")
-    
+    # Vérifier la santé du système avant de commencer
     try:
-        # Initialiser avec les données historiques
-        if not initialize_bot_with_historical_data():
-            logger.error("Échec de l'initialisation, arrêt du bot")
-            return
-        
-        # Initialiser les composants
-        state_manager = StateManager()
-        market_data = MarketDataManager()
-        indicators = TechnicalIndicators()
-        decision_engine = DecisionEngine(state_manager)
-        kraken_client = KrakenFuturesClient()
-        trade_manager = TradeManager(kraken_client, state_manager)
-        scheduler = Scheduler()
-        
-        logger.info("Tous les composants initialisés avec succès")
-        
-        # Boucle principale
-        while True:
-            try:
-                # Attendre la prochaine exécution (toutes les 15 minutes)
-                next_run = scheduler.wait_until_next_run()
-                logger.info(f"Prochaine exécution à {next_run}")
-                
-                # Récupérer les données de marché
-                candles = market_data.get_ohlcv_15m()
-                if not candles:
-                    logger.error("Impossible de récupérer les données de marché")
-                    continue
-                
-                # Ajouter la nouvelle bougie aux indicateurs
-                if len(candles) >= 2:
-                    latest_candle = candles[-2]  # Utiliser N-1 (dernière bougie fermée)
-                    indicators.add_candle(
-                        timestamp=latest_candle['datetime'],
-                        close=float(latest_candle['close']),
-                        rsi=float(latest_candle['rsi']),
-                        volume_normalized=float(latest_candle['volume_normalized'])
-                    )
-                
-                # Vérifier si les indicateurs sont prêts
-                if not indicators.is_ready():
-                    logger.warning("Indicateurs pas encore prêts, attente...")
-                    continue
-                
-                # Obtenir les données actuelles
-                current_data = indicators.get_latest_data()
-                logger.info(f"Données actuelles: {current_data}")
-                
-                # Prendre une décision
-                action = decision_engine.decide_action(
-                    current_rsi=current_data['rsi'],
-                    current_volume=current_data['volume_normalized'],
-                    current_price=current_data['price']
-                )
-                
-                logger.info(f"Décision: {action}")
-                
-                # Exécuter l'action
-                if action != 'hold':
-                    trade_manager.execute_action(action, current_data['price'])
-                
-            except KeyboardInterrupt:
-                logger.info("Arrêt demandé par l'utilisateur")
-                break
-            except Exception as e:
-                logger.error(f"Erreur dans la boucle principale: {e}")
-                time.sleep(60)  # Attendre 1 minute avant de réessayer
-                
+        health = system_monitor.get_system_health()
+        if not health.is_healthy:
+            logger.log_warning(f"Système en mauvaise santé: {health.consecutive_errors} erreurs consécutives")
+            print(f"⚠️  SYSTÈME EN MAUVAISE SANTÉ: {health.consecutive_errors} erreurs consécutives")
+            
+            # Vérifier les alertes
+            alerts = system_monitor.check_alerts()
+            if alerts:
+                for alert in alerts:
+                    print(f"🚨 {alert}")
+            
+            # Continuer malgré tout, mais avec prudence
+            print("   Le bot continue mais avec prudence...")
     except Exception as e:
-        logger.error(f"Erreur fatale: {e}")
-        sys.exit(1)
+        logger.log_error(f"Erreur lors de la vérification de la santé système: {e}")
+    
+    print("\n" + "="*60)
+    print("NOUVELLE BOUGIE 15M - ANALYSE COMPLÈTE")
+    print("="*60)
+    
+    # 1. Récupération des données de marché
+    print("\n📊 RÉCUPÉRATION DES DONNÉES DE MARCHÉ")
+    try:
+        md = MarketData()
+        
+        # Vérifier si on a des données d'initialisation
+        if is_initialization_ready():
+            print("🔄 Utilisation des données d'initialisation historiques")
+            initial_candles, initial_rsi, initial_volume = initialize_bot()
+            candles = initial_candles
+            rsi = initial_rsi
+            rsi_success = True
+            rsi_message = "RSI initialisé avec données historiques"
+            print(f"✅ {len(candles)} bougies historiques chargées")
+            print(f"✅ RSI initialisé: {len(rsi)} valeurs")
+            print(f"✅ Volume initialisé: {len(initial_volume)} valeurs")
+        else:
+            print("📈 Récupération des données en temps réel")
+            candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour RSI(12)+SMA(14) et Volume MA(20)+SMA(9)
+            
+            # Validation de l'historique pour le RSI
+            rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=12)
+        
+        if not rsi_success:
+            logger.log_warning(f"Trading impossible: {rsi_message}")
+            print(f"❌ TRADING IMPOSSIBLE: {rsi_message}")
+            print("   Le bot attend d'avoir assez d'historique pour calculer le RSI de manière fiable.")
+            return
+            
+    except Exception as e:
+        logger.log_error(f"Erreur lors de la récupération des données de marché: {e}")
+        print(f"❌ ERREUR RÉCUPÉRATION DONNÉES: {e}")
+        print("   Le bot attendra la prochaine bougie pour réessayer.")
+        return
+    
+    logger.log_candle_analysis(candles, rsi_success, rsi_message)
+    print(f"✅ {rsi_message}")
+    
+    # Dernière bougie (N-1) et avant-dernière (N-2)
+    last_candle = candles[-1]
+    prev_candle = candles[-2]
+    last_rsi = rsi.iloc[-1]
+    prev_rsi = rsi.iloc[-2]
+    
+    print(f"Bougie N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle['volume']}, RSI={prev_rsi:.2f}")
+    print(f"Bougie N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle['volume']}, RSI={last_rsi:.2f}")
+    
+    # Calculs pour la stratégie
+    volume_n2 = float(prev_candle['volume'])
+    volume_n1 = float(last_candle['volume'])
+    delta_volume = volume_n1 / volume_n2 if volume_n2 > 0 else 0
+    rsi_change = last_rsi - prev_rsi
+    
+    # 3. Analyse technique complète
+    print("\n🔍 ANALYSE TECHNIQUE")
+    analysis = analyze_candles(candles, rsi)
+    conditions_check = check_all_conditions(analysis)
+    analysis_summary = get_analysis_summary(analysis, conditions_check)
+    print(analysis_summary)
+    logger.log_technical_analysis(analysis, conditions_check)
+    
+    # 2. Récupération des infos du compte
+    print("\n💰 RÉCUPÉRATION DU COMPTE")
+    try:
+        kf = KrakenFuturesClient()
+        current_price = float(last_candle['close'])
+        account_summary = kf.get_account_summary(current_price)
+        
+        # Initialisation du gestionnaire de trades et de l'état
+        tm = TradeManager(kf.api_key, kf.api_secret)
+        sm = StateManager()
+        
+    except Exception as e:
+        logger.log_error(f"Erreur lors de la récupération du compte: {e}")
+        print(f"❌ ERREUR RÉCUPÉRATION COMPTE: {e}")
+        print("   Le bot attendra la prochaine bougie pour réessayer.")
+        return
+    
+    logger.log_account_status(account_summary)
+    
+    wallet = account_summary['wallet']
+    positions = account_summary['positions']
+    max_size = account_summary['max_position_size']
+    current_price = account_summary['current_btc_price']
+    
+    # Vérifications de sécurité sur le portefeuille
+    if wallet['usd_balance'] <= 0:
+        logger.log_warning(f"Solde USD insuffisant: ${wallet['usd_balance']:.2f}")
+        print("❌ TRADING IMPOSSIBLE: Solde USD insuffisant")
+        print(f"   Solde disponible: ${wallet['usd_balance']:.2f}")
+        return
+    
+    if max_size['max_btc_size'] < 0.0001:
+        logger.log_warning(f"Taille de position trop faible: {max_size['max_btc_size']:.4f} BTC")
+        print("❌ TRADING IMPOSSIBLE: Taille de position maximale trop faible")
+        print(f"   Taille max: {max_size['max_btc_size']:.4f} BTC (minimum: 0.0001 BTC)")
+        return
+    
+    print(f"✅ Compte accessible - Solde: ${wallet['usd_balance']:.2f}")
+    print(f"   Prix BTC actuel: ${current_price:.2f}")
+    print(f"   Taille max position: {max_size['max_btc_size']:.4f} BTC (${max_size['max_usd_value']:.2f})")
+    print(f"   Positions ouvertes: {len(positions)}")
+    
+    if positions:
+        for pos in positions:
+            print(f"     - {pos['side'].upper()} {pos['size']:.4f} BTC @ ${pos['price']:.2f}")
+            print(f"       PnL: ${pos['unrealizedPnl']:.2f}, Marge: ${pos['margin']:.2f}")
+    else:
+        print("     - Aucune position ouverte")
+    
+    # 4. Prise de décision
+    print("\n🎯 DÉCISION DE TRADING")
+    decision = decide_action(analysis, conditions_check, account_summary, sm)
+    decision_summary = get_decision_summary(decision)
+    print(decision_summary)
+    logger.log_trading_decision(decision)
+    
+    # 5. Exécution de la décision (si pas "hold")
+    if decision['action'] != 'hold':
+        print("\n🚀 EXÉCUTION DE L'ORDRE")
+        execution_result = tm.execute_decision(decision, account_summary)
+        execution_summary = tm.get_execution_summary(execution_result)
+        print(execution_summary)
+        
+        if execution_result.get('success', False):
+            print("   ✅ Ordre exécuté avec succès")
+            logger.log_order_execution(execution_result)
+            
+            # Mettre à jour l'état si l'ordre est réussi
+            if decision['action'].startswith('enter_'):
+                position_type = decision['action'].replace('enter_', '')
+                sm.update_position(position_type, 'open', {
+                    'entry_price': decision['entry_price'],
+                    'entry_rsi': decision['entry_rsi'],
+                    'size': decision['size']
+                })
+            elif decision['action'].startswith('exit_'):
+                # Fermer la position dans l'état
+                current_pos = sm.get_current_position()
+                if current_pos:
+                    sm.update_position(current_pos['type'], 'close', {
+                        'exit_price': execution_result.get('price'),
+                        'exit_rsi': analysis['rsi_n1'],
+                        'pnl': execution_result.get('pnl', 0)
+                    })
+        else:
+            print("   ❌ Erreur lors de l'exécution")
+            logger.log_order_execution(execution_result)
+    else:
+        print("\n⏸️  AUCUNE ACTION À EXÉCUTER")
+    
+    # 6. Affichage de l'état du bot
+    print("\n" + sm.get_state_summary())
+    logger.log_state_update(sm)
+    
+    # 7. Monitoring et sauvegarde des données
+    try:
+        # Sauvegarder les données de monitoring toutes les 4 bougies (1 heure)
+        if len(system_monitor.health_history) % 4 == 0:
+            system_monitor.save_monitoring_data()
+        
+        # Afficher un résumé de monitoring toutes les 8 bougies (2 heures)
+        if len(system_monitor.health_history) % 8 == 0:
+            print("\n📊 RÉSUMÉ MONITORING SYSTÈME")
+            system_monitor.print_status()
+            
+    except Exception as e:
+        logger.log_error(f"Erreur lors du monitoring: {e}")
+    
+    print("\n" + "="*60)
 
 if __name__ == "__main__":
-    main() 
+    logger.log_bot_start()
+    print("BitSniper - Bot de trading BTC/USD sur Kraken Futures")
+    print("Synchronisé sur les bougies 15m. En attente de la prochaine clôture...")
+    print("="*60)
+    
+    # Affichage initial du statut système
+    try:
+        print("\n📊 STATUT SYSTÈME INITIAL")
+        system_monitor.print_status()
+    except Exception as e:
+        logger.log_error(f"Erreur lors de l'affichage du statut initial: {e}")
+    
+    try:
+        run_every_15min(trading_loop)
+    except KeyboardInterrupt:
+        logger.log_bot_stop()
+        print("\nBot arrêté par l'utilisateur")
+        
+        # Sauvegarder les données de monitoring avant de quitter
+        try:
+            system_monitor.save_monitoring_data("final_monitoring_data.json")
+            print("Données de monitoring sauvegardées")
+        except Exception as e:
+            logger.log_error(f"Erreur lors de la sauvegarde finale: {e}")
+            
+    except Exception as e:
+        logger.log_error(f"Erreur fatale: {str(e)}")
+        print(f"\nErreur fatale: {e}")
+        
+        # Sauvegarder les données de monitoring en cas d'erreur fatale
+        try:
+            system_monitor.save_monitoring_data("error_monitoring_data.json")
+            print("Données de monitoring sauvegardées (erreur fatale)")
+        except Exception as save_error:
+            logger.log_error(f"Erreur lors de la sauvegarde d'urgence: {save_error}")
+        
+        raise 

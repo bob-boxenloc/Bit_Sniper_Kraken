@@ -2,7 +2,6 @@ import os
 import logging
 from kraken.futures import User, Trade, Market
 from core.error_handler import handle_network_errors
-from core.logger import get_logger
 
 class KrakenFuturesClient:
     def __init__(self):
@@ -11,7 +10,7 @@ class KrakenFuturesClient:
         if not self.api_key or not self.api_secret:
             raise ValueError("Les variables d'environnement KRAKEN_API_KEY et KRAKEN_API_SECRET doivent être définies.")
         
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
         self.user = User(key=self.api_key, secret=self.api_secret)
         self.trade = Trade(key=self.api_key, secret=self.api_secret)
         self.market = Market()

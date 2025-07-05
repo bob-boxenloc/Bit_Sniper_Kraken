@@ -3,14 +3,13 @@ import logging
 from kraken.futures import Market
 from datetime import datetime
 from core.error_handler import handle_network_errors
-from core.logger import get_logger
 
-class MarketDataManager:
+class MarketData:
     def __init__(self):
         self.api_key = os.getenv("KRAKEN_API_KEY")
         self.api_secret = os.getenv("KRAKEN_API_SECRET")
         self.client = Market(key=self.api_key, secret=self.api_secret)
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
 
     @handle_network_errors(max_retries=3, timeout=20.0)
     def get_ohlcv_15m(self, symbol="PI_XBTUSD", limit=100):
@@ -56,7 +55,7 @@ class MarketDataManager:
             raise
 
 if __name__ == "__main__":
-    md = MarketDataManager()
+    md = MarketData()
     candles = md.get_ohlcv_15m(limit=5)
     print("5 dernières bougies 15m (UTC) :")
     for c in candles:

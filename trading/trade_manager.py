@@ -7,44 +7,19 @@ import time
 import logging
 from kraken.futures import Trade
 from core.error_handler import handle_network_errors
-from core.logger import get_logger
 
 class TradeManager:
-    def __init__(self, kraken_client, state_manager):
+    def __init__(self, api_key, api_secret):
         """
         Initialise le gestionnaire de trades.
         
-        :param kraken_client: Instance du client Kraken
-        :param state_manager: Instance du gestionnaire d'état
+        :param api_key: Clé API Kraken Futures
+        :param api_secret: Secret API Kraken Futures
         """
-        self.kraken_client = kraken_client
-        self.state_manager = state_manager
+        self.trade = Trade(key=api_key, secret=api_secret)
         self.symbol = "PI_XBTUSD"  # Symbole BTC Perp selon la doc Kraken
-        self.logger = get_logger(__name__)
+        self.logger = logging.getLogger(__name__)
         
-    def execute_action(self, action, current_price):
-        """
-        Exécute une action de trading.
-        
-        :param action: Action à exécuter ('hold', 'enter_long1', etc.)
-        :param current_price: Prix actuel
-        :return: dict avec le résultat de l'exécution
-        """
-        if action == 'hold':
-            return {
-                'executed': False,
-                'reason': 'Aucune action à exécuter',
-                'action': action
-            }
-        
-        # Pour l'instant, on ne fait rien (trading désactivé)
-        self.logger.info(f"Action {action} ignorée (trading désactivé)")
-        return {
-            'executed': False,
-            'reason': 'Trading temporairement désactivé',
-            'action': action
-        }
-    
     @handle_network_errors(max_retries=3, timeout=30.0)
     def open_long_position(self, size, order_type="mkt"):
         """

@@ -1,115 +1,6 @@
 import pandas as pd
-import numpy as np
-from typing import List, Dict, Optional, Tuple
-from core.logger import get_logger
-
-logger = get_logger(__name__)
-
-class TechnicalIndicators:
-    def __init__(self):
-        self.rsi_values = []
-        self.volume_normalized_values = []
-        self.price_values = []
-        self.timestamps = []
-        
-    def initialize_with_historical_data(self, historical_data: List[Dict]) -> bool:
-        """Initialise les indicateurs avec des données historiques"""
-        if not historical_data:
-            logger.error("Aucune donnée historique fournie")
-            return False
-            
-        try:
-            # Trier les données par timestamp (du plus ancien au plus récent)
-            sorted_data = sorted(historical_data, key=lambda x: x['datetime'])
-            
-            # Extraire les données
-            self.timestamps = [candle['datetime'] for candle in sorted_data]
-            self.price_values = [candle['close'] for candle in sorted_data]
-            self.rsi_values = [candle['rsi'] for candle in sorted_data]
-            self.volume_normalized_values = [candle['volume_normalized'] for candle in sorted_data]
-            
-            logger.info(f"Indicateurs initialisés avec {len(sorted_data)} bougies historiques")
-            logger.info(f"Période: {self.timestamps[0]} à {self.timestamps[-1]}")
-            logger.info(f"Prix actuel: {self.price_values[-1]:.2f}")
-            logger.info(f"RSI actuel: {self.rsi_values[-1]:.2f}")
-            logger.info(f"Volume normalisé actuel: {self.volume_normalized_values[-1]:.2f}")
-            
-            return True
-            
-        except Exception as e:
-            logger.error(f"Erreur lors de l'initialisation avec données historiques: {e}")
-            return False
-    
-    def add_candle(self, timestamp: str, close: float, rsi: float, volume_normalized: float):
-        """Ajoute une nouvelle bougie aux indicateurs"""
-        self.timestamps.append(timestamp)
-        self.price_values.append(close)
-        self.rsi_values.append(rsi)
-        self.volume_normalized_values.append(volume_normalized)
-        
-        # Garder seulement les 100 dernières valeurs pour éviter la surcharge mémoire
-        if len(self.timestamps) > 100:
-            self.timestamps = self.timestamps[-100:]
-            self.price_values = self.price_values[-100:]
-            self.rsi_values = self.rsi_values[-100:]
-            self.volume_normalized_values = self.volume_normalized_values[-100:]
-    
-    def get_current_rsi(self) -> Optional[float]:
-        """Retourne le RSI actuel"""
-        if not self.rsi_values:
-            return None
-        return self.rsi_values[-1]
-    
-    def get_current_volume_normalized(self) -> Optional[float]:
-        """Retourne le volume normalisé actuel"""
-        if not self.volume_normalized_values:
-            return None
-        return self.volume_normalized_values[-1]
-    
-    def get_current_price(self) -> Optional[float]:
-        """Retourne le prix actuel"""
-        if not self.price_values:
-            return None
-        return self.price_values[-1]
-    
-    def get_previous_rsi(self) -> Optional[float]:
-        """Retourne le RSI précédent"""
-        if len(self.rsi_values) < 2:
-            return None
-        return self.rsi_values[-2]
-    
-    def get_previous_volume_normalized(self) -> Optional[float]:
-        """Retourne le volume normalisé précédent"""
-        if len(self.volume_normalized_values) < 2:
-            return None
-        return self.volume_normalized_values[-2]
-    
-    def get_previous_price(self) -> Optional[float]:
-        """Retourne le prix précédent"""
-        if len(self.price_values) < 2:
-            return None
-        return self.price_values[-2]
-    
-    def get_data_count(self) -> int:
-        """Retourne le nombre de bougies disponibles"""
-        return len(self.timestamps)
-    
-    def is_ready(self) -> bool:
-        """Vérifie si les indicateurs ont suffisamment de données"""
-        return len(self.timestamps) >= 27  # Minimum requis pour RSI(12) + smoothing
-    
-    def get_latest_data(self) -> Dict:
-        """Retourne les dernières données disponibles"""
-        if not self.is_ready():
-            return {}
-            
-        return {
-            'timestamp': self.timestamps[-1] if self.timestamps else None,
-            'price': self.price_values[-1] if self.price_values else None,
-            'rsi': self.rsi_values[-1] if self.rsi_values else None,
-            'volume_normalized': self.volume_normalized_values[-1] if self.volume_normalized_values else None,
-            'data_count': self.get_data_count()
-        }
+import logging
+from core.initialization import is_initialization_ready, initialization_manager
 
 def compute_rsi(closes, period=12, smoothing_period=14):
     """
@@ -120,7 +11,7 @@ def compute_rsi(closes, period=12, smoothing_period=14):
     :param smoothing_period: période du lissage SMA sur le RSI (par défaut 14)
     :return: Series du RSI lissé
     """
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     closes = pd.Series(closes)
     
@@ -209,6 +100,14 @@ def get_rsi_with_validation(candles, period=12, smoothing_period=14):
     :param smoothing_period: période du lissage SMA (par défaut 14)
     :return: (bool, rsi_series, message) - (succès, RSI, message)
     """
+    # Vérifier si on a des données d'initialisation
+    if is_initialization_ready():
+        logger = logging.getLogger(__name__)
+        logger.info("Utilisation des données d'initialisation pour le RSI")
+        initial_rsi = initialization_manager.get_initial_rsi_series()
+        return True, initial_rsi, "RSI initialisé avec données historiques"
+    
+    # Sinon, calculer normalement
     is_valid, message = has_sufficient_history_for_rsi(candles, period, smoothing_period)
     if not is_valid:
         return False, None, message
@@ -226,7 +125,7 @@ def compute_normalized_volume(volumes, ma_length=20, smoothing_period=9):
     :param smoothing_period: période du lissage SMA (par défaut 9)
     :return: Series du volume normalisé
     """
-    logger = get_logger(__name__)
+    logger = logging.getLogger(__name__)
     
     volumes_series = pd.Series(volumes)
     
@@ -300,6 +199,14 @@ def get_volume_with_validation(candles, ma_length=20, smoothing_period=9):
     :param smoothing_period: période du lissage SMA (par défaut 9)
     :return: (bool, volume_series, message) - (succès, Volume normalisé, message)
     """
+    # Vérifier si on a des données d'initialisation
+    if is_initialization_ready():
+        logger = logging.getLogger(__name__)
+        logger.info("Utilisation des données d'initialisation pour le volume")
+        initial_volume = initialization_manager.get_initial_volume_series()
+        return True, initial_volume, "Volume initialisé avec données historiques"
+    
+    # Sinon, calculer normalement
     is_valid, message = has_sufficient_history_for_volume(candles, ma_length, smoothing_period)
     if not is_valid:
         return False, None, message

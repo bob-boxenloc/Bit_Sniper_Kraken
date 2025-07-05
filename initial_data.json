@@ -4,6 +4,12 @@
     "required_periods": 40,
     "data": [
       {
+        "datetime": "2025-07-04T20:00:00",
+        "close": "107679.0",
+        "rsi": "44.83",
+        "volume_normalized": "15"
+      },
+      {
         "datetime": "2025-07-04T20:15:00",
         "close": "107802.0",
         "rsi": "49.57",
@@ -386,6 +392,18 @@
         "close": "108101.0",
         "rsi": "46.45",
         "volume_normalized": "28"
+      },
+      {
+        "datetime": "2025-07-05T12:15:00",
+        "close": "108056.0",
+        "rsi": "43.46",
+        "volume_normalized": "17"
+      },
+      {
+        "datetime": "2025-07-05T12:30:00",
+        "close": "108109.0",
+        "rsi": "47.78",
+        "volume_normalized": "15"
       }
     ]
   } 
