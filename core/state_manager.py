@@ -1,250 +1,176 @@
 """
-Module de gestion d'état pour BitSniper
-Sauvegarde et restaure l'état du bot (RSI d'entrée, positions, etc.)
+Module de gestion de l'état pour BitSniper
+Gère la persistance des données et l'état du bot
 """
 
 import json
 import os
+import logging
 from datetime import datetime
 from typing import Dict, Any, Optional
 
 class StateManager:
-    def __init__(self, state_file="bot_state.json"):
-        """
-        Initialise le gestionnaire d'état.
-        
-        :param state_file: Chemin vers le fichier de sauvegarde d'état
-        """
+    """
+    Gère l'état du bot et la persistance des données.
+    """
+    
+    def __init__(self, state_file: str = "bot_state.json"):
         self.state_file = state_file
-        self.state = self.load_state()
-        # S'assurer que la clé 'positions' existe toujours
-        self._ensure_positions_key_exists()
+        self.logger = logging.getLogger(__name__)
+        self.state = self._load_state()
     
-    def load_state(self) -> Dict[str, Any]:
-        """
-        Charge l'état depuis le fichier de sauvegarde.
-        
-        :return: dict avec l'état du bot
-        """
-        if not os.path.exists(self.state_file):
-            # État initial par défaut
-            return {
-                'created_at': datetime.utcnow().isoformat(),
-                'last_updated': datetime.utcnow().isoformat(),
-                'positions': {},
-                'long2_entry_rsi': None,
-                'long2_entry_time': None,
-                'last_long2_time': None,
-                'trading_stats': {
-                    'total_trades': 0,
-                    'successful_trades': 0,
-                    'failed_trades': 0
-                }
-            }
-        
+    def _load_state(self) -> Dict[str, Any]:
+        """Charge l'état depuis le fichier JSON."""
         try:
-            with open(self.state_file, 'r') as f:
-                state = json.load(f)
-                print(f"✅ État chargé depuis {self.state_file}")
+            if os.path.exists(self.state_file):
+                with open(self.state_file, 'r') as f:
+                    state = json.load(f)
+                self.logger.info(f"État chargé depuis {self.state_file}")
                 return state
-        except Exception as e:
-            print(f"❌ Erreur lors du chargement de l'état: {e}")
-            # Retourner un état par défaut en cas d'erreur
-            return {
-                'created_at': datetime.utcnow().isoformat(),
-                'last_updated': datetime.utcnow().isoformat(),
-                'positions': {},
-                'long2_entry_rsi': None,
-                'long2_entry_time': None,
-                'last_long2_time': None,
-                'trading_stats': {
-                    'total_trades': 0,
-                    'successful_trades': 0,
-                    'failed_trades': 0
+            else:
+                # État initial
+                initial_state = {
+                    'created_at': datetime.now().isoformat(),
+                    'last_updated': datetime.now().isoformat(),
+                    'current_position': None,
+                    'position_history': [],
+                    'data_progression': {
+                        'kraken_candles_count': 0,  # Nombre de bougies Kraken récupérées
+                        'total_required': 80,        # Total requis pour la transition complète
+                        'last_transition_date': None,
+                        'is_transition_complete': False
+                    },
+                    'trading_stats': {
+                        'total_trades': 0,
+                        'winning_trades': 0,
+                        'losing_trades': 0,
+                        'total_pnl': 0.0
+                    }
                 }
-            }
-    
-    def save_state(self):
-        """
-        Sauvegarde l'état actuel dans le fichier.
-        """
-        try:
-            self.state['last_updated'] = datetime.utcnow().isoformat()
-            
-            # Créer le dossier si nécessaire
-            os.makedirs(os.path.dirname(self.state_file), exist_ok=True)
-            
-            with open(self.state_file, 'w') as f:
-                json.dump(self.state, f, indent=2)
-            
-            print(f"✅ État sauvegardé dans {self.state_file}")
+                self._save_state(initial_state)
+                return initial_state
         except Exception as e:
-            print(f"❌ Erreur lors de la sauvegarde de l'état: {e}")
+            self.logger.error(f"Erreur lors du chargement de l'état: {e}")
+            return {}
     
-    def get_long2_entry_rsi(self) -> Optional[float]:
-        """
-        Récupère le RSI d'entrée de la position long2 actuelle.
-        
-        :return: RSI d'entrée ou None si pas de position long2
-        """
-        return self.state.get('long2_entry_rsi')
+    def _save_state(self, state: Dict[str, Any]) -> None:
+        """Sauvegarde l'état dans le fichier JSON."""
+        try:
+            state['last_updated'] = datetime.now().isoformat()
+            with open(self.state_file, 'w') as f:
+                json.dump(state, f, indent=2)
+            self.logger.debug(f"État sauvegardé dans {self.state_file}")
+        except Exception as e:
+            self.logger.error(f"Erreur lors de la sauvegarde de l'état: {e}")
     
-    def set_long2_entry_rsi(self, rsi: float, entry_time: str = None):
+    def update_data_progression(self, kraken_candles_count: int) -> None:
         """
-        Sauvegarde le RSI d'entrée pour une position long2.
+        Met à jour la progression des données.
         
-        :param rsi: RSI d'entrée
-        :param entry_time: Timestamp d'entrée (optionnel)
+        :param kraken_candles_count: Nombre de bougies Kraken récupérées
         """
-        self.state['long2_entry_rsi'] = rsi
-        self.state['long2_entry_time'] = entry_time or datetime.utcnow().isoformat()
-        self.state['last_long2_time'] = datetime.utcnow().isoformat()
-        self.save_state()
-        print(f"💾 RSI d'entrée long2 sauvegardé: {rsi:.2f}")
+        self.state['data_progression']['kraken_candles_count'] = kraken_candles_count
+        self.state['data_progression']['last_transition_date'] = datetime.now().isoformat()
+        
+        # Vérifier si la transition est complète
+        if kraken_candles_count >= self.state['data_progression']['total_required']:
+            self.state['data_progression']['is_transition_complete'] = True
+        
+        self._save_state(self.state)
+        self.logger.info(f"Progression mise à jour: {kraken_candles_count}/{self.state['data_progression']['total_required']} bougies Kraken")
     
-    def clear_long2_entry_rsi(self):
-        """
-        Efface le RSI d'entrée long2 (quand la position est fermée).
-        """
-        self.state['long2_entry_rsi'] = None
-        self.state['long2_entry_time'] = None
-        self.save_state()
-        print("🗑️ RSI d'entrée long2 effacé")
+    def get_data_progression(self) -> Dict[str, Any]:
+        """Récupère les informations de progression des données."""
+        return self.state.get('data_progression', {})
     
-    def can_open_long2(self, current_rsi: float) -> bool:
-        """
-        Vérifie si on peut ouvrir une nouvelle position long2.
-        
-        :param current_rsi: RSI actuel
-        :return: True si on peut ouvrir long2
-        """
-        last_long2_time = self.state.get('last_long2_time')
-        
-        if not last_long2_time:
-            # Première position long2
-            return True
-        
-        # Vérifier si le RSI est repassé sous 50 depuis la dernière position long2
-        # Cette logique est dans le module de décision, mais on peut l'aider ici
-        return True  # La vérification complète se fait dans decision.py
+    def is_transition_complete(self) -> bool:
+        """Vérifie si la transition vers les données temps réel est complète."""
+        return self.state.get('data_progression', {}).get('is_transition_complete', False)
     
-    def _ensure_positions_key_exists(self):
+    def get_kraken_candles_count(self) -> int:
+        """Récupère le nombre de bougies Kraken récupérées."""
+        return self.state.get('data_progression', {}).get('kraken_candles_count', 0)
+    
+    def update_position(self, position_type: str, action: str, data: Dict[str, Any]) -> None:
         """
-        S'assure que la clé 'positions' existe dans l'état.
-        Si elle n'existe pas, la crée avec un dictionnaire vide.
-        """
-        if 'positions' not in self.state:
-            print("⚠️  Clé 'positions' manquante dans l'état, création...")
-            self.state['positions'] = {}
-            self.save_state()
-            print("✅ Clé 'positions' créée dans l'état")
-
-    def update_position(self, position_type: str, action: str, details: Dict[str, Any]):
-        """
-        Met à jour les informations de position.
+        Met à jour la position actuelle.
         
-        :param position_type: Type de position ('long1', 'long2', 'short')
-        :param action: Action effectuée ('open', 'close')
-        :param details: Détails de la position
+        :param position_type: Type de position (long1, long2, short)
+        :param action: Action (open, close)
+        :param data: Données de la position
         """
-        # S'assurer que la clé 'positions' existe
-        self._ensure_positions_key_exists()
-        
         if action == 'open':
-            self.state['positions'][position_type] = {
-                'opened_at': datetime.utcnow().isoformat(),
-                'entry_price': details.get('entry_price'),
-                'entry_rsi': details.get('entry_rsi'),
-                'size': details.get('size'),
-                'status': 'open'
+            self.state['current_position'] = {
+                'type': position_type,
+                'entry_time': datetime.now().isoformat(),
+                'entry_data': data
             }
-            
-            # Si c'est une position long2, sauvegarder le RSI d'entrée
-            if position_type == 'long2':
-                self.set_long2_entry_rsi(details.get('entry_rsi'))
-        
         elif action == 'close':
-            if position_type in self.state['positions']:
-                self.state['positions'][position_type]['closed_at'] = datetime.utcnow().isoformat()
-                self.state['positions'][position_type]['exit_price'] = details.get('exit_price')
-                self.state['positions'][position_type]['exit_rsi'] = details.get('exit_rsi')
-                self.state['positions'][position_type]['pnl'] = details.get('pnl')
-                self.state['positions'][position_type]['status'] = 'closed'
+            if self.state['current_position']:
+                # Ajouter à l'historique
+                closed_position = {
+                    **self.state['current_position'],
+                    'exit_time': datetime.now().isoformat(),
+                    'exit_data': data
+                }
+                self.state['position_history'].append(closed_position)
                 
-                # Si c'est une position long2, effacer le RSI d'entrée
-                if position_type == 'long2':
-                    self.clear_long2_entry_rsi()
+                # Mettre à jour les stats
+                if 'pnl' in data:
+                    self.state['trading_stats']['total_trades'] += 1
+                    if data['pnl'] > 0:
+                        self.state['trading_stats']['winning_trades'] += 1
+                    else:
+                        self.state['trading_stats']['losing_trades'] += 1
+                    self.state['trading_stats']['total_pnl'] += data['pnl']
+            
+            self.state['current_position'] = None
         
-        self.save_state()
+        self._save_state(self.state)
     
     def get_current_position(self) -> Optional[Dict[str, Any]]:
-        """
-        Récupère la position actuellement ouverte.
-        
-        :return: Détails de la position ouverte ou None
-        """
-        # S'assurer que la clé 'positions' existe
-        self._ensure_positions_key_exists()
-        
-        for pos_type, pos_data in self.state['positions'].items():
-            if pos_data.get('status') == 'open':
-                return {
-                    'type': pos_type,
-                    **pos_data
-                }
+        """Récupère la position actuelle."""
+        return self.state.get('current_position')
+    
+    def get_long2_entry_rsi(self) -> Optional[float]:
+        """Récupère le RSI d'entrée pour une position long2."""
+        current_pos = self.get_current_position()
+        if current_pos and current_pos['type'] == 'long2':
+            return current_pos['entry_data'].get('entry_rsi')
         return None
     
     def get_state_summary(self) -> str:
-        """
-        Génère un résumé de l'état actuel.
-        
-        :return: String avec le résumé
-        """
+        """Génère un résumé de l'état du bot."""
         summary = []
         summary.append("📊 ÉTAT DU BOT:")
-        summary.append(f"   Dernière mise à jour: {self.state.get('last_updated', 'N/A')}")
+        
+        # Progression des données
+        progression = self.get_data_progression()
+        kraken_count = progression.get('kraken_candles_count', 0)
+        total_required = progression.get('total_required', 80)
+        is_complete = progression.get('is_transition_complete', False)
+        
+        if is_complete:
+            summary.append("   ✅ Transition vers données temps réel: TERMINÉE")
+        else:
+            progress_pct = (kraken_count / total_required) * 100
+            summary.append(f"   🔄 Progression données: {kraken_count}/{total_required} ({progress_pct:.1f}%)")
         
         # Position actuelle
         current_pos = self.get_current_position()
         if current_pos:
-            summary.append(f"   Position ouverte: {current_pos['type'].upper()}")
-            summary.append(f"     Prix d'entrée: ${current_pos.get('entry_price', 'N/A')}")
-            summary.append(f"     RSI d'entrée: {current_pos.get('entry_rsi', 'N/A')}")
-            summary.append(f"     Taille: {current_pos.get('size', 'N/A')} BTC")
+            summary.append(f"   📈 Position ouverte: {current_pos['type'].upper()}")
+            summary.append(f"      Entrée: ${current_pos['entry_data'].get('entry_price', 0):.2f}")
+            summary.append(f"      RSI: {current_pos['entry_data'].get('entry_rsi', 0):.2f}")
         else:
-            summary.append("   Aucune position ouverte")
+            summary.append("   ⚪ Aucune position ouverte")
         
-        # RSI long2 si applicable
-        long2_rsi = self.get_long2_entry_rsi()
-        if long2_rsi:
-            summary.append(f"   RSI d'entrée long2: {long2_rsi:.2f}")
-        
-        # Statistiques
+        # Stats de trading
         stats = self.state.get('trading_stats', {})
-        summary.append(f"   Total trades: {stats.get('total_trades', 0)}")
-        summary.append(f"   Trades réussis: {stats.get('successful_trades', 0)}")
-        summary.append(f"   Trades échoués: {stats.get('failed_trades', 0)}")
+        total_trades = stats.get('total_trades', 0)
+        if total_trades > 0:
+            win_rate = (stats.get('winning_trades', 0) / total_trades) * 100
+            summary.append(f"   📊 Stats: {total_trades} trades, {win_rate:.1f}% win rate")
+            summary.append(f"      PnL total: ${stats.get('total_pnl', 0):.2f}")
         
-        return "\n".join(summary)
-
-# Test du module
-if __name__ == "__main__":
-    # Test avec un fichier temporaire
-    sm = StateManager("test_state.json")
-    
-    # Test sauvegarde RSI long2
-    sm.set_long2_entry_rsi(72.5)
-    print(f"RSI récupéré: {sm.get_long2_entry_rsi()}")
-    
-    # Test position
-    sm.update_position('long2', 'open', {
-        'entry_price': 40000,
-        'entry_rsi': 72.5,
-        'size': 0.001
-    })
-    
-    print(sm.get_state_summary())
-    
-    # Nettoyer le fichier de test
-    if os.path.exists("test_state.json"):
-        os.remove("test_state.json") 
+        return "\n".join(summary) 

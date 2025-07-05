@@ -17,29 +17,31 @@ def analyze_candles(candles, rsi_series):
     if len(candles) < 2:
         raise ValueError("Il faut au moins 2 bougies pour l'analyse")
     
-    # Bougies N-1 (dernière) et N-2 (avant-dernière)
-    candle_n1 = candles[-1]  # Dernière bougie clôturée
-    candle_n2 = candles[-2]  # Avant-dernière bougie
+    # IMPORTANT: Utiliser les bougies Kraken temps réel pour les décisions
+    # Les 2 dernières bougies de la liste sont les bougies Kraken temps réel
+    candle_n1 = candles[-1]  # Dernière bougie Kraken temps réel
+    candle_n2 = candles[-2]  # Avant-dernière bougie Kraken temps réel
     
-    # RSI N-1 et N-2
+    # RSI N-1 et N-2 (calculé avec toutes les données mais utilisé sur les bougies Kraken)
     rsi_n1 = float(rsi_series.iloc[-1])
     rsi_n2 = float(rsi_series.iloc[-2])
     
-    # Volumes bruts
+    # Volumes bruts des bougies Kraken temps réel
     volume_n1_raw = float(candle_n1['volume'])
     volume_n2_raw = float(candle_n2['volume'])
     
     # Calculer le volume normalisé (comme Kraken) avec validation
+    # Utilise toutes les bougies pour le calcul mais retourne les valeurs pour les bougies Kraken
     volume_success, volume_normalized, volume_message = get_volume_with_validation(candles, ma_length=20, smoothing_period=9)
     
     if not volume_success:
         raise ValueError(f"Impossible de calculer le volume normalisé: {volume_message}")
     
-    # Volumes normalisés N-1 et N-2
+    # Volumes normalisés N-1 et N-2 (pour les bougies Kraken temps réel)
     volume_n1 = float(volume_normalized.iloc[-1])
     volume_n2 = float(volume_normalized.iloc[-2])
     
-    # Prix de clôture
+    # Prix de clôture des bougies Kraken temps réel
     close_n1 = float(candle_n1['close'])
     close_n2 = float(candle_n2['close'])
     
@@ -49,7 +51,7 @@ def analyze_candles(candles, rsi_series):
     
     # Analyse complète
     analysis = {
-        # Données brutes
+        # Données brutes (bougies Kraken temps réel)
         'candle_n1': candle_n1,
         'candle_n2': candle_n2,
         'rsi_n1': rsi_n1,
@@ -157,7 +159,7 @@ def get_analysis_summary(analysis, conditions_check):
     :return: str avec le résumé
     """
     summary = []
-    summary.append("📊 ANALYSE TECHNIQUE:")
+    summary.append("📊 ANALYSE TECHNIQUE (bougies Kraken temps réel):")
     summary.append(f"   RSI N-2: {analysis['rsi_n2']:.2f}")
     summary.append(f"   RSI N-1: {analysis['rsi_n1']:.2f}")
     summary.append(f"   Variation RSI: {analysis['rsi_change']:+.2f}")

@@ -63,9 +63,55 @@ class BitSniperLogger:
         self.logger.addHandler(file_handler)
         self.logger.addHandler(console_handler)
     
-    def log_candle_analysis(self, candles, rsi_success, rsi_message):
+    def log_data_progression(self, data_progression):
         """
-        Log l'analyse des bougies avec validation RSI.
+        Log la progression des données (transition historique → temps réel).
+        
+        :param data_progression: Informations de progression des données
+        """
+        try:
+            kraken_count = data_progression.get('kraken_candles_count', 0)
+            total_required = data_progression.get('total_required', 80)
+            is_complete = data_progression.get('is_transition_complete', False)
+            progress_percentage = (kraken_count / total_required) * 100 if total_required > 0 else 0
+            
+            progression_debug = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'data_progression': {
+                    'kraken_candles_count': kraken_count,
+                    'total_required': total_required,
+                    'is_transition_complete': is_complete,
+                    'progress_percentage': progress_percentage,
+                    'historical_candles_count': total_required - kraken_count
+                },
+                'transition_status': {
+                    'phase': 'complete' if is_complete else 'in_progress',
+                    'current_ratio': f"{kraken_count}/{total_required}",
+                    'percentage': f"{progress_percentage:.1f}%"
+                }
+            }
+            
+            self.logger.info(f"DATA_PROGRESSION_JSON: {json.dumps(progression_debug, indent=2)}")
+            
+            # Log de base
+            self.logger.info("Progression des données mise à jour", extra={
+                'kraken_candles_count': kraken_count,
+                'total_required': total_required,
+                'is_transition_complete': is_complete,
+                'progress_percentage': progress_percentage
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de la progression des données: {e}")
+
+    def log_candle_analysis(self, candles, rsi_success, rsi_message, data_progression=None):
+        """
+        Log l'analyse des bougies avec validation RSI et progression des données.
+        
+        :param candles: Liste des bougies combinées
+        :param rsi_success: Succès du calcul RSI
+        :param rsi_message: Message RSI
+        :param data_progression: Informations de progression (optionnel)
         """
         try:
             # Log des dernières bougies pour debug
@@ -73,13 +119,28 @@ class BitSniperLogger:
                 last_candle = candles[-1]
                 prev_candle = candles[-2]
                 
+                # Informations de progression si disponibles
+                progression_info = {}
+                if data_progression:
+                    kraken_count = data_progression.get('kraken_candles_count', 0)
+                    total_required = data_progression.get('total_required', 80)
+                    is_complete = data_progression.get('is_transition_complete', False)
+                    
+                    progression_info = {
+                        'kraken_candles_count': kraken_count,
+                        'total_required': total_required,
+                        'is_transition_complete': is_complete,
+                        'progress_percentage': (kraken_count / total_required) * 100 if total_required > 0 else 0
+                    }
+                
                 candle_debug = {
                     'timestamp': datetime.utcnow().isoformat(),
+                    'data_progression': progression_info,
                     'rsi_validation': {
                         'success': rsi_success,
                         'message': rsi_message
                     },
-                    'last_candles': {
+                    'decision_candles': {
                         'candle_n1': {
                             'time': last_candle['time'],
                             'datetime': last_candle['datetime'].isoformat() if hasattr(last_candle['datetime'], 'isoformat') else str(last_candle['datetime']),
@@ -87,7 +148,8 @@ class BitSniperLogger:
                             'high': last_candle['high'],
                             'low': last_candle['low'],
                             'close': last_candle['close'],
-                            'volume': last_candle['volume']
+                            'volume': last_candle['volume'],
+                            'source': 'kraken_realtime'  # Indique que c'est une bougie Kraken temps réel
                         },
                         'candle_n2': {
                             'time': prev_candle['time'],
@@ -96,19 +158,35 @@ class BitSniperLogger:
                             'high': prev_candle['high'],
                             'low': prev_candle['low'],
                             'close': prev_candle['close'],
-                            'volume': prev_candle['volume']
+                            'volume': prev_candle['volume'],
+                            'source': 'kraken_realtime'  # Indique que c'est une bougie Kraken temps réel
                         }
                     },
-                    'total_candles': len(candles)
+                    'total_candles': len(candles),
+                    'data_sources': {
+                        'kraken_realtime_count': progression_info.get('kraken_candles_count', 0),
+                        'historical_count': len(candles) - progression_info.get('kraken_candles_count', 0),
+                        'calculation_method': 'hybrid' if progression_info else 'realtime_only'
+                    }
                 }
                 
                 self.logger.info(f"CANDLES_DEBUG_JSON: {json.dumps(candle_debug, indent=2)}")
             
-            self.logger.info("Analyse des bougies effectuée", extra={
+            # Log de base avec progression
+            log_extra = {
                 'rsi_success': rsi_success,
                 'rsi_message': rsi_message,
                 'candles_count': len(candles)
-            })
+            }
+            
+            if data_progression:
+                log_extra.update({
+                    'kraken_candles_count': data_progression.get('kraken_candles_count', 0),
+                    'total_required': data_progression.get('total_required', 80),
+                    'is_transition_complete': data_progression.get('is_transition_complete', False)
+                })
+            
+            self.logger.info("Analyse des bougies effectuée", extra=log_extra)
             
         except Exception as e:
             self.logger.error(f"Erreur lors du logging de l'analyse des bougies: {e}")

@@ -39,50 +39,62 @@ def trading_loop():
     # 1. Récupération des données de marché
     print("\n📊 RÉCUPÉRATION DES DONNÉES")
     
-    # Initialiser current_candles pour qu'il soit toujours disponible
-    current_candles = []
+    # Initialiser le gestionnaire d'état
+    sm = StateManager()
     
     try:
         md = MarketData()
         
         # Vérifier si on a des données d'initialisation
         if is_initialization_ready():
-            print("🔄 Mode hybride : Kraken temps réel (N-1, N-2) + données historiques (N-3+)")
+            print("🔄 Mode hybride : Transition progressive vers données temps réel")
             
-            # Récupérer N-1 et N-2 depuis Kraken (temps réel)
-            current_candles = md.get_ohlcv_15m(limit=2)  # N-1 et N-2 actuels
+            # Récupérer le nombre de bougies Kraken déjà récupérées
+            kraken_count = sm.get_kraken_candles_count()
+            total_required = 80  # Total requis pour la transition complète
             
-            # Charger les données d'initialisation pour l'historique (N-3, N-4, etc.)
+            # Calculer combien de bougies Kraken récupérer cette fois
+            # On récupère progressivement plus de bougies Kraken
+            kraken_to_fetch = min(2 + kraken_count, total_required)
+            
+            print(f"📈 Progression: {kraken_count}/{total_required} bougies Kraken récupérées")
+            print(f"🔄 Récupération de {kraken_to_fetch} bougies Kraken cette fois")
+            
+            # Récupérer les bougies Kraken temps réel
+            current_candles = md.get_ohlcv_15m(limit=kraken_to_fetch)
+            
+            # Charger les données d'initialisation pour l'historique
             initial_candles, initial_rsi, initial_volume = initialize_bot()
             
-            # Exclure les 2 dernières bougies de vos données pour éviter les doublons
-            historical_candles = initial_candles[:-2]  # N-3, N-4, etc.
+            # Calculer combien de bougies historiques utiliser
+            # On utilise de moins en moins de données historiques
+            historical_to_use = max(0, total_required - kraken_to_fetch)
+            historical_candles = initial_candles[:historical_to_use]
             
-            # Utiliser vos données pour RSI et volume normalisé
+            # Utiliser les données historiques pour RSI et volume normalisé
             rsi = initial_rsi
             volume_normalized = initial_volume
             rsi_success = True
-            rsi_message = "RSI et volume utilisés depuis données historiques"
+            rsi_message = f"RSI et volume depuis données historiques + {kraken_to_fetch} bougies Kraken"
             
-            # Remplacer les volumes bruts par les volumes normalisés dans les bougies Kraken
-            # Utiliser les 2 dernières valeurs de vos données normalisées
-            if len(volume_normalized) >= 2:
-                current_candles[0]['volume'] = float(volume_normalized.iloc[-1])  # N-1
-                current_candles[1]['volume'] = float(volume_normalized.iloc[-2])  # N-2
-            
-            # Combiner : N-1,N-2 (Kraken temps réel) + N-3,N-4... (vos données historiques)
+            # Combiner les données : Kraken temps réel + historiques
             candles = current_candles + historical_candles
             
-            print(f"✅ {len(current_candles)} bougies Kraken temps réel (N-1, N-2)")
-            print(f"✅ {len(historical_candles)} bougies historiques (N-3+)")
+            print(f"✅ {len(current_candles)} bougies Kraken temps réel")
+            print(f"✅ {len(historical_candles)} bougies historiques")
             print(f"✅ Total: {len(candles)} bougies combinées")
-            print(f"✅ RSI et volume: {len(rsi)} valeurs depuis données historiques")
-            print(f"✅ Volume normalisé appliqué sur N-1, N-2")
             
-            # AFFICHER LES VRAIES BOUGIES KRAKEN
-            print(f"🔍 BOUGIES KRAKEN TEMPS RÉEL:")
-            for i, candle in enumerate(current_candles):
+            # AFFICHER LES BOUGIES KRAKEN TEMPS RÉEL
+            print(f"🔍 BOUGIES KRAKEN TEMPS RÉEL (pour décisions):")
+            for i, candle in enumerate(current_candles[-2:]):  # Afficher les 2 dernières
                 print(f"   N-{2-i}: {candle['datetime']} - Close: {candle['close']} - Volume: {candle['volume']}")
+            
+            # Mettre à jour la progression
+            sm.update_data_progression(kraken_to_fetch)
+            
+            # Logger la progression
+            logger.log_data_progression(sm.get_data_progression())
+            
         else:
             print("📈 Récupération des données en temps réel")
             candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour RSI(12)+SMA(14) et Volume MA(20)+SMA(9)
@@ -102,15 +114,16 @@ def trading_loop():
         print("   Le bot attendra la prochaine bougie pour réessayer.")
         return
     
-    logger.log_candle_analysis(candles, rsi_success, rsi_message)
+    logger.log_candle_analysis(candles, rsi_success, rsi_message, sm.get_data_progression())
     print(f"✅ {rsi_message}")
     
-    # Dernière bougie (N-1) et avant-dernière (N-2)
-    # IMPORTANT: Utiliser les bougies Kraken temps réel, pas les données historiques
+    # IMPORTANT: Utiliser les bougies Kraken temps réel pour les décisions
+    # Les 2 dernières bougies de la liste sont les bougies Kraken temps réel
     if is_initialization_ready():
-        # En mode hybride, utiliser les bougies Kraken temps réel
-        last_candle = current_candles[-1]  # N-1 Kraken temps réel
-        prev_candle = current_candles[-2]  # N-2 Kraken temps réel
+        # En mode hybride, les bougies Kraken sont au début de la liste
+        kraken_count = sm.get_kraken_candles_count()
+        last_candle = current_candles[-1]  # Dernière bougie Kraken
+        prev_candle = current_candles[-2]  # Avant-dernière bougie Kraken
     else:
         # En mode normal, utiliser les bougies de la liste combinée
         last_candle = candles[-1]
@@ -119,8 +132,9 @@ def trading_loop():
     last_rsi = rsi.iloc[-1]
     prev_rsi = rsi.iloc[-2]
     
-    print(f"Bougie N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle['volume']}, RSI={prev_rsi:.2f}")
-    print(f"Bougie N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle['volume']}, RSI={last_rsi:.2f}")
+    print(f"🎯 BOUGIES UTILISÉES POUR DÉCISIONS:")
+    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle['volume']}, RSI={prev_rsi:.2f}")
+    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle['volume']}, RSI={last_rsi:.2f}")
     
     # Calculs pour la stratégie
     volume_n2 = float(prev_candle['volume'])
@@ -143,9 +157,8 @@ def trading_loop():
         current_price = float(last_candle['close'])
         account_summary = kf.get_account_summary(current_price)
         
-        # Initialisation du gestionnaire de trades et de l'état
+        # Initialisation du gestionnaire de trades
         tm = TradeManager(kf.api_key, kf.api_secret)
-        sm = StateManager()
         
     except Exception as e:
         logger.log_error(f"Erreur lors de la récupération du compte: {e}")
