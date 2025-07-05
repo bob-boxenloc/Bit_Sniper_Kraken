@@ -17,6 +17,8 @@ class StateManager:
         """
         self.state_file = state_file
         self.state = self.load_state()
+        # S'assurer que la clé 'positions' existe toujours
+        self._ensure_positions_key_exists()
     
     def load_state(self) -> Dict[str, Any]:
         """
@@ -126,6 +128,17 @@ class StateManager:
         # Cette logique est dans le module de décision, mais on peut l'aider ici
         return True  # La vérification complète se fait dans decision.py
     
+    def _ensure_positions_key_exists(self):
+        """
+        S'assure que la clé 'positions' existe dans l'état.
+        Si elle n'existe pas, la crée avec un dictionnaire vide.
+        """
+        if 'positions' not in self.state:
+            print("⚠️  Clé 'positions' manquante dans l'état, création...")
+            self.state['positions'] = {}
+            self.save_state()
+            print("✅ Clé 'positions' créée dans l'état")
+
     def update_position(self, position_type: str, action: str, details: Dict[str, Any]):
         """
         Met à jour les informations de position.
@@ -134,6 +147,9 @@ class StateManager:
         :param action: Action effectuée ('open', 'close')
         :param details: Détails de la position
         """
+        # S'assurer que la clé 'positions' existe
+        self._ensure_positions_key_exists()
+        
         if action == 'open':
             self.state['positions'][position_type] = {
                 'opened_at': datetime.utcnow().isoformat(),
@@ -167,6 +183,9 @@ class StateManager:
         
         :return: Détails de la position ouverte ou None
         """
+        # S'assurer que la clé 'positions' existe
+        self._ensure_positions_key_exists()
+        
         for pos_type, pos_data in self.state['positions'].items():
             if pos_data.get('status') == 'open':
                 return {

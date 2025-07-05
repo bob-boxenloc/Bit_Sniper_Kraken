@@ -1,409 +1,427 @@
 {
-    "description": "Template simplifié pour les données d'initialisation du bot BitSniper",
-    "instructions": "Remplacer les valeurs d'exemple par tes vraies données Kraken. Format: YYYY-MM-DDTHH:MM:SS",
-    "required_periods": 40,
-    "data": [
-      {
-        "datetime": "2025-07-04T20:00:00",
-        "close": "107679.0",
-        "rsi": "44.83",
-        "volume_normalized": "15"
-      },
-      {
-        "datetime": "2025-07-04T20:15:00",
-        "close": "107802.0",
-        "rsi": "49.57",
-        "volume_normalized": "20"
-      },
-      {
-        "datetime": "2025-07-04T20:30:00",
-        "close": "107832.0",
-        "rsi": "50.7",
-        "volume_normalized": "8"
-      },
-      {
-        "datetime": "2025-07-04T20:45:00",
-        "close": "107756.0",
-        "rsi": "47.75",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-04T21:00:00",
-        "close": "107787.0",
-        "rsi": "49.07",
-        "volume_normalized": "7"
-      },
-      {
-        "datetime": "2025-07-04T21:15:00",
-        "close": "107901.0",
-        "rsi": "53.75",
-        "volume_normalized": "9"
-      },
-      {
-        "datetime": "2025-07-04T21:30:00",
-        "close": "107921.0",
-        "rsi": "54.55",
-        "volume_normalized": "11"
-      },
-      {
-        "datetime": "2025-07-04T21:45:00",
-        "close": "107976.0",
-        "rsi": "56.79",
-        "volume_normalized": "55"
-      },
-      {
-        "datetime": "2025-07-04T22:00:00",
-        "close": "108096.0",
-        "rsi": "61.33",
-        "volume_normalized": "55"
-      },
-      {
-        "datetime": "2025-07-04T22:15:00",
-        "close": "108187.0",
-        "rsi": "64.42",
-        "volume_normalized": "42"
-      },
-      {
-        "datetime": "2025-07-04T22:30:00",
-        "close": "108266.0",
-        "rsi": "66.93",
-        "volume_normalized": "27"
-      },
-      {
-        "datetime": "2025-07-04T22:45:00",
-        "close": "108309.0",
-        "rsi": "68.26",
-        "volume_normalized": "19"
-      },
-      {
-        "datetime": "2025-07-04T23:00:00",
-        "close": "108161.0",
-        "rsi": "59.32",
-        "volume_normalized": "7"
-      },
-      {
-        "datetime": "2025-07-04T23:15:00",
-        "close": "108170.0",
-        "rsi": "59.67",
-        "volume_normalized": "8"
-      },
-      {
-        "datetime": "2025-07-04T23:30:00",
-        "close": "108049.0",
-        "rsi": "52.98",
-        "volume_normalized": "14"
-      },
-      {
-        "datetime": "2025-07-04T23:45:00",
-        "close": "108048.0",
-        "rsi": "52.92",
-        "volume_normalized": "3"
-      },
-      {
-        "datetime": "2025-07-05T00:00:00",
-        "close": "108078.0",
-        "rsi": "54.43",
-        "volume_normalized": "25"
-      },
-      {
-        "datetime": "2025-07-05T00:15:00",
-        "close": "108135.0",
-        "rsi": "57.26",
-        "volume_normalized": "9"
-      },
-      {
-        "datetime": "2025-07-05T00:30:00",
-        "close": "108252.0",
-        "rsi": "62.49",
-        "volume_normalized": "7"
-      },
-      {
-        "datetime": "2025-07-05T00:45:00",
-        "close": "108240.0",
-        "rsi": "61.65",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T01:00:00",
-        "close": "108137.0",
-        "rsi": "54.73",
-        "volume_normalized": "5"
-      },
-      {
-        "datetime": "2025-07-05T01:15:00",
-        "close": "107997.0",
-        "rsi": "46.93",
-        "volume_normalized": "38"
-      },
-      {
-        "datetime": "2025-07-05T01:30:00",
-        "close": "108051.0",
-        "rsi": "49.93",
-        "volume_normalized": "18"
-      },
-      {
-        "datetime": "2025-07-05T01:45:00",
-        "close": "108040.0",
-        "rsi": "49.31",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T02:00:00",
-        "close": "107944.0",
-        "rsi": "44.09",
-        "volume_normalized": "23"
-      },
-      {
-        "datetime": "2025-07-05T02:15:00",
-        "close": "107886.0",
-        "rsi": "40.31",
-        "volume_normalized": "4"
-      },
-      {
-        "datetime": "2025-07-05T02:30:00",
-        "close": "108023.0",
-        "rsi": "49.77",
-        "volume_normalized": "39"
-      },
-      {
-        "datetime": "2025-07-05T02:45:00",
-        "close": "108126.0",
-        "rsi": "54.88",
-        "volume_normalized": "7"
-      },
-      {
-        "datetime": "2025-07-05T03:00:00",
-        "close": "108180.0",
-        "rsi": "57.37",
-        "volume_normalized": "20"
-      },
-      {
-        "datetime": "2025-07-05T03:15:00",
-        "close": "108317.0",
-        "rsi": "63",
-        "volume_normalized": "5"
-      },
-      {
-        "datetime": "2025-07-05T03:30:00",
-        "close": "108188.0",
-        "rsi": "55.47",
-        "volume_normalized": "19"
-      },
-      {
-        "datetime": "2025-07-05T03:45:00",
-        "close": "108223.0",
-        "rsi": "56.99",
-        "volume_normalized": "1"
-      },
-      {
-        "datetime": "2025-07-05T04:00:00",
-        "close": "108156.0",
-        "rsi": "53.2",
-        "volume_normalized": "28"
-      },
-      {
-        "datetime": "2025-07-05T04:15:00",
-        "close": "108440.0",
-        "rsi": "64.22",
-        "volume_normalized": "30"
-      },
-      {
-        "datetime": "2025-07-05T04:30:00",
-        "close": "110800.0",
-        "rsi": "56.01",
-        "volume_normalized": "21"
-      },
-      {
-        "datetime": "2025-07-05T04:45:00",
-        "close": "108201.0",
-        "rsi": "52.53",
-        "volume_normalized": "5"
-      },
-      {
-        "datetime": "2025-07-05T05:00:00",
-        "close": "108186.0",
-        "rsi": "51.84",
-        "volume_normalized": "17"
-      },
-      {
-        "datetime": "2025-07-05T05:15:00",
-        "close": "108167.0",
-        "rsi": "50.93",
-        "volume_normalized": "124"
-      },
-      {
-        "datetime": "2025-07-05T05:30:00",
-        "close": "108108.0",
-        "rsi": "48.05",
-        "volume_normalized": "10"
-      },
-      {
-        "datetime": "2025-07-05T05:45:00",
-        "close": "108169.0",
-        "rsi": "51.16",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T06:00:00",
-        "close": "108155.0",
-        "rsi": "50.4",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T06:15:00",
-        "close": "108270.0",
-        "rsi": "56.21",
-        "volume_normalized": "14"
-      },
-      {
-        "datetime": "2025-07-05T06:30:00",
-        "close": "108254.0",
-        "rsi": "55.23",
-        "volume_normalized": "9"
-      },
-      {
-        "datetime": "2025-07-05T06:45:00",
-        "close": "108332.0",
-        "rsi": "59.03",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T07:00:00",
-        "close": "108195.0",
-        "rsi": "50.77",
-        "volume_normalized": "10"
-      },
-      {
-        "datetime": "2025-07-05T07:15:00",
-        "close": "108198.0",
-        "rsi": "50.93",
-        "volume_normalized": "5"
-      },
-      {
-        "datetime": "2025-07-05T07:30:00",
-        "close": "108104.0",
-        "rsi": "45.75",
-        "volume_normalized": "9"
-      },
-      {
-        "datetime": "2025-07-05T07:45:00",
-        "close": "108112.0",
-        "rsi": "46.23",
-        "volume_normalized": "16"
-      },
-      {
-        "datetime": "2025-07-05T08:00:00",
-        "close": "108171.0",
-        "rsi": "50.02",
-        "volume_normalized": "20"
-      },
-      {
-        "datetime": "2025-07-05T08:15:00",
-        "close": "108108.0",
-        "rsi": "46.23",
-        "volume_normalized": "5"
-      },
-      {
-        "datetime": "2025-07-05T08:30:00",
-        "close": "108017.0",
-        "rsi": "41.30",
-        "volume_normalized": "28"
-      },
-      {
-        "datetime": "2025-07-05T08:45:00",
-        "close": "108079.0",
-        "rsi": "45.61",
-        "volume_normalized": "5"
-      },
-      {
-        "datetime": "2025-07-05T09:00:00",
-        "close": "107994.0",
-        "rsi": "41.1",
-        "volume_normalized": "12"
-      },
-      {
-        "datetime": "2025-07-05T09:15:00",
-        "close": "107984.0",
-        "rsi": "40.58",
-        "volume_normalized": "14"
-      },
-      {
-        "datetime": "2025-07-05T09:30:00",
-        "close": "108011.0",
-        "rsi": "42.7",
-        "volume_normalized": "10"
-      },
-      {
-        "datetime": "2025-07-05T09:45:00",
-        "close": "108136.0",
-        "rsi": "51.44",
-        "volume_normalized": "12"
-      },
-      {
-        "datetime": "2025-07-05T10:00:00",
-        "close": "108140.0",
-        "rsi": "51.69",
-        "volume_normalized": "7"
-      },
-      {
-        "datetime": "2025-07-05T10:15:00",
-        "close": "108193.0",
-        "rsi": "55.13",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T10:30:00",
-        "close": "108206.0",
-        "rsi": "55.96",
-        "volume_normalized": "8"
-      },
-      {
-        "datetime": "2025-07-05T10:45:00",
-        "close": "108129.0",
-        "rsi": "49.94",
-        "volume_normalized": "4"
-      },
-      {
-        "datetime": "2025-07-05T11:00:00",
-        "close": "108178.0",
-        "rsi": "53.42",
-        "volume_normalized": "9"
-      },
-      {
-        "datetime": "2025-07-05T11:15:00",
-        "close": "108214.0",
-        "rsi": "55.88",
-        "volume_normalized": "6"
-      },
-      {
-        "datetime": "2025-07-05T11:30:00",
-        "close": "108259.0",
-        "rsi": "58.84",
-        "volume_normalized": "9"
-      },
-      {
-        "datetime": "2025-07-05T11:45:00",
-        "close": "108165.0",
-        "rsi": "51.03",
-        "volume_normalized": "10"
-      },
-      {
-        "datetime": "2025-07-05T12:00:00",
-        "close": "108101.0",
-        "rsi": "46.45",
-        "volume_normalized": "28"
-      },
-      {
-        "datetime": "2025-07-05T12:15:00",
-        "close": "108056.0",
-        "rsi": "43.46",
-        "volume_normalized": "17"
-      },
-      {
-        "datetime": "2025-07-05T12:30:00",
-        "close": "108109.0",
-        "rsi": "47.78",
-        "volume_normalized": "15"
-      }
-    ]
-  } 
+  "description": "Template simplifié pour les données d'initialisation du bot BitSniper",
+  "instructions": "Remplacer les valeurs d'exemple par tes vraies données Kraken. Format: YYYY-MM-DDTHH:MM:SS",
+  "required_periods": 40,
+  "data": [
+    {
+      "datetime": "2025-07-04T20:00:00",
+      "close": "107679.0",
+      "rsi": "44.83",
+      "volume_normalized": "15"
+    },
+    {
+      "datetime": "2025-07-04T20:15:00",
+      "close": "107802.0",
+      "rsi": "49.57",
+      "volume_normalized": "20"
+    },
+    {
+      "datetime": "2025-07-04T20:30:00",
+      "close": "107832.0",
+      "rsi": "50.7",
+      "volume_normalized": "8"
+    },
+    {
+      "datetime": "2025-07-04T20:45:00",
+      "close": "107756.0",
+      "rsi": "47.75",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-04T21:00:00",
+      "close": "107787.0",
+      "rsi": "49.07",
+      "volume_normalized": "7"
+    },
+    {
+      "datetime": "2025-07-04T21:15:00",
+      "close": "107901.0",
+      "rsi": "53.75",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-04T21:30:00",
+      "close": "107921.0",
+      "rsi": "54.55",
+      "volume_normalized": "11"
+    },
+    {
+      "datetime": "2025-07-04T21:45:00",
+      "close": "107976.0",
+      "rsi": "56.79",
+      "volume_normalized": "55"
+    },
+    {
+      "datetime": "2025-07-04T22:00:00",
+      "close": "108096.0",
+      "rsi": "61.33",
+      "volume_normalized": "55"
+    },
+    {
+      "datetime": "2025-07-04T22:15:00",
+      "close": "108187.0",
+      "rsi": "64.42",
+      "volume_normalized": "42"
+    },
+    {
+      "datetime": "2025-07-04T22:30:00",
+      "close": "108266.0",
+      "rsi": "66.93",
+      "volume_normalized": "27"
+    },
+    {
+      "datetime": "2025-07-04T22:45:00",
+      "close": "108309.0",
+      "rsi": "68.26",
+      "volume_normalized": "19"
+    },
+    {
+      "datetime": "2025-07-04T23:00:00",
+      "close": "108161.0",
+      "rsi": "59.32",
+      "volume_normalized": "7"
+    },
+    {
+      "datetime": "2025-07-04T23:15:00",
+      "close": "108170.0",
+      "rsi": "59.67",
+      "volume_normalized": "8"
+    },
+    {
+      "datetime": "2025-07-04T23:30:00",
+      "close": "108049.0",
+      "rsi": "52.98",
+      "volume_normalized": "14"
+    },
+    {
+      "datetime": "2025-07-04T23:45:00",
+      "close": "108048.0",
+      "rsi": "52.92",
+      "volume_normalized": "3"
+    },
+    {
+      "datetime": "2025-07-05T00:00:00",
+      "close": "108078.0",
+      "rsi": "54.43",
+      "volume_normalized": "25"
+    },
+    {
+      "datetime": "2025-07-05T00:15:00",
+      "close": "108135.0",
+      "rsi": "57.26",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-05T00:30:00",
+      "close": "108252.0",
+      "rsi": "62.49",
+      "volume_normalized": "7"
+    },
+    {
+      "datetime": "2025-07-05T00:45:00",
+      "close": "108240.0",
+      "rsi": "61.65",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T01:00:00",
+      "close": "108137.0",
+      "rsi": "54.73",
+      "volume_normalized": "5"
+    },
+    {
+      "datetime": "2025-07-05T01:15:00",
+      "close": "107997.0",
+      "rsi": "46.93",
+      "volume_normalized": "38"
+    },
+    {
+      "datetime": "2025-07-05T01:30:00",
+      "close": "108051.0",
+      "rsi": "49.93",
+      "volume_normalized": "18"
+    },
+    {
+      "datetime": "2025-07-05T01:45:00",
+      "close": "108040.0",
+      "rsi": "49.31",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T02:00:00",
+      "close": "107944.0",
+      "rsi": "44.09",
+      "volume_normalized": "23"
+    },
+    {
+      "datetime": "2025-07-05T02:15:00",
+      "close": "107886.0",
+      "rsi": "40.31",
+      "volume_normalized": "4"
+    },
+    {
+      "datetime": "2025-07-05T02:30:00",
+      "close": "108023.0",
+      "rsi": "49.77",
+      "volume_normalized": "39"
+    },
+    {
+      "datetime": "2025-07-05T02:45:00",
+      "close": "108126.0",
+      "rsi": "54.88",
+      "volume_normalized": "7"
+    },
+    {
+      "datetime": "2025-07-05T03:00:00",
+      "close": "108180.0",
+      "rsi": "57.37",
+      "volume_normalized": "20"
+    },
+    {
+      "datetime": "2025-07-05T03:15:00",
+      "close": "108317.0",
+      "rsi": "63",
+      "volume_normalized": "5"
+    },
+    {
+      "datetime": "2025-07-05T03:30:00",
+      "close": "108188.0",
+      "rsi": "55.47",
+      "volume_normalized": "19"
+    },
+    {
+      "datetime": "2025-07-05T03:45:00",
+      "close": "108223.0",
+      "rsi": "56.99",
+      "volume_normalized": "1"
+    },
+    {
+      "datetime": "2025-07-05T04:00:00",
+      "close": "108156.0",
+      "rsi": "53.2",
+      "volume_normalized": "28"
+    },
+    {
+      "datetime": "2025-07-05T04:15:00",
+      "close": "108440.0",
+      "rsi": "64.22",
+      "volume_normalized": "30"
+    },
+    {
+      "datetime": "2025-07-05T04:30:00",
+      "close": "110800.0",
+      "rsi": "56.01",
+      "volume_normalized": "21"
+    },
+    {
+      "datetime": "2025-07-05T04:45:00",
+      "close": "108201.0",
+      "rsi": "52.53",
+      "volume_normalized": "5"
+    },
+    {
+      "datetime": "2025-07-05T05:00:00",
+      "close": "108186.0",
+      "rsi": "51.84",
+      "volume_normalized": "17"
+    },
+    {
+      "datetime": "2025-07-05T05:15:00",
+      "close": "108167.0",
+      "rsi": "50.93",
+      "volume_normalized": "124"
+    },
+    {
+      "datetime": "2025-07-05T05:30:00",
+      "close": "108108.0",
+      "rsi": "48.05",
+      "volume_normalized": "10"
+    },
+    {
+      "datetime": "2025-07-05T05:45:00",
+      "close": "108169.0",
+      "rsi": "51.16",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T06:00:00",
+      "close": "108155.0",
+      "rsi": "50.4",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T06:15:00",
+      "close": "108270.0",
+      "rsi": "56.21",
+      "volume_normalized": "14"
+    },
+    {
+      "datetime": "2025-07-05T06:30:00",
+      "close": "108254.0",
+      "rsi": "55.23",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-05T06:45:00",
+      "close": "108332.0",
+      "rsi": "59.03",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T07:00:00",
+      "close": "108195.0",
+      "rsi": "50.77",
+      "volume_normalized": "10"
+    },
+    {
+      "datetime": "2025-07-05T07:15:00",
+      "close": "108198.0",
+      "rsi": "50.93",
+      "volume_normalized": "5"
+    },
+    {
+      "datetime": "2025-07-05T07:30:00",
+      "close": "108104.0",
+      "rsi": "45.75",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-05T07:45:00",
+      "close": "108112.0",
+      "rsi": "46.23",
+      "volume_normalized": "16"
+    },
+    {
+      "datetime": "2025-07-05T08:00:00",
+      "close": "108171.0",
+      "rsi": "50.02",
+      "volume_normalized": "20"
+    },
+    {
+      "datetime": "2025-07-05T08:15:00",
+      "close": "108108.0",
+      "rsi": "46.23",
+      "volume_normalized": "5"
+    },
+    {
+      "datetime": "2025-07-05T08:30:00",
+      "close": "108017.0",
+      "rsi": "41.30",
+      "volume_normalized": "28"
+    },
+    {
+      "datetime": "2025-07-05T08:45:00",
+      "close": "108079.0",
+      "rsi": "45.61",
+      "volume_normalized": "5"
+    },
+    {
+      "datetime": "2025-07-05T09:00:00",
+      "close": "107994.0",
+      "rsi": "41.1",
+      "volume_normalized": "12"
+    },
+    {
+      "datetime": "2025-07-05T09:15:00",
+      "close": "107984.0",
+      "rsi": "40.58",
+      "volume_normalized": "14"
+    },
+    {
+      "datetime": "2025-07-05T09:30:00",
+      "close": "108011.0",
+      "rsi": "42.7",
+      "volume_normalized": "10"
+    },
+    {
+      "datetime": "2025-07-05T09:45:00",
+      "close": "108136.0",
+      "rsi": "51.44",
+      "volume_normalized": "12"
+    },
+    {
+      "datetime": "2025-07-05T10:00:00",
+      "close": "108140.0",
+      "rsi": "51.69",
+      "volume_normalized": "7"
+    },
+    {
+      "datetime": "2025-07-05T10:15:00",
+      "close": "108193.0",
+      "rsi": "55.13",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T10:30:00",
+      "close": "108206.0",
+      "rsi": "55.96",
+      "volume_normalized": "8"
+    },
+    {
+      "datetime": "2025-07-05T10:45:00",
+      "close": "108129.0",
+      "rsi": "49.94",
+      "volume_normalized": "4"
+    },
+    {
+      "datetime": "2025-07-05T11:00:00",
+      "close": "108178.0",
+      "rsi": "53.42",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-05T11:15:00",
+      "close": "108214.0",
+      "rsi": "55.88",
+      "volume_normalized": "6"
+    },
+    {
+      "datetime": "2025-07-05T11:30:00",
+      "close": "108259.0",
+      "rsi": "58.84",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-05T11:45:00",
+      "close": "108165.0",
+      "rsi": "51.03",
+      "volume_normalized": "10"
+    },
+    {
+      "datetime": "2025-07-05T12:00:00",
+      "close": "108101.0",
+      "rsi": "46.45",
+      "volume_normalized": "28"
+    },
+    {
+      "datetime": "2025-07-05T12:15:00",
+      "close": "108057.0",
+      "rsi": "43.52",
+      "volume_normalized": "17"
+    },
+    {
+      "datetime": "2025-07-05T12:30:00",
+      "close": "108109.0",
+      "rsi": "47.77",
+      "volume_normalized": "15"
+    },
+    {
+      "datetime": "2025-07-05T12:45:00",
+      "close": "108181.0",
+      "rsi": "53.10",
+      "volume_normalized": "9"
+    },
+    {
+      "datetime": "2025-07-05T13:00:00",
+      "close": "108172.0",
+      "rsi": "52.37",
+      "volume_normalized": "11"
+    },
+    {
+      "datetime": "2025-07-05T13:15:00",
+      "close": "108240.0",
+      "rsi": "57.21",
+      "volume_normalized": "7"
+    }
+  ]
+} 
