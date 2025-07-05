@@ -111,7 +111,7 @@ class SystemMonitor:
         """Récupère les métriques de trading actuelles"""
         try:
             # Récupérer l'état du trading depuis le state manager
-            state = self.state_manager.get_state()
+            state = self.state_manager.state
             
             # Calculer les métriques basées sur l'état
             total_trades = len(state.get('trade_history', []))

@@ -5,6 +5,7 @@ Charge les données historiques pour initialiser RSI et volume normalisé
 
 import json
 import logging
+import os
 from datetime import datetime
 from typing import List, Dict, Optional, Tuple
 import pandas as pd
@@ -175,6 +176,9 @@ class InitializationManager:
         
         :return: True si l'initialisation est terminée
         """
+        # Vérifier si le fichier existe
+        if not os.path.exists(self.initial_data_file):
+            return False
         return self.is_initialized and self.initial_data is not None
 
 # Instance globale
