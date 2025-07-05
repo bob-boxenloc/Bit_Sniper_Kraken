@@ -422,6 +422,12 @@
       "close": "108240.0",
       "rsi": "57.21",
       "volume_normalized": "7"
+    },
+    {
+      "datetime": "2025-07-05T13:30:00",
+      "close": "108213.0",
+      "rsi": "54.79",
+      "volume_normalized": "8"
     }
   ]
 } 

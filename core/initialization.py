@@ -179,7 +179,34 @@ class InitializationManager:
         # Vérifier si le fichier existe
         if not os.path.exists(self.initial_data_file):
             return False
-        return self.is_initialized and self.initial_data is not None
+        
+        # Vérifier si on peut charger et valider les données
+        try:
+            with open(self.initial_data_file, 'r') as f:
+                temp_data = json.load(f)
+            
+            # Validation rapide de la structure
+            required_keys = ['description', 'instructions', 'required_periods', 'data']
+            if not all(key in temp_data for key in required_keys):
+                return False
+            
+            # Vérifier le nombre de périodes
+            data = temp_data['data']
+            required_periods = temp_data['required_periods']
+            
+            if len(data) != required_periods:
+                return False
+            
+            # Vérifier au moins la première bougie
+            if data:
+                required_fields = ['datetime', 'close', 'rsi', 'volume_normalized']
+                if not all(field in data[0] for field in required_fields):
+                    return False
+            
+            return True
+            
+        except Exception:
+            return False
 
 # Instance globale
 initialization_manager = InitializationManager()
