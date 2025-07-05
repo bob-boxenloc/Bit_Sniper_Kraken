@@ -317,3 +317,9 @@ if __name__ == "__main__":
     logger.log_technical_analysis(test_analysis, test_conditions)
     
     print("Logs créés dans le dossier 'logs/'") 
+
+def get_logger(name):
+    """
+    Retourne le logger global BitSniper, compatible avec l'import get_logger partout dans le projet.
+    """
+    return logging.getLogger('bitsniper') 
