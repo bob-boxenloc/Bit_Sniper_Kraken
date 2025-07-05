@@ -43,28 +43,36 @@ def trading_loop():
         
         # Vérifier si on a des données d'initialisation
         if is_initialization_ready():
-            print("🔄 Mode hybride : Kraken temps réel + données historiques")
+            print("🔄 Mode hybride : Kraken temps réel (N-1, N-2) + données historiques (N-3+)")
             
-            # Récupérer les nouvelles bougies Kraken (temps réel)
+            # Récupérer N-1 et N-2 depuis Kraken (temps réel)
             current_candles = md.get_ohlcv_15m(limit=2)  # N-1 et N-2 actuels
             
-            # Charger les données d'initialisation pour l'historique
+            # Calculer RSI sur les vraies données Kraken (N-1, N-2)
+            rsi_success, current_rsi, rsi_message = get_rsi_with_validation(current_candles, period=12)
+            
+            if not rsi_success:
+                logger.log_warning(f"Trading impossible: {rsi_message}")
+                print(f"❌ TRADING IMPOSSIBLE: {rsi_message}")
+                print("   Le bot attend d'avoir assez d'historique pour calculer le RSI de manière fiable.")
+                return
+            
+            # Charger les données d'initialisation pour l'historique (N-3, N-4, etc.)
             initial_candles, initial_rsi, initial_volume = initialize_bot()
             
-            # Combiner : N-1,N-2 (Kraken) + N-3,N-4... (vos données historiques)
             # Exclure les 2 dernières bougies de vos données pour éviter les doublons
             historical_candles = initial_candles[:-2]  # N-3, N-4, etc.
+            
+            # Combiner : N-1,N-2 (Kraken temps réel) + N-3,N-4... (vos données historiques)
             candles = current_candles + historical_candles
             
-            # Utiliser vos données pour RSI et volume (historique)
-            rsi = initial_rsi
-            rsi_success = True
-            rsi_message = "RSI initialisé avec données historiques"
+            # Utiliser RSI calculé sur Kraken (pas vos RSI statiques)
+            rsi = current_rsi
             
-            print(f"✅ {len(current_candles)} bougies Kraken temps réel")
-            print(f"✅ {len(historical_candles)} bougies historiques")
+            print(f"✅ {len(current_candles)} bougies Kraken temps réel (N-1, N-2)")
+            print(f"✅ {len(historical_candles)} bougies historiques (N-3+)")
             print(f"✅ Total: {len(candles)} bougies combinées")
-            print(f"✅ RSI initialisé: {len(rsi)} valeurs")
+            print(f"✅ RSI calculé sur données Kraken: {len(rsi)} valeurs")
         else:
             print("📈 Récupération des données en temps réel")
             candles = md.get_ohlcv_15m(limit=35)  # On prend 35 bougies pour avoir assez d'historique pour RSI(12)+SMA(14) et Volume MA(20)+SMA(9)
