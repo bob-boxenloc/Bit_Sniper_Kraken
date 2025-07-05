@@ -13,7 +13,7 @@ from core.scheduler import Scheduler
 from data.market_data import MarketDataManager
 from data.indicators import TechnicalIndicators
 from signals.decision import DecisionEngine
-from trading.kraken_client import KrakenClient
+from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 
 logger = get_logger(__name__)
@@ -63,7 +63,7 @@ def main():
         market_data = MarketDataManager()
         indicators = TechnicalIndicators()
         decision_engine = DecisionEngine(state_manager)
-        kraken_client = KrakenClient()
+        kraken_client = KrakenFuturesClient()
         trade_manager = TradeManager(kraken_client, state_manager)
         scheduler = Scheduler()
         

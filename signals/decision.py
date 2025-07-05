@@ -3,6 +3,18 @@ Module de décision pour BitSniper
 Prend les décisions de trading basées sur l'analyse technique et l'état du compte
 """
 
+class DecisionEngine:
+    def __init__(self, state_manager):
+        self.state_manager = state_manager
+    
+    def decide_action(self, current_rsi, current_volume, current_price):
+        """
+        Prend une décision de trading basée sur les indicateurs actuels.
+        Version simplifiée pour l'initialisation.
+        """
+        # TEMPORAIRE: Bloquer tous les trades pour debug
+        return 'hold'
+
 def decide_action(analysis, conditions_check, account_summary, state_manager=None):
     """
     Prend une décision de trading basée sur l'analyse technique et l'état du compte.
