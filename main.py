@@ -37,7 +37,11 @@ def trading_loop():
     print("="*60)
     
     # 1. Récupération des données de marché
-    print("\n📊 RÉCUPÉRATION DES DONNÉES DE MARCHÉ")
+    print("\n📊 RÉCUPÉRATION DES DONNÉES")
+    
+    # Initialiser current_candles pour qu'il soit toujours disponible
+    current_candles = []
+    
     try:
         md = MarketData()
         

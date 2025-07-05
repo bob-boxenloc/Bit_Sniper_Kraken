@@ -17,7 +17,13 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
+            # LOG DÉTAILLÉ DE L'APPEL API
+            print(f"🔍 APPEL API KRAKEN: get_ohlc(tick_type='trade', symbol='{symbol}', resolution='15m')")
+            
             candles = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
+            
+            # LOG DE LA RÉPONSE BRUTE
+            print(f"📡 RÉPONSE API KRAKEN: {candles}")
             
             # Log de la réponse brute pour debug
             self.logger.debug(f"Réponse brute API: {candles}")
@@ -41,6 +47,11 @@ class MarketData:
             
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
             
+            # LOG DÉTAILLÉ DES BOUGIES RÉCUPÉRÉES
+            print(f"✅ BOUGIES KRAKEN RÉCUPÉRÉES: {len(ohlcv)} bougies")
+            for i, c in enumerate(ohlcv[-5:]):  # Afficher les 5 dernières
+                print(f"   {i+1}: {c['datetime']} | Close: {c['close']} | Volume: {c['volume']}")
+            
             # Log des 2 dernières bougies pour debug
             if len(ohlcv) >= 2:
                 last_candle = ohlcv[-1]
@@ -52,6 +63,7 @@ class MarketData:
             
         except Exception as e:
             self.logger.error(f"Erreur récupération bougies 15m pour {symbol}: {e}")
+            print(f"❌ ERREUR API KRAKEN: {e}")
             raise
 
 if __name__ == "__main__":
