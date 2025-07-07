@@ -48,13 +48,8 @@ class MarketData:
             # On trie par timestamp croissant (du plus ancien au plus récent)
             ohlcv = sorted(candles['candles'], key=lambda x: x['time'])
             
-            # IMPORTANT: La dernière bougie est la bougie en cours (non fermée)
-            # On exclut cette bougie et on ne garde que les bougies fermées
-            if len(ohlcv) > 1:
-                ohlcv = ohlcv[:-1]  # Exclure la dernière bougie (en cours)
-                self.logger.debug(f"Bougie en cours exclue. Bougies fermées restantes: {len(ohlcv)}")
-            
-            # On ne garde que les 'limit' dernières bougies fermées
+            # L'API Kraken retourne déjà les bougies fermées
+            # On ne garde que les 'limit' dernières bougies
             ohlcv = ohlcv[-limit:]
             
             # On convertit le timestamp en datetime lisible
@@ -81,6 +76,48 @@ class MarketData:
             self.logger.error(f"Erreur récupération bougies 15m pour {symbol}: {e}")
             print(f"❌ ERREUR API KRAKEN: {e}")
             raise
+
+class CandleBuffer:
+    """
+    Gère un buffer de 40 bougies maximum pour les calculs.
+    Ajoute les nouvelles bougies et supprime les plus anciennes automatiquement.
+    """
+    
+    def __init__(self, max_candles=40):
+        self.candles = []
+        self.max_candles = max_candles
+        self.logger = logging.getLogger(__name__)
+    
+    def initialize_with_historical(self, historical_candles):
+        """Initialise le buffer avec les données historiques"""
+        self.candles = historical_candles[-self.max_candles:]  # Garder les 40 plus récentes
+        self.logger.info(f"Buffer initialisé avec {len(self.candles)} bougies historiques")
+    
+    def add_candle(self, new_candle):
+        """Ajoute une nouvelle bougie et supprime la plus ancienne si nécessaire"""
+        self.candles.append(new_candle)
+        if len(self.candles) > self.max_candles:
+            removed_candle = self.candles.pop(0)  # Supprime la plus ancienne
+            self.logger.debug(f"Bougie supprimée: {removed_candle['datetime']}")
+        
+        self.logger.debug(f"Buffer: {len(self.candles)} bougies (max: {self.max_candles})")
+    
+    def get_candles(self):
+        """Retourne la liste des bougies pour les calculs"""
+        return self.candles
+    
+    def get_latest_candles(self, count=2):
+        """Retourne les N dernières bougies pour les décisions"""
+        return self.candles[-count:] if len(self.candles) >= count else []
+    
+    def get_status(self):
+        """Retourne le statut du buffer"""
+        return {
+            'total_candles': len(self.candles),
+            'max_candles': self.max_candles,
+            'is_full': len(self.candles) >= self.max_candles,
+            'latest_candle': self.candles[-1]['datetime'] if self.candles else None
+        }
 
 if __name__ == "__main__":
     md = MarketData()

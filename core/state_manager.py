@@ -12,8 +12,8 @@ from typing import Dict, Any, Optional
 class StateManager:
     """
     Gère l'état du bot et la persistance des données.
-    """
-    
+        """
+        
     def __init__(self, state_file: str = "bot_state.json"):
         self.state_file = state_file
         self.logger = logging.getLogger(__name__)
@@ -23,8 +23,8 @@ class StateManager:
         """Charge l'état depuis le fichier JSON."""
         try:
             if os.path.exists(self.state_file):
-                with open(self.state_file, 'r') as f:
-                    state = json.load(f)
+            with open(self.state_file, 'r') as f:
+                state = json.load(f)
                 
                 # Vérifier si data_progression existe, sinon l'ajouter
                 if 'data_progression' not in state:
@@ -51,8 +51,8 @@ class StateManager:
                         'last_transition_date': None,
                         'is_transition_complete': False
                     },
-                    'trading_stats': {
-                        'total_trades': 0,
+                'trading_stats': {
+                    'total_trades': 0,
                         'winning_trades': 0,
                         'losing_trades': 0,
                         'total_pnl': 0.0
@@ -184,4 +184,4 @@ class StateManager:
             summary.append(f"   📊 Stats: {total_trades} trades, {win_rate:.1f}% win rate")
             summary.append(f"      PnL total: ${stats.get('total_pnl', 0):.2f}")
         
-        return "\n".join(summary) 
+        return "\n".join(summary)
