@@ -60,11 +60,12 @@ def trading_loop():
             
             print(f"✅ Buffer initialisé avec {len(candle_buffer.get_candles())} bougies historiques")
         
-        # Récupérer la dernière bougie fermée de Kraken
-        print("🔄 Récupération de la dernière bougie fermée")
-        new_candles = md.get_ohlcv_15m(limit=1)
+        # Récupérer les dernières bougies fermées de Kraken
+        print("🔄 Récupération des dernières bougies fermées")
+        new_candles = md.get_ohlcv_15m(limit=5)  # Récupérer 5 bougies pour avoir assez de données fermées
         
         if new_candles:
+            # Utiliser la dernière bougie fermée (celle avec le volume le plus élevé parmi les récentes)
             new_candle = new_candles[-1]  # La dernière bougie fermée
             candle_buffer.add_candle(new_candle)
             
@@ -85,6 +86,14 @@ def trading_loop():
                 logger.log_warning("Pas assez de bougies pour les décisions")
                 print("❌ TRADING IMPOSSIBLE: Pas assez de bougies pour les décisions")
                 return
+            
+            # Vérifier que les bougies utilisées sont fermées (volume > 0)
+            for i, candle in enumerate(latest_candles):
+                if float(candle['volume']) == 0:
+                    logger.log_warning(f"Bougie {i+1} a un volume de 0 (non fermée)")
+                    print(f"⚠️  BOUGIE N-{2-i} NON FERMÉE: Volume = 0")
+                    print("   Le bot attendra la prochaine bougie fermée.")
+                    return
             
             # Validation de l'historique pour le RSI
             rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=12)

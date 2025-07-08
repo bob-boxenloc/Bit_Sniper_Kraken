@@ -20,7 +20,7 @@ class MarketData:
             # LOG DÉTAILLÉ DE L'APPEL API
             print(f"🔍 APPEL API KRAKEN: get_ohlc(tick_type='trade', symbol='{symbol}', resolution='15m')")
             
-            # Ne pas spécifier de timestamps pour éviter les limitations
+            # Récupérer plus de bougies pour avoir assez de données fermées
             candles = self.client.get_ohlc(
                 tick_type="trade", 
                 symbol=symbol, 
@@ -37,9 +37,16 @@ class MarketData:
             # On trie par timestamp croissant (du plus ancien au plus récent)
             ohlcv = sorted(candles['candles'], key=lambda x: x['time'])
             
-            # L'API Kraken retourne déjà les bougies fermées
-            # On ne garde que les 'limit' dernières bougies
-            ohlcv = ohlcv[-limit:]
+            # FILTRER LES BOUGIES FERMÉES (volume > 0)
+            closed_candles = [c for c in ohlcv if float(c['volume']) > 0]
+            
+            if not closed_candles:
+                self.logger.warning("Aucune bougie fermée trouvée dans la réponse API")
+                print("⚠️  AUCUNE BOUGIE FERMÉE TROUVÉE")
+                return []
+            
+            # On ne garde que les 'limit' dernières bougies fermées
+            ohlcv = closed_candles[-limit:]
             
             # On convertit le timestamp en datetime lisible
             for c in ohlcv:
@@ -48,16 +55,16 @@ class MarketData:
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
             
             # LOG DÉTAILLÉ DES BOUGIES RÉCUPÉRÉES
-            print(f"✅ BOUGIES KRAKEN RÉCUPÉRÉES: {len(ohlcv)} bougies")
+            print(f"✅ BOUGIES KRAKEN FERMÉES RÉCUPÉRÉES: {len(ohlcv)} bougies")
             for i, c in enumerate(ohlcv[-5:]):  # Afficher les 5 dernières
                 print(f"   {i+1}: {c['datetime']} | Close: {c['close']} | Volume: {c['volume']}")
             
-            # Log des 2 dernières bougies pour debug
+            # Log des 2 dernières bougies fermées pour debug
             if len(ohlcv) >= 2:
                 last_candle = ohlcv[-1]
                 prev_candle = ohlcv[-2]
                 self.logger.debug(f"Bougie N-1 (dernière fermée): {last_candle['datetime']} | O:{last_candle['open']} H:{last_candle['high']} L:{last_candle['low']} C:{last_candle['close']} V:{last_candle['volume']}")
-                self.logger.debug(f"Bougie N-2 (avant-dernière): {prev_candle['datetime']} | O:{prev_candle['open']} H:{prev_candle['high']} L:{prev_candle['low']} C:{prev_candle['close']} V:{prev_candle['volume']}")
+                self.logger.debug(f"Bougie N-2 (avant-dernière fermée): {prev_candle['datetime']} | O:{prev_candle['open']} H:{prev_candle['high']} L:{prev_candle['low']} C:{prev_candle['close']} V:{prev_candle['volume']}")
             
             return ohlcv
             
