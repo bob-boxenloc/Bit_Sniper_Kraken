@@ -48,13 +48,11 @@ class MarketData:
             # On ne garde que les 'limit' dernières bougies fermées
             ohlcv = closed_candles[-limit:]
             
-            # On convertit le timestamp en datetime lisible et vérifie la présence de 'count'
+            # On convertit le timestamp en datetime lisible et ajoute le champ 'count' basé sur 'volume'
             for c in ohlcv:
                 c['datetime'] = datetime.utcfromtimestamp(c['time']/1000)
-                if 'count' not in c:
-                    raise KeyError(f"Champ 'count' manquant dans la bougie Kraken (timestamp={c['time']})")
-                # Optionnel : forcer le type int
-                c['count'] = int(c['count'])
+                # Utiliser 'volume' comme 'count' (nombre de trades)
+                c['count'] = int(c['volume'])
             
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
             
