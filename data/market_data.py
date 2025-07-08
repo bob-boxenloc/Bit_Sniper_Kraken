@@ -97,7 +97,11 @@ class MarketData:
                 c['datetime'] = datetime.utcfromtimestamp(c['time']/1000)
                 # Ajouter le trade-count depuis les analytics
                 if c['time'] in trade_counts:
-                    c['count'] = trade_counts[c['time']]
+                    try:
+                        c['count'] = int(trade_counts[c['time']])
+                    except (ValueError, TypeError):
+                        c['count'] = 0
+                        self.logger.warning(f"Trade-count invalide pour timestamp {c['time']}: {trade_counts[c['time']]}")
                 else:
                     # Si pas de trade-count disponible, utiliser 0 ou une valeur par défaut
                     c['count'] = 0
