@@ -197,7 +197,11 @@ class CandleBuffer:
             oldest = self.candles[0]
             newest = self.candles[-1]
             summary.append(f"Période: {oldest['datetime']} → {newest['datetime']}")
-            summary.append(f"Prix range: ${min(c['low'] for c in self.candles):.2f} - ${max(c['high'] for c in self.candles):.2f}")
+            
+            # Convertir les prix en float avant le formatage
+            lows = [float(c['low']) for c in self.candles]
+            highs = [float(c['high']) for c in self.candles]
+            summary.append(f"Prix range: ${min(lows):.2f} - ${max(highs):.2f}")
             
             # Count range si disponible
             counts = [c.get('count', 0) for c in self.candles if c.get('count') is not None]
