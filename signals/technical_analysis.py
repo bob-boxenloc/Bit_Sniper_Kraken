@@ -3,8 +3,6 @@ Module d'analyse technique pour BitSniper
 Calcule tous les indicateurs nécessaires pour la stratégie de trading
 """
 
-# from data.indicators import compute_normalized_volume, get_volume_with_validation
-
 def analyze_candles(candles, rsi_series):
     """
     Analyse complète des bougies pour la stratégie de trading.
