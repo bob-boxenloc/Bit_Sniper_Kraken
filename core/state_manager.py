@@ -51,8 +51,8 @@ class StateManager:
                         'last_transition_date': None,
                         'is_transition_complete': False
                     },
-                    'trading_stats': {
-                        'total_trades': 0,
+                'trading_stats': {
+                    'total_trades': 0,
                         'winning_trades': 0,
                         'losing_trades': 0,
                         'total_pnl': 0.0
@@ -101,7 +101,7 @@ class StateManager:
     def get_kraken_candles_count(self) -> int:
         """Récupère le nombre de bougies Kraken récupérées."""
         return self.state.get('data_progression', {}).get('kraken_candles_count', 0)
-    
+
     def update_position(self, position_type: str, action: str, data: Dict[str, Any]) -> None:
         """
         Met à jour la position actuelle.
