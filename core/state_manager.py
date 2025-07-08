@@ -51,8 +51,8 @@ class StateManager:
                         'last_transition_date': None,
                         'is_transition_complete': False
                     },
-                'trading_stats': {
-                    'total_trades': 0,
+                    'trading_stats': {
+                        'total_trades': 0,
                         'winning_trades': 0,
                         'losing_trades': 0,
                         'total_pnl': 0.0

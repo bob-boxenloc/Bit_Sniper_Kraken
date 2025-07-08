@@ -4,24 +4,6 @@
   "required_periods": 40,
   "data": [
     {
-      "datetime": "2025-07-07T22:45:00",
-      "close": "108040.0",
-      "rsi": "48.49",
-      "volume_normalized": "8"
-    },
-    {
-      "datetime": "2025-07-07T23:00:00",
-      "close": "108210.0",
-      "rsi": "54.47",
-      "volume_normalized": "16"
-    },
-    {
-      "datetime": "2025-07-07T23:15:00",
-      "close": "108202.0",
-      "rsi": "54.15",
-      "volume_normalized": "2"
-    },
-    {
       "datetime": "2025-07-07T23:30:00",
       "close": "108216.0",
       "rsi": "54.66",
@@ -242,6 +224,24 @@
       "close": "108299.0",
       "rsi": "54.10",
       "volume_normalized": "16"
+    },
+    {
+      "datetime": "2025-07-08T08:45:00",
+      "close": "108277.0",
+      "rsi": "52.67",
+      "volume_normalized": "4"
+    },
+    {
+      "datetime": "2025-07-08T09:00:00",
+      "close": "108362.0",
+      "rsi": "57.41",
+      "volume_normalized": "11"
+    },
+    {
+      "datetime": "2025-07-08T09:15:00",
+      "close": "108410.0",
+      "rsi": "59.89",
+      "volume_normalized": "12"
     }
   ]
 } 

@@ -17,25 +17,14 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Calculer le timestamp de fin (maintenant) et de début (limit * 15 minutes en arrière)
-            from datetime import datetime, timedelta
-            now = datetime.utcnow()
-            end_time = int(now.timestamp() * 1000)  # Timestamp en millisecondes
-            
-            # Chaque bougie 15m = 15 * 60 = 900 secondes
-            # On veut récupérer les limit dernières bougies fermées
-            # Donc on remonte de (limit + 1) * 15 minutes pour être sûr d'avoir assez de données
-            start_time = end_time - ((limit + 1) * 15 * 60 * 1000)
-            
             # LOG DÉTAILLÉ DE L'APPEL API
-            print(f"🔍 APPEL API KRAKEN: get_ohlc(tick_type='trade', symbol='{symbol}', resolution='15m', from={start_time}, to={end_time})")
+            print(f"🔍 APPEL API KRAKEN: get_ohlc(tick_type='trade', symbol='{symbol}', resolution='15m')")
             
+            # Ne pas spécifier de timestamps pour éviter les limitations
             candles = self.client.get_ohlc(
                 tick_type="trade", 
                 symbol=symbol, 
-                resolution="15m",
-                from_=start_time,
-                to=end_time
+                resolution="15m"
             )
             
             # LOG DE LA RÉPONSE BRUTE
