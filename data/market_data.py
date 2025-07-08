@@ -14,11 +14,9 @@ class MarketData:
         self.base_url = "https://futures.kraken.com/api"
 
     @handle_network_errors(max_retries=3, timeout=20.0)
-    def get_trade_count_15m(self, symbol="PI_XBTUSD", limit=100):
+    def get_trade_count_15m(self, symbol="PI_XBTUSD", limit=12):
         """Récupère le trade-count via l'endpoint Analytics"""
         try:
-            self.logger.debug(f"Récupération trade-count pour {symbol}")
-            
             # Calculer les timestamps from/to
             import time
             end_time = int(time.time())
@@ -31,13 +29,10 @@ class MarketData:
                 "to": end_time
             }
             
-            print(f"🔍 APPEL API ANALYTICS: {url} avec params {params}")
-            
             response = requests.get(url, params=params)
             response.raise_for_status()
             
             data = response.json()
-            print(f"📡 RÉPONSE ANALYTICS: {data}")
             
             # data['analytics'] contient [[timestamp, count], ...]
             trade_counts = {}
@@ -49,30 +44,20 @@ class MarketData:
             
         except Exception as e:
             self.logger.error(f"Erreur récupération trade-count pour {symbol}: {e}")
-            print(f"❌ ERREUR ANALYTICS: {e}")
-            raise
+            return {}
 
     @handle_network_errors(max_retries=3, timeout=20.0)
-    def get_ohlcv_15m(self, symbol="PI_XBTUSD", limit=100):
+    def get_ohlcv_15m(self, symbol="PI_XBTUSD", limit=12):
         # Récupère les dernières bougies 15m (OHLCV) pour le symbole donné
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # LOG DÉTAILLÉ DE L'APPEL API
-            print(f"🔍 APPEL API KRAKEN: get_ohlc(tick_type='trade', symbol='{symbol}', resolution='15m')")
-            
-            # Récupérer plus de bougies pour avoir assez de données fermées
+            # Récupérer les bougies OHLCV
             candles = self.client.get_ohlc(
                 tick_type="trade", 
                 symbol=symbol, 
                 resolution="15m"
             )
-            
-            # LOG DE LA RÉPONSE BRUTE
-            print(f"📡 RÉPONSE API KRAKEN: {candles}")
-            
-            # Log de la réponse brute pour debug
-            self.logger.debug(f"Réponse brute API: {candles}")
             
             # candles['candles'] est une liste de dicts avec time, open, high, low, close, volume
             # On trie par timestamp croissant (du plus ancien au plus récent)
@@ -82,50 +67,33 @@ class MarketData:
             closed_candles = [c for c in ohlcv if float(c['volume']) > 0]
             
             if not closed_candles:
-                self.logger.warning("Aucune bougie fermée trouvée dans la réponse API")
-                print("⚠️  AUCUNE BOUGIE FERMÉE TROUVÉE")
+                self.logger.warning("Aucune bougie fermée trouvée")
                 return []
             
             # On ne garde que les 'limit' dernières bougies fermées
             ohlcv = closed_candles[-limit:]
             
             # Récupérer le trade-count via l'endpoint Analytics
-            trade_counts = self.get_trade_count_15m(symbol, limit)
+            try:
+                trade_counts = self.get_trade_count_15m(symbol, limit)
+            except Exception as e:
+                self.logger.warning(f"Impossible de récupérer trade-count: {e}")
+                trade_counts = {}
             
             # Fusionner les données OHLCV avec le trade-count
             for c in ohlcv:
                 c['datetime'] = datetime.utcfromtimestamp(c['time']/1000)
                 # Ajouter le trade-count depuis les analytics
                 if c['time'] in trade_counts:
-                    try:
-                        c['count'] = int(trade_counts[c['time']])
-                    except (ValueError, TypeError):
-                        c['count'] = 0
-                        self.logger.warning(f"Trade-count invalide pour timestamp {c['time']}: {trade_counts[c['time']]}")
+                    c['count'] = trade_counts[c['time']]
                 else:
-                    # Si pas de trade-count disponible, utiliser 0 ou une valeur par défaut
                     c['count'] = 0
-                    self.logger.warning(f"Pas de trade-count trouvé pour timestamp {c['time']}")
             
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
-            
-            # LOG DÉTAILLÉ DES BOUGIES RÉCUPÉRÉES
-            print(f"✅ BOUGIES KRAKEN FERMÉES RÉCUPÉRÉES: {len(ohlcv)} bougies")
-            for i, c in enumerate(ohlcv[-5:]):  # Afficher les 5 dernières
-                print(f"   {i+1}: {c['datetime']} | Close: {c['close']} | Volume: {c['volume']} | Count: {c['count']}")
-            
-            # Log des 2 dernières bougies fermées pour debug
-            if len(ohlcv) >= 2:
-                last_candle = ohlcv[-1]
-                prev_candle = ohlcv[-2]
-                self.logger.debug(f"Bougie N-1 (dernière fermée): {last_candle['datetime']} | O:{last_candle['open']} H:{last_candle['high']} L:{last_candle['low']} C:{last_candle['close']} V:{last_candle['volume']} Count:{last_candle['count']}")
-                self.logger.debug(f"Bougie N-2 (avant-dernière fermée): {prev_candle['datetime']} | O:{prev_candle['open']} H:{prev_candle['high']} L:{prev_candle['low']} C:{prev_candle['close']} V:{prev_candle['volume']} Count:{prev_candle['count']}")
-            
             return ohlcv
             
         except Exception as e:
             self.logger.error(f"Erreur récupération bougies 15m pour {symbol}: {e}")
-            print(f"❌ ERREUR API KRAKEN: {e}")
             raise
 
 class CandleBuffer:
