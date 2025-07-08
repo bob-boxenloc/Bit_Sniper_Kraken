@@ -182,7 +182,17 @@ def has_sufficient_history_for_volume(candles, ma_length=20, smoothing_period=9)
         return False, f"Pas assez d'historique pour volume. Nécessaire: {total_needed}, Disponible: {len(candles)}"
     
     # Vérifier que les dernières bougies ont des valeurs volume valides (pas NaN)
-    volumes = [float(c['volume']) for c in candles]
+    # Gérer les deux formats : 'volume' (Kraken) et 'volume_normalized' (initial_data.json)
+    volumes = []
+    for c in candles:
+        if 'volume' in c:
+            volumes.append(float(c['volume']))
+        elif 'volume_normalized' in c:
+            # Si c'est déjà normalisé, on l'utilise tel quel
+            volumes.append(float(c['volume_normalized']))
+        else:
+            raise ValueError(f"Champ volume manquant dans la bougie: {c}")
+    
     volume_normalized = compute_normalized_volume(volumes, ma_length, smoothing_period)
     
     # Vérifier que les 2 dernières valeurs volume sont valides (pour N-1 et N-2)
@@ -211,7 +221,17 @@ def get_volume_with_validation(candles, ma_length=20, smoothing_period=9):
     if not is_valid:
         return False, None, message
     
-    volumes = [float(c['volume']) for c in candles]
+    # Gérer les deux formats : 'volume' (Kraken) et 'volume_normalized' (initial_data.json)
+    volumes = []
+    for c in candles:
+        if 'volume' in c:
+            volumes.append(float(c['volume']))
+        elif 'volume_normalized' in c:
+            # Si c'est déjà normalisé, on l'utilise tel quel
+            volumes.append(float(c['volume_normalized']))
+        else:
+            raise ValueError(f"Champ volume manquant dans la bougie: {c}")
+    
     volume_normalized = compute_normalized_volume(volumes, ma_length, smoothing_period)
     return True, volume_normalized, f"Volume MA({ma_length}) + SMA({smoothing_period}) calculé avec succès"
 
