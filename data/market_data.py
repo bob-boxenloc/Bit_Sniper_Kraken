@@ -48,23 +48,27 @@ class MarketData:
             # On ne garde que les 'limit' dernières bougies fermées
             ohlcv = closed_candles[-limit:]
             
-            # On convertit le timestamp en datetime lisible
+            # On convertit le timestamp en datetime lisible et vérifie la présence de 'count'
             for c in ohlcv:
                 c['datetime'] = datetime.utcfromtimestamp(c['time']/1000)
+                if 'count' not in c:
+                    raise KeyError(f"Champ 'count' manquant dans la bougie Kraken (timestamp={c['time']})")
+                # Optionnel : forcer le type int
+                c['count'] = int(c['count'])
             
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
             
             # LOG DÉTAILLÉ DES BOUGIES RÉCUPÉRÉES
             print(f"✅ BOUGIES KRAKEN FERMÉES RÉCUPÉRÉES: {len(ohlcv)} bougies")
             for i, c in enumerate(ohlcv[-5:]):  # Afficher les 5 dernières
-                print(f"   {i+1}: {c['datetime']} | Close: {c['close']} | Volume: {c['volume']}")
+                print(f"   {i+1}: {c['datetime']} | Close: {c['close']} | Volume: {c['volume']} | Count: {c['count']}")
             
             # Log des 2 dernières bougies fermées pour debug
             if len(ohlcv) >= 2:
                 last_candle = ohlcv[-1]
                 prev_candle = ohlcv[-2]
-                self.logger.debug(f"Bougie N-1 (dernière fermée): {last_candle['datetime']} | O:{last_candle['open']} H:{last_candle['high']} L:{last_candle['low']} C:{last_candle['close']} V:{last_candle['volume']}")
-                self.logger.debug(f"Bougie N-2 (avant-dernière fermée): {prev_candle['datetime']} | O:{prev_candle['open']} H:{prev_candle['high']} L:{prev_candle['low']} C:{prev_candle['close']} V:{prev_candle['volume']}")
+                self.logger.debug(f"Bougie N-1 (dernière fermée): {last_candle['datetime']} | O:{last_candle['open']} H:{last_candle['high']} L:{last_candle['low']} C:{last_candle['close']} V:{last_candle['volume']} Count:{last_candle['count']}")
+                self.logger.debug(f"Bougie N-2 (avant-dernière fermée): {prev_candle['datetime']} | O:{prev_candle['open']} H:{prev_candle['high']} L:{prev_candle['low']} C:{prev_candle['close']} V:{prev_candle['volume']} Count:{prev_candle['count']}")
             
             return ohlcv
             
@@ -75,11 +79,11 @@ class MarketData:
 
 class CandleBuffer:
     """
-    Gère un buffer de 40 bougies maximum pour les calculs.
+    Gère un buffer de 12 bougies maximum pour les calculs.
     Ajoute les nouvelles bougies et supprime les plus anciennes automatiquement.
     """
     
-    def __init__(self, max_candles=40):
+    def __init__(self, max_candles=12):
         self.candles = []
         self.max_candles = max_candles
         self.logger = logging.getLogger(__name__)

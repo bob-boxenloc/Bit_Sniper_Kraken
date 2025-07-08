@@ -148,8 +148,8 @@ class BitSniperLogger:
                             'high': last_candle['high'],
                             'low': last_candle['low'],
                             'close': last_candle['close'],
-                            'volume': last_candle['volume'],
-                            'source': 'kraken_realtime'  # Indique que c'est une bougie Kraken temps réel
+                            'count': last_candle.get('count', None),
+                            'source': 'kraken_realtime'
                         },
                         'candle_n2': {
                             'time': prev_candle['time'],
@@ -158,8 +158,8 @@ class BitSniperLogger:
                             'high': prev_candle['high'],
                             'low': prev_candle['low'],
                             'close': prev_candle['close'],
-                            'volume': prev_candle['volume'],
-                            'source': 'kraken_realtime'  # Indique que c'est une bougie Kraken temps réel
+                            'count': prev_candle.get('count', None),
+                            'source': 'kraken_realtime'
                         }
                     },
                     'total_candles': len(candles),
@@ -215,9 +215,9 @@ class BitSniperLogger:
                 'rsi_n1': analysis['rsi_n1'],
                 'rsi_n2': analysis['rsi_n2'],
                 'rsi_change': analysis['rsi_change'],
-                'volume_n1': analysis['volume_n1'],
-                'volume_n2': analysis['volume_n2'],
-                'delta_volume': analysis['delta_volume'],
+                'count_n1': analysis.get('count_n1'),
+                'count_n2': analysis.get('count_n2'),
+                'delta_count': analysis.get('delta_count'),
                 'trading_allowed': conditions_check['trading_allowed'],
                 'long1_ready': conditions_check['long1_ready'],
                 'long2_ready': conditions_check['long2_ready'],
@@ -235,7 +235,7 @@ class BitSniperLogger:
                         'high': analysis['candle_n1']['high'],
                         'low': analysis['candle_n1']['low'],
                         'close': analysis['candle_n1']['close'],
-                        'volume': analysis['candle_n1']['volume']
+                        'count': analysis['candle_n1'].get('count', None)
                     },
                     'candle_n2': {
                         'time': analysis['candle_n2']['time'],
@@ -244,7 +244,7 @@ class BitSniperLogger:
                         'high': analysis['candle_n2']['high'],
                         'low': analysis['candle_n2']['low'],
                         'close': analysis['candle_n2']['close'],
-                        'volume': analysis['candle_n2']['volume']
+                        'count': analysis['candle_n2'].get('count', None)
                     }
                 },
                 'rsi_data': {
@@ -252,10 +252,10 @@ class BitSniperLogger:
                     'rsi_n2': analysis['rsi_n2'],
                     'rsi_change': analysis['rsi_change']
                 },
-                'volume_data': {
-                    'volume_n1': analysis['volume_n1'],
-                    'volume_n2': analysis['volume_n2'],
-                    'delta_volume': analysis['delta_volume']
+                'count_data': {
+                    'count_n1': analysis.get('count_n1'),
+                    'count_n2': analysis.get('count_n2'),
+                    'delta_count': analysis.get('delta_count')
                 },
                 'price_data': {
                     'close_n1': analysis['close_n1'],

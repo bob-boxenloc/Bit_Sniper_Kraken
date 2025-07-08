@@ -50,15 +50,13 @@ def trading_loop():
         
         # Initialisation du buffer si c'est la première fois
         if not candle_buffer.get_candles():
-            print("🔄 Initialisation du buffer avec données historiques")
+            print("🔄 Initialisation avec buffer vide - attente des données Kraken")
             
-            # Charger les données d'initialisation
+            # Initialiser avec un buffer vide
             initial_candles, initial_rsi, initial_volume = initialize_bot()
             
-            # Initialiser le buffer avec les 40 bougies les plus récentes
-            candle_buffer.initialize_with_historical(initial_candles)
-            
-            print(f"✅ Buffer initialisé avec {len(candle_buffer.get_candles())} bougies historiques")
+            # Le buffer reste vide - on attend les données Kraken
+            print("✅ Buffer initialisé (vide) - attente des données Kraken")
         
         # Récupérer les dernières bougies fermées de Kraken
         print("🔄 Récupération des dernières bougies fermées")
@@ -69,7 +67,7 @@ def trading_loop():
             new_candle = new_candles[-1]  # La dernière bougie fermée
             candle_buffer.add_candle(new_candle)
             
-            print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']}")
+            print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Count: {new_candle['count']}")
             
             # Afficher le statut du buffer
             status = candle_buffer.get_status()
@@ -85,6 +83,7 @@ def trading_loop():
             if len(latest_candles) < 2:
                 logger.log_warning("Pas assez de bougies pour les décisions")
                 print("❌ TRADING IMPOSSIBLE: Pas assez de bougies pour les décisions")
+                print("   Le bot attendra d'avoir au moins 2 bougies fermées.")
                 return
             
             # Vérifier que les bougies utilisées sont fermées (volume > 0)
@@ -97,6 +96,22 @@ def trading_loop():
             
             # Validation de l'historique pour le RSI
             rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=12)
+            
+            if not rsi_success:
+                logger.log_warning(f"RSI non calculable: {rsi_message}")
+                print(f"❌ TRADING IMPOSSIBLE: {rsi_message}")
+                return
+            
+            # Calculer le RSI pour les 2 dernières bougies séparément
+            # RSI N-1 (dernière bougie) - utiliser toutes les bougies
+            rsi_n1_success, rsi_n1, _ = get_rsi_with_validation(candles, period=12)
+            # RSI N-2 (avant-dernière bougie) - utiliser toutes les bougies sauf la dernière
+            rsi_n2_success, rsi_n2, _ = get_rsi_with_validation(candles[:-1], period=12)
+            
+            if not rsi_n1_success or not rsi_n2_success:
+                logger.log_warning("Impossible de calculer RSI pour les 2 dernières bougies")
+                print("❌ TRADING IMPOSSIBLE: RSI non calculable pour les décisions")
+                return
         
         else:
             logger.log_warning("Aucune bougie récupérée de Kraken")
@@ -117,22 +132,25 @@ def trading_loop():
     last_candle = latest_candles[-1]  # Dernière bougie
     prev_candle = latest_candles[-2]  # Avant-dernière bougie
     
-    last_rsi = rsi.iloc[-1]
-    prev_rsi = rsi.iloc[-2]
+    last_rsi = rsi_n1
+    prev_rsi = rsi_n2
     
     print(f"🎯 BOUGIES UTILISÉES POUR DÉCISIONS:")
-    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle['volume']}, RSI={prev_rsi:.2f}")
-    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle['volume']}, RSI={last_rsi:.2f}")
+    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Count={prev_candle['count']}, RSI={prev_rsi:.2f}")
+    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Count={last_candle['count']}, RSI={last_rsi:.2f}")
     
     # Calculs pour la stratégie
-    volume_n2 = float(prev_candle['volume'])
-    volume_n1 = float(last_candle['volume'])
-    delta_volume = volume_n1 / volume_n2 if volume_n2 > 0 else 0
+    count_n2 = int(prev_candle['count'])
+    count_n1 = int(last_candle['count'])
+    delta_count = count_n1 / count_n2 if count_n2 > 0 else 0
     rsi_change = last_rsi - prev_rsi
     
     # 3. Analyse technique complète
     print("\n🔍 ANALYSE TECHNIQUE")
-    analysis = analyze_candles(candles, rsi)
+    # Créer une série RSI avec les 2 valeurs calculées pour compatibilité
+    import pandas as pd
+    rsi_series = pd.Series([prev_rsi, last_rsi])
+    analysis = analyze_candles(candles, rsi_series)
     conditions_check = check_all_conditions(analysis)
     analysis_summary = get_analysis_summary(analysis, conditions_check)
     print(analysis_summary)

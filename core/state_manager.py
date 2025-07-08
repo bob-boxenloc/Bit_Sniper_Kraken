@@ -25,19 +25,19 @@ class StateManager:
             if os.path.exists(self.state_file):
                 with open(self.state_file, 'r') as f:
                     state = json.load(f)
-                    
-                    # Vérifier si data_progression existe, sinon l'ajouter
-                    if 'data_progression' not in state:
-                        state['data_progression'] = {
-                            'kraken_candles_count': 0,
-                            'total_required': 80,
-                            'last_transition_date': None,
-                            'is_transition_complete': False
-                        }
-                        self.logger.info("Clé data_progression ajoutée à l'état existant")
-                    
-                    self.logger.info(f"État chargé depuis {self.state_file}")
-                    return state
+                
+                # Vérifier si data_progression existe, sinon l'ajouter
+                if 'data_progression' not in state:
+                    state['data_progression'] = {
+                        'kraken_candles_count': 0,
+                        'total_required': 80,
+                        'last_transition_date': None,
+                        'is_transition_complete': False
+                    }
+                    self.logger.info("Clé data_progression ajoutée à l'état existant")
+                
+                self.logger.info(f"État chargé depuis {self.state_file}")
+                return state
             else:
                 # État initial
                 initial_state = {
