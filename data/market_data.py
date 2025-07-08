@@ -11,7 +11,7 @@ class MarketData:
         self.api_secret = os.getenv("KRAKEN_API_SECRET")
         self.client = Market(key=self.api_key, secret=self.api_secret)
         self.logger = logging.getLogger(__name__)
-        self.base_url = "https://futures.kraken.com/api"
+        self.base_url = "https://futures.kraken.com/api/charts/v1"
 
     @handle_network_errors(max_retries=3, timeout=20.0)
     def get_trade_count_15m(self, symbol="PI_XBTUSD", limit=12):
@@ -22,11 +22,11 @@ class MarketData:
             end_time = int(time.time())
             start_time = end_time - (limit * 15 * 60)  # limit * 15 minutes
             
-            url = f"{self.base_url}/analytics/v1/{symbol}/trade-count"
+            url = f"{self.base_url}/analytics/{symbol}/trade-count"
             params = {
-                "resolution": 900,  # 15 minutes = 900 secondes
-                "from": start_time,
-                "to": end_time
+                "since": start_time,
+                "to": end_time,
+                "interval": 900  # 15 minutes = 900 secondes
             }
             
             response = requests.get(url, params=params)
@@ -34,10 +34,13 @@ class MarketData:
             
             data = response.json()
             
-            # data['analytics'] contient [[timestamp, count], ...]
+            # data['data'] contient les données analytics
             trade_counts = {}
-            for timestamp, count in data.get('analytics', []):
-                trade_counts[timestamp * 1000] = count  # Convertir en millisecondes
+            if 'data' in data and isinstance(data['data'], list):
+                for item in data['data']:
+                    if isinstance(item, list) and len(item) >= 2:
+                        timestamp, count = item[0], item[1]
+                        trade_counts[timestamp * 1000] = count  # Convertir en millisecondes
             
             self.logger.debug(f"Récupéré {len(trade_counts)} trade-counts pour {symbol}")
             return trade_counts
