@@ -1,5 +1,6 @@
 import os
 import logging
+import requests
 from kraken.futures import Market
 from datetime import datetime
 from core.error_handler import handle_network_errors
@@ -10,6 +11,46 @@ class MarketData:
         self.api_secret = os.getenv("KRAKEN_API_SECRET")
         self.client = Market(key=self.api_key, secret=self.api_secret)
         self.logger = logging.getLogger(__name__)
+        self.base_url = "https://futures.kraken.com/api"
+
+    @handle_network_errors(max_retries=3, timeout=20.0)
+    def get_trade_count_15m(self, symbol="PI_XBTUSD", limit=100):
+        """Récupère le trade-count via l'endpoint Analytics"""
+        try:
+            self.logger.debug(f"Récupération trade-count pour {symbol}")
+            
+            # Calculer les timestamps from/to
+            import time
+            end_time = int(time.time())
+            start_time = end_time - (limit * 15 * 60)  # limit * 15 minutes
+            
+            url = f"{self.base_url}/analytics/v1/{symbol}/trade-count"
+            params = {
+                "resolution": 900,  # 15 minutes = 900 secondes
+                "from": start_time,
+                "to": end_time
+            }
+            
+            print(f"🔍 APPEL API ANALYTICS: {url} avec params {params}")
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            
+            data = response.json()
+            print(f"📡 RÉPONSE ANALYTICS: {data}")
+            
+            # data['analytics'] contient [[timestamp, count], ...]
+            trade_counts = {}
+            for timestamp, count in data.get('analytics', []):
+                trade_counts[timestamp * 1000] = count  # Convertir en millisecondes
+            
+            self.logger.debug(f"Récupéré {len(trade_counts)} trade-counts pour {symbol}")
+            return trade_counts
+            
+        except Exception as e:
+            self.logger.error(f"Erreur récupération trade-count pour {symbol}: {e}")
+            print(f"❌ ERREUR ANALYTICS: {e}")
+            raise
 
     @handle_network_errors(max_retries=3, timeout=20.0)
     def get_ohlcv_15m(self, symbol="PI_XBTUSD", limit=100):
@@ -48,11 +89,19 @@ class MarketData:
             # On ne garde que les 'limit' dernières bougies fermées
             ohlcv = closed_candles[-limit:]
             
-            # On convertit le timestamp en datetime lisible et ajoute le champ 'count' basé sur 'volume'
+            # Récupérer le trade-count via l'endpoint Analytics
+            trade_counts = self.get_trade_count_15m(symbol, limit)
+            
+            # Fusionner les données OHLCV avec le trade-count
             for c in ohlcv:
                 c['datetime'] = datetime.utcfromtimestamp(c['time']/1000)
-                # Utiliser 'volume' comme 'count' (nombre de trades)
-                c['count'] = int(c['volume'])
+                # Ajouter le trade-count depuis les analytics
+                if c['time'] in trade_counts:
+                    c['count'] = trade_counts[c['time']]
+                else:
+                    # Si pas de trade-count disponible, utiliser 0 ou une valeur par défaut
+                    c['count'] = 0
+                    self.logger.warning(f"Pas de trade-count trouvé pour timestamp {c['time']}")
             
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
             
