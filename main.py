@@ -57,6 +57,7 @@ def trading_loop():
             
             # Le buffer reste vide - on attend les données Kraken
             print("✅ Buffer initialisé (vide) - attente des données Kraken")
+            print("📊 " + candle_buffer.get_buffer_summary())
         
         # Récupérer les dernières bougies fermées de Kraken
         print("🔄 Récupération des dernières bougies fermées")
@@ -73,6 +74,9 @@ def trading_loop():
             status = candle_buffer.get_status()
             print(f"📊 Buffer: {status['total_candles']}/{status['max_candles']} bougies")
             print(f"   Dernière bougie: {status['latest_candle']}")
+            
+            # Afficher le résumé détaillé du buffer
+            print("📋 " + candle_buffer.get_buffer_summary())
             
             # Récupérer toutes les bougies pour les calculs
             candles = candle_buffer.get_candles()
