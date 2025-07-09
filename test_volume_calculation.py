@@ -94,16 +94,16 @@ def test_kraken_api():
     
     print("\n" + "="*50 + "\n")
     
-    # Test 3: SDK Kraken pour OHLC (corrigé selon la doc)
-    print("=== TEST 3: SDK Kraken OHLC (corrigé) ===")
+    # Test 3: SDK Kraken avec tick_type="trade" (selon la doc)
+    print("=== TEST 3: SDK Kraken avec tick_type=trade ===")
     
     try:
         # Initialiser le client SDK
         client = Market()
         
-        # Récupérer les données OHLC via le SDK (selon la doc)
-        # get_ohlc(symbol, resolution, since=None, to=None)
-        ohlc_data = client.get_ohlc(symbol, resolution=15, since=start_time)
+        # Récupérer les données OHLC via le SDK avec tick_type="trade"
+        # Selon la doc: market.get_ohlc(tick_type="trade", symbol="PI_XBTUSD", resolution="15m")
+        ohlc_data = client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
         
         print(f"Type de réponse SDK: {type(ohlc_data)}")
         print(f"Clés de la réponse: {list(ohlc_data.keys()) if isinstance(ohlc_data, dict) else 'Pas un dict'}")
@@ -140,9 +140,9 @@ def test_kraken_api():
     try:
         client = Market()
         
-        # Essayer sans paramètres
-        print("Test 1: Sans paramètres")
-        ohlc_data = client.get_ohlc(symbol)
+        # Essayer sans tick_type
+        print("Test 1: Sans tick_type")
+        ohlc_data = client.get_ohlc(symbol=symbol, resolution="15m")
         print(f"Type: {type(ohlc_data)}")
         if isinstance(ohlc_data, dict):
             print(f"Clés: {list(ohlc_data.keys())}")
@@ -152,9 +152,9 @@ def test_kraken_api():
                 if 'volume' in first_candle:
                     print(f"Volume: {first_candle['volume']}")
         
-        # Essayer avec resolution=900 (15 minutes en secondes)
-        print("\nTest 2: Avec resolution=900")
-        ohlc_data = client.get_ohlc(symbol, resolution=900)
+        # Essayer avec tick_type="trade"
+        print("\nTest 2: Avec tick_type=trade")
+        ohlc_data = client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
         print(f"Type: {type(ohlc_data)}")
         if isinstance(ohlc_data, dict):
             print(f"Clés: {list(ohlc_data.keys())}")
