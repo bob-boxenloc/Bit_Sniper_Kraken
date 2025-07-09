@@ -55,19 +55,29 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Récupérer les bougies OHLCV
-            candles = self.client.get_ohlc(
-                tick_type="trade", 
-                symbol=symbol, 
-                resolution="15m"
-            )
+            # Utiliser l'endpoint direct au lieu du SDK pour avoir le volume
+            import time
+            end_time = int(time.time())
+            start_time = end_time - (limit * 15 * 60)  # limit * 15 minutes
             
-            # candles['candles'] est une liste de dicts avec time, open, high, low, close, volume
+            url = f"{self.base_url}/trade/{symbol}/900"  # 900 secondes = 15 minutes
+            params = {
+                "from": start_time,
+                "to": end_time
+            }
+            
+            response = requests.get(url, params=params)
+            response.raise_for_status()
+            data = response.json()
+            
+            # data['candles'] est une liste de dicts avec time, open, high, low, close, volume, count
+            ohlcv = data.get('candles', [])
+            
             # On trie par timestamp croissant (du plus ancien au plus récent)
-            ohlcv = sorted(candles['candles'], key=lambda x: x['time'])
+            ohlcv = sorted(ohlcv, key=lambda x: x['time'])
             
             # FILTRER LES BOUGIES FERMÉES (volume > 0)
-            closed_candles = [c for c in ohlcv if float(c['volume']) > 0]
+            closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
             
             if not closed_candles:
                 self.logger.warning("Aucune bougie fermée trouvée")
