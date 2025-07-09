@@ -76,13 +76,21 @@ def test_kraken_api():
         print(f"URL: {response.url}")
         print(f"Data keys: {list(data.keys())}")
         
-        if 'data' in data:
-            print(f"Nombre de données volume: {len(data['data'])}")
-            if data['data']:
-                first_volume = data['data'][0]
-                print(f"Première donnée volume: {first_volume}")
+        # Afficher le contenu complet pour voir la structure
+        print(f"Contenu complet: {json.dumps(data, indent=2)}")
+        
+        if 'result' in data:
+            print(f"✅ 'result' présent")
+            result = data['result']
+            print(f"Type de result: {type(result)}")
+            if isinstance(result, dict):
+                print(f"Keys de result: {list(result.keys())}")
+            elif isinstance(result, list):
+                print(f"Nombre d'éléments dans result: {len(result)}")
+                if result:
+                    print(f"Premier élément: {result[0]}")
         else:
-            print("❌ Pas de 'data' dans la réponse")
+            print("❌ Pas de 'result' dans la réponse")
             
     except Exception as e:
         print(f"Erreur: {e}")
@@ -108,13 +116,21 @@ def test_kraken_api():
         print(f"URL: {response.url}")
         print(f"Data keys: {list(data.keys())}")
         
-        if 'data' in data:
-            print(f"Nombre de données count: {len(data['data'])}")
-            if data['data']:
-                first_count = data['data'][0]
-                print(f"Première donnée count: {first_count}")
+        # Afficher le contenu complet pour voir la structure
+        print(f"Contenu complet: {json.dumps(data, indent=2)}")
+        
+        if 'result' in data:
+            print(f"✅ 'result' présent")
+            result = data['result']
+            print(f"Type de result: {type(result)}")
+            if isinstance(result, dict):
+                print(f"Keys de result: {list(result.keys())}")
+            elif isinstance(result, list):
+                print(f"Nombre d'éléments dans result: {len(result)}")
+                if result:
+                    print(f"Premier élément: {result[0]}")
         else:
-            print("❌ Pas de 'data' dans la réponse")
+            print("❌ Pas de 'result' dans la réponse")
             
     except Exception as e:
         print(f"Erreur: {e}")
