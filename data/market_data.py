@@ -34,13 +34,14 @@ class MarketData:
             
             data = response.json()
             
-            # data['data'] contient les données analytics
+            # data['result']['data'] contient les données analytics
             trade_counts = {}
-            if 'data' in data and isinstance(data['data'], list):
-                for item in data['data']:
-                    if isinstance(item, list) and len(item) >= 2:
-                        timestamp, count = item[0], item[1]
-                        trade_counts[timestamp * 1000] = count  # Convertir en millisecondes
+            if 'result' in data and 'data' in data['result'] and 'timestamp' in data['result']:
+                timestamps = data['result']['timestamp']
+                counts = data['result']['data']
+                for i, timestamp in enumerate(timestamps):
+                    if i < len(counts):
+                        trade_counts[timestamp * 1000] = counts[i]  # Convertir en millisecondes
             
             self.logger.debug(f"Récupéré {len(trade_counts)} trade-counts pour {symbol}")
             return trade_counts
@@ -55,23 +56,11 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Utiliser l'endpoint direct au lieu du SDK pour avoir le volume
-            import time
-            end_time = int(time.time())
-            start_time = end_time - (limit * 15 * 60)  # limit * 15 minutes
+            # Utiliser le SDK avec tick_type="trade" pour avoir le volume
+            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
             
-            url = f"{self.base_url}/trade/{symbol}/900"  # 900 secondes = 15 minutes
-            params = {
-                "from": start_time,
-                "to": end_time
-            }
-            
-            response = requests.get(url, params=params)
-            response.raise_for_status()
-            data = response.json()
-            
-            # data['candles'] est une liste de dicts avec time, open, high, low, close, volume, count
-            ohlcv = data.get('candles', [])
+            # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
+            ohlcv = ohlc_data.get('candles', [])
             
             # On trie par timestamp croissant (du plus ancien au plus récent)
             ohlcv = sorted(ohlcv, key=lambda x: x['time'])
