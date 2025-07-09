@@ -6,6 +6,7 @@ Script de test pour vérifier l'approche de ChatGPT sur le calcul du volume BTC
 import requests
 import time
 import json
+from kraken.futures import Market
 
 def test_kraken_api():
     """Test direct de l'API Kraken pour voir les données retournées"""
@@ -93,8 +94,47 @@ def test_kraken_api():
     
     print("\n" + "="*50 + "\n")
     
-    # Test 3: Endpoint analytics trade-volume
-    print("=== TEST 3: Endpoint analytics trade-volume ===")
+    # Test 3: SDK Kraken pour OHLC
+    print("=== TEST 3: SDK Kraken OHLC ===")
+    
+    try:
+        # Initialiser le client SDK
+        client = Market()
+        
+        # Récupérer les données OHLC via le SDK
+        ohlc_data = client.get_ohlc(symbol, interval=15, since=start_time)
+        
+        print(f"Type de réponse SDK: {type(ohlc_data)}")
+        print(f"Clés de la réponse: {list(ohlc_data.keys()) if isinstance(ohlc_data, dict) else 'Pas un dict'}")
+        
+        if isinstance(ohlc_data, dict) and 'candles' in ohlc_data:
+            candles = ohlc_data['candles']
+            print(f"Nombre de bougies SDK: {len(candles)}")
+            
+            if candles:
+                first_candle = candles[0]
+                print(f"Première bougie SDK: {json.dumps(first_candle, indent=2)}")
+                
+                # Vérifier si volume est présent
+                if 'volume' in first_candle:
+                    print(f"✅ Volume présent dans SDK: {first_candle['volume']}")
+                else:
+                    print("❌ Volume absent dans SDK")
+                    
+                if 'count' in first_candle:
+                    print(f"Count dans SDK: {first_candle['count']}")
+                else:
+                    print("❌ Count absent dans SDK")
+        else:
+            print(f"Réponse SDK complète: {json.dumps(ohlc_data, indent=2)}")
+            
+    except Exception as e:
+        print(f"Erreur SDK: {e}")
+    
+    print("\n" + "="*50 + "\n")
+    
+    # Test 4: Endpoint analytics trade-volume
+    print("=== TEST 4: Endpoint analytics trade-volume ===")
     
     url = f"{base_url}/analytics/{symbol}/trade-volume"
     params = {
@@ -129,8 +169,8 @@ def test_kraken_api():
     
     print("\n" + "="*50 + "\n")
     
-    # Test 4: Endpoint analytics trade-count
-    print("=== TEST 4: Endpoint analytics trade-count ===")
+    # Test 5: Endpoint analytics trade-count
+    print("=== TEST 5: Endpoint analytics trade-count ===")
     
     url = f"{base_url}/analytics/{symbol}/trade-count"
     params = {
