@@ -94,15 +94,16 @@ def test_kraken_api():
     
     print("\n" + "="*50 + "\n")
     
-    # Test 3: SDK Kraken pour OHLC
-    print("=== TEST 3: SDK Kraken OHLC ===")
+    # Test 3: SDK Kraken pour OHLC (corrigé selon la doc)
+    print("=== TEST 3: SDK Kraken OHLC (corrigé) ===")
     
     try:
         # Initialiser le client SDK
         client = Market()
         
-        # Récupérer les données OHLC via le SDK
-        ohlc_data = client.get_ohlc(symbol, interval=15, since=start_time)
+        # Récupérer les données OHLC via le SDK (selon la doc)
+        # get_ohlc(symbol, resolution, since=None, to=None)
+        ohlc_data = client.get_ohlc(symbol, resolution=15, since=start_time)
         
         print(f"Type de réponse SDK: {type(ohlc_data)}")
         print(f"Clés de la réponse: {list(ohlc_data.keys()) if isinstance(ohlc_data, dict) else 'Pas un dict'}")
@@ -133,8 +134,43 @@ def test_kraken_api():
     
     print("\n" + "="*50 + "\n")
     
-    # Test 4: Endpoint analytics trade-volume
-    print("=== TEST 4: Endpoint analytics trade-volume ===")
+    # Test 4: SDK Kraken avec différents paramètres
+    print("=== TEST 4: SDK Kraken avec différents paramètres ===")
+    
+    try:
+        client = Market()
+        
+        # Essayer sans paramètres
+        print("Test 1: Sans paramètres")
+        ohlc_data = client.get_ohlc(symbol)
+        print(f"Type: {type(ohlc_data)}")
+        if isinstance(ohlc_data, dict):
+            print(f"Clés: {list(ohlc_data.keys())}")
+            if 'candles' in ohlc_data and ohlc_data['candles']:
+                first_candle = ohlc_data['candles'][0]
+                print(f"Volume présent: {'volume' in first_candle}")
+                if 'volume' in first_candle:
+                    print(f"Volume: {first_candle['volume']}")
+        
+        # Essayer avec resolution=900 (15 minutes en secondes)
+        print("\nTest 2: Avec resolution=900")
+        ohlc_data = client.get_ohlc(symbol, resolution=900)
+        print(f"Type: {type(ohlc_data)}")
+        if isinstance(ohlc_data, dict):
+            print(f"Clés: {list(ohlc_data.keys())}")
+            if 'candles' in ohlc_data and ohlc_data['candles']:
+                first_candle = ohlc_data['candles'][0]
+                print(f"Volume présent: {'volume' in first_candle}")
+                if 'volume' in first_candle:
+                    print(f"Volume: {first_candle['volume']}")
+                    
+    except Exception as e:
+        print(f"Erreur SDK: {e}")
+    
+    print("\n" + "="*50 + "\n")
+    
+    # Test 5: Endpoint analytics trade-volume
+    print("=== TEST 5: Endpoint analytics trade-volume ===")
     
     url = f"{base_url}/analytics/{symbol}/trade-volume"
     params = {
@@ -169,8 +205,8 @@ def test_kraken_api():
     
     print("\n" + "="*50 + "\n")
     
-    # Test 5: Endpoint analytics trade-count
-    print("=== TEST 5: Endpoint analytics trade-count ===")
+    # Test 6: Endpoint analytics trade-count
+    print("=== TEST 6: Endpoint analytics trade-count ===")
     
     url = f"{base_url}/analytics/{symbol}/trade-count"
     params = {
