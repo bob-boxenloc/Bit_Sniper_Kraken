@@ -120,14 +120,14 @@ class CandleBuffer:
         if self.candles:
             self.logger.info("Contenu du buffer après initialisation:")
             for i, candle in enumerate(self.candles):
-                self.logger.info(f"  [{i+1}] {candle['datetime']} - Close: {candle['close']} - Count: {candle.get('count', 'N/A')}")
+                self.logger.info(f"  [{i+1}] {candle['datetime']} - Close: {candle['close']} - Volume: {candle.get('volume', 'N/A')} - Count: {candle.get('count', 'N/A')}")
         else:
             self.logger.info("Buffer vide après initialisation")
     
     def add_candle(self, new_candle):
         """Ajoute une nouvelle bougie et supprime la plus ancienne si nécessaire"""
         # Log avant ajout
-        self.logger.info(f"Ajout bougie: {new_candle['datetime']} - Close: {new_candle['close']} - Count: {new_candle.get('count', 'N/A')}")
+        self.logger.info(f"Ajout bougie: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle.get('count', 'N/A')}")
         
         # Vérifier si la bougie est déjà dans le buffer
         existing_times = [c['time'] for c in self.candles]
@@ -149,7 +149,7 @@ class CandleBuffer:
         if self.candles:
             self.logger.info("Contenu actuel du buffer:")
             for i, candle in enumerate(self.candles):
-                self.logger.info(f"  [{i+1}] {candle['datetime']} - Close: {candle['close']} - Count: {candle.get('count', 'N/A')}")
+                self.logger.info(f"  [{i+1}] {candle['datetime']} - Close: {candle['close']} - Volume: {candle.get('volume', 'N/A')} - Count: {candle.get('count', 'N/A')}")
     
     def get_candles(self):
         """Retourne la liste des bougies pour les calculs"""
@@ -164,7 +164,7 @@ class CandleBuffer:
         if latest:
             self.logger.info("Dernières bougies pour décisions:")
             for i, candle in enumerate(latest):
-                self.logger.info(f"  N-{len(latest)-i}: {candle['datetime']} - Close: {candle['close']} - Count: {candle.get('count', 'N/A')}")
+                self.logger.info(f"  N-{len(latest)-i}: {candle['datetime']} - Close: {candle['close']} - Volume: {candle.get('volume', 'N/A')} - Count: {candle.get('count', 'N/A')}")
         
         return latest
     

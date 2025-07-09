@@ -68,7 +68,7 @@ def trading_loop():
             new_candle = new_candles[-1]  # La dernière bougie fermée
             candle_buffer.add_candle(new_candle)
             
-            print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Count: {new_candle['count']}")
+            print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle['count']}")
             
             # Afficher le statut du buffer
             status = candle_buffer.get_status()
@@ -140,8 +140,8 @@ def trading_loop():
     prev_rsi = rsi_n2
     
     print(f"🎯 BOUGIES UTILISÉES POUR DÉCISIONS:")
-    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Count={prev_candle['count']}, RSI={prev_rsi:.2f}")
-    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Count={last_candle['count']}, RSI={last_rsi:.2f}")
+    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle.get('volume', 'N/A')}, Count={prev_candle['count']}, RSI={prev_rsi:.2f}")
+    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle.get('volume', 'N/A')}, Count={last_candle['count']}, RSI={last_rsi:.2f}")
     
     # Calculs pour la stratégie
     count_n2 = int(prev_candle['count'])
