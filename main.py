@@ -4,15 +4,16 @@ from core.logger import logger
 from core.monitor import system_monitor
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer
-from data.indicators import get_rsi_with_validation
+from data.indicators import get_indicators_with_validation
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
 from signals.decision import decide_action, get_decision_summary
 from core.initialization import initialize_bot, is_initialization_ready
+import time
 
 # Buffer global pour les bougies
-candle_buffer = CandleBuffer(max_candles=40)
+candle_buffer = CandleBuffer(max_candles=50)  # Augmenté pour RSI(40) + ATR(28)
 
 def trading_loop():
     logger.log_scheduler_tick()
@@ -36,7 +37,7 @@ def trading_loop():
         logger.log_error(f"Erreur lors de la vérification de la santé système: {e}")
     
     print("\n" + "="*60)
-    print("NOUVELLE BOUGIE 15M - ANALYSE COMPLÈTE")
+    print("NOUVELLE BOUGIE 15M - ANALYSE COMPLÈTE (Nouvelle Stratégie)")
     print("="*60)
     
     # 1. Récupération des données de marché
@@ -97,25 +98,6 @@ def trading_loop():
                     print(f"⚠️  BOUGIE N-{2-i} NON FERMÉE: Volume = 0")
                     print("   Le bot attendra la prochaine bougie fermée.")
                     return
-            
-            # Validation de l'historique pour le RSI
-            rsi_success, rsi, rsi_message = get_rsi_with_validation(candles, period=12)
-            
-            if not rsi_success:
-                logger.log_warning(f"RSI non calculable: {rsi_message}")
-                print(f"❌ TRADING IMPOSSIBLE: {rsi_message}")
-                return
-            
-            # Calculer le RSI pour les 2 dernières bougies séparément
-            # RSI N-1 (dernière bougie) - utiliser toutes les bougies
-            rsi_n1_success, rsi_n1, _ = get_rsi_with_validation(candles, period=12)
-            # RSI N-2 (avant-dernière bougie) - utiliser toutes les bougies sauf la dernière
-            rsi_n2_success, rsi_n2, _ = get_rsi_with_validation(candles[:-1], period=12)
-            
-            if not rsi_n1_success or not rsi_n2_success:
-                logger.log_warning("Impossible de calculer RSI pour les 2 dernières bougies")
-                print("❌ TRADING IMPOSSIBLE: RSI non calculable pour les décisions")
-                return
         
         else:
             logger.log_warning("Aucune bougie récupérée de Kraken")
@@ -128,39 +110,59 @@ def trading_loop():
         print("   Le bot attendra la prochaine bougie pour réessayer.")
         return
     
+    # 2. Calcul des indicateurs pour la nouvelle stratégie
+    print("\n🔍 CALCUL DES INDICATEURS")
+    
+    # Validation de l'historique pour les nouveaux indicateurs
+    indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
+    
+    if not indicators_success:
+        logger.log_warning(f"Indicateurs non calculables: {indicators_message}")
+        print(f"❌ TRADING IMPOSSIBLE: {indicators_message}")
+        return
+    
     # Logger l'analyse des bougies
-    logger.log_candle_analysis(candles, rsi_success, rsi_message)
-    print(f"✅ {rsi_message}")
+    logger.log_candle_analysis(candles, indicators_success, indicators_message)
+    print(f"✅ {indicators_message}")
+    
+    # Logger le calcul des indicateurs
+    logger.log_indicators_calculation(indicators)
     
     # Utiliser les 2 dernières bougies pour les décisions
     last_candle = latest_candles[-1]  # Dernière bougie
     prev_candle = latest_candles[-2]  # Avant-dernière bougie
     
-    last_rsi = rsi_n1
-    prev_rsi = rsi_n2
-    
     print(f"🎯 BOUGIES UTILISÉES POUR DÉCISIONS:")
-    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle.get('volume', 'N/A')}, Count={prev_candle['count']}, RSI={prev_rsi:.2f}")
-    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle.get('volume', 'N/A')}, Count={last_candle['count']}, RSI={last_rsi:.2f}")
+    print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle.get('volume', 'N/A')}, Count={prev_candle['count']}")
+    print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle.get('volume', 'N/A')}, Count={last_candle['count']}")
     
-    # Calculs pour la stratégie
-    count_n2 = int(prev_candle['count'])
-    count_n1 = int(last_candle['count'])
-    delta_count = count_n1 / count_n2 if count_n2 > 0 else 0
-    rsi_change = last_rsi - prev_rsi
+    # 3. Analyse technique complète avec nouveaux indicateurs
+    print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie)")
     
-    # 3. Analyse technique complète
-    print("\n🔍 ANALYSE TECHNIQUE")
-    # Créer une série RSI avec les 2 valeurs calculées pour compatibilité
-    import pandas as pd
-    rsi_series = pd.Series([prev_rsi, last_rsi])
-    analysis = analyze_candles(candles, rsi_series)
-    conditions_check = check_all_conditions(analysis)
+    # Mettre à jour la phase VI1 si nécessaire
+    vi1_current = indicators['VI1']
+    current_close = float(last_candle['close'])
+    vi1_above_close = vi1_current > current_close
+    current_phase = 'SHORT' if vi1_above_close else 'LONG'
+    
+    # Vérifier si la phase VI1 a changé
+    old_phase = sm.get_vi1_current_phase()
+    sm.update_vi1_phase(current_phase)
+    
+    # Logger le changement de phase VI1 si nécessaire
+    if old_phase != current_phase:
+        logger.log_vi1_phase_change(old_phase, current_phase, time.time())
+    
+    analysis = analyze_candles(candles, indicators)
+    conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp())
     analysis_summary = get_analysis_summary(analysis, conditions_check)
     print(analysis_summary)
     logger.log_technical_analysis(analysis, conditions_check)
     
-    # 2. Récupération des infos du compte
+    # Logger l'état de la nouvelle stratégie
+    logger.log_new_strategy_state(sm)
+    
+    # 4. Récupération des infos du compte
     print("\n💰 RÉCUPÉRATION DU COMPTE")
     try:
         kf = KrakenFuturesClient()
@@ -208,14 +210,14 @@ def trading_loop():
     else:
         print("     - Aucune position ouverte")
     
-    # 4. Prise de décision
+    # 5. Prise de décision
     print("\n🎯 DÉCISION DE TRADING")
     decision = decide_action(analysis, conditions_check, account_summary, sm)
     decision_summary = get_decision_summary(decision)
     print(decision_summary)
     logger.log_trading_decision(decision)
     
-    # 5. Exécution de la décision (si pas "hold")
+    # 6. Exécution de la décision (si pas "hold")
     if decision['action'] != 'hold':
         print("\n🚀 EXÉCUTION DE L'ORDRE")
         execution_result = tm.execute_decision(decision, account_summary)
@@ -228,11 +230,12 @@ def trading_loop():
             
             # Mettre à jour l'état si l'ordre est réussi
             if decision['action'].startswith('enter_'):
-                position_type = decision['action'].replace('enter_', '')
+                position_type = decision['position_type']
                 sm.update_position(position_type, 'open', {
                     'entry_price': decision['entry_price'],
                     'entry_rsi': decision['entry_rsi'],
-                    'size': decision['size']
+                    'size': decision['size'],
+                    'entry_time': decision['entry_time']
                 })
             elif decision['action'].startswith('exit_'):
                 # Fermer la position dans l'état
@@ -249,11 +252,11 @@ def trading_loop():
     else:
         print("\n⏸️  AUCUNE ACTION À EXÉCUTER")
     
-    # 6. Affichage de l'état du bot
+    # 7. Affichage de l'état du bot
     print("\n" + sm.get_state_summary())
     logger.log_state_update(sm)
     
-    # 7. Monitoring et sauvegarde des données
+    # 8. Monitoring et sauvegarde des données
     try:
         # Sauvegarder les données de monitoring toutes les 4 bougies (1 heure)
         if len(system_monitor.health_history) % 4 == 0:
@@ -271,7 +274,7 @@ def trading_loop():
 
 if __name__ == "__main__":
     logger.log_bot_start()
-    print("BitSniper - Bot de trading BTC/USD sur Kraken Futures")
+    print("BitSniper - Bot de trading BTC/USD sur Kraken Futures (Nouvelle Stratégie)")
     print("Synchronisé sur les bougies 15m. En attente de la prochaine clôture...")
     print("="*60)
     

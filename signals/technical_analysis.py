@@ -1,16 +1,18 @@
 """
 Module d'analyse technique pour BitSniper
-Calcule tous les indicateurs nécessaires pour la stratégie de trading
+Calcule tous les indicateurs nécessaires pour la nouvelle stratégie de trading
 """
 
-def analyze_candles(candles, rsi_series):
+from core.logger import logger
+
+def analyze_candles(candles, indicators):
     """
-    Analyse complète des bougies pour la stratégie de trading.
+    Analyse complète des bougies pour la nouvelle stratégie de trading.
     
     :param candles: liste des bougies (format Kraken Futures API)
                    chaque bougie = {'time', 'open', 'high', 'low', 'close', 'volume', 'count', 'datetime'}
-    :param rsi_series: Series pandas du RSI calculé
-    :return: dict avec tous les indicateurs calculés
+    :param indicators: dict avec RSI et Volatility Indexes calculés
+    :return: dict avec tous les indicateurs calculés et conditions
     """
     if len(candles) < 2:
         raise ValueError("Il faut au moins 2 bougies pour l'analyse")
@@ -20,21 +22,26 @@ def analyze_candles(candles, rsi_series):
     candle_n1 = candles[-1]  # Dernière bougie Kraken temps réel
     candle_n2 = candles[-2]  # Avant-dernière bougie Kraken temps réel
     
-    # RSI N-1 et N-2 (calculé avec toutes les données mais utilisé sur les bougies Kraken)
-    rsi_n1 = float(rsi_series.iloc[-1])
-    rsi_n2 = float(rsi_series.iloc[-2])
+    # RSI N-1 et N-2
+    rsi_n1 = float(indicators['RSI'])
+    rsi_n2 = float(indicators.get('RSI_N2', rsi_n1))  # RSI N-2 si disponible
     
-    # Nombre de trades (count) des bougies Kraken temps réel
-    count_n1 = int(candle_n1['count'])
-    count_n2 = int(candle_n2['count'])
+    # Volatility Indexes actuels
+    vi1_n1 = float(indicators['VI1'])
+    vi2_n1 = float(indicators['VI2'])
+    vi3_n1 = float(indicators['VI3'])
     
     # Prix de clôture des bougies Kraken temps réel
     close_n1 = float(candle_n1['close'])
     close_n2 = float(candle_n2['close'])
     
     # Calculs dérivés
-    delta_count = count_n1 / count_n2 if count_n2 > 0 else 0
     rsi_change = rsi_n1 - rsi_n2  # Variation du RSI
+    
+    # Positions des VI par rapport au close
+    vi1_above_close = vi1_n1 > close_n1
+    vi2_above_close = vi2_n1 > close_n1
+    vi3_above_close = vi3_n1 > close_n1
     
     # Analyse complète
     analysis = {
@@ -43,95 +50,124 @@ def analyze_candles(candles, rsi_series):
         'candle_n2': candle_n2,
         'rsi_n1': rsi_n1,
         'rsi_n2': rsi_n2,
-        'count_n1': count_n1,
-        'count_n2': count_n2,
         'close_n1': close_n1,
         'close_n2': close_n2,
         
+        # Volatility Indexes
+        'vi1_n1': vi1_n1,
+        'vi2_n1': vi2_n1,
+        'vi3_n1': vi3_n1,
+        
+        # Positions des VI par rapport au close
+        'vi1_above_close': vi1_above_close,
+        'vi2_above_close': vi2_above_close,
+        'vi3_above_close': vi3_above_close,
+        
         # Calculs dérivés
-        'delta_count': delta_count,
         'rsi_change': rsi_change,
         
-        # Conditions pour long1
-        'long1_conditions': {
-            'count_sufficient': count_n1 >= 90,
-            'rsi_n2_in_range': 10 <= rsi_n2 <= 26,
-            'rsi_increasing': rsi_change >= 4,
-            'rsi_n1_below_40': rsi_n1 < 40,
-            'delta_count_in_range': 0.3 <= delta_count <= 1.8
-        },
-        
-        # Conditions pour long2
-        'long2_conditions': {
-            'count_sufficient': count_n1 >= 90,
-            'count_increasing': count_n1 > count_n2,
-            'delta_count_in_range': delta_count > 1,
-            'rsi_n2_in_range': 72 <= rsi_n2 <= 86,
-            'rsi_decreasing': rsi_change <= -2.5
-        },
-        
-        # Conditions pour short
+        # Conditions pour SHORT
         'short_conditions': {
-            'count_sufficient': count_n1 >= 90,
-            'count_decreasing': count_n1 < count_n2,
-            'delta_count_in_range': 0.7 <= delta_count < 1,
-            'rsi_n2_in_range': 72 <= rsi_n2 <= 83,
-            'rsi_decreasing': rsi_change <= -3.5,
-            'rsi_n1_above_60': rsi_n1 > 60
+            'vi1_crossing_over': vi1_above_close,  # VI1 au-dessus du close
+            'vi2_above_close': vi2_above_close,     # VI2 au-dessus du close
+            'vi3_above_close': vi3_above_close,     # VI3 au-dessus du close
+            'rsi_condition': rsi_n1 <= 50           # RSI ≤ 50
         },
         
-        # Règle générale de sécurité (extrêmes RSI)
-        'safety_rule': {
-            'rsi_extreme_high': rsi_n1 > 86,
-            'rsi_extreme_low': rsi_n1 < 10,
-            'rsi_passed_50': 10 <= rsi_n1 <= 86  # RSI dans la zone "normale"
+        # Conditions pour LONG_VI1
+        'long_vi1_conditions': {
+            'vi1_crossing_under': not vi1_above_close,  # VI1 en-dessous du close
+            'vi2_above_close': not vi2_above_close,     # VI2 en-dessous du close
+            'vi3_above_close': not vi3_above_close,     # VI3 en-dessous du close
+            'rsi_condition': rsi_n1 >= 45               # RSI ≥ 45
+        },
+        
+        # Conditions pour LONG_VI2
+        'long_vi2_conditions': {
+            'vi1_already_under': not vi1_above_close,   # VI1 déjà en-dessous du close
+            'vi2_crossing_under': not vi2_above_close,  # VI2 crossing-under
+            'rsi_condition': rsi_n1 >= 45               # RSI ≥ 45
+        },
+        
+        # Conditions pour LONG_REENTRY
+        'long_reentry_conditions': {
+            'vi1_not_crossed_over': not vi1_above_close,  # VI1 pas encore repassé au-dessus
+            'vi3_under_close': not vi3_above_close,       # VI3 sous le close
+            'vi2_above_close': vi2_above_close,           # VI2 au-dessus du close
+            'vi2_crossing_under': not vi2_above_close,    # VI2 crossing-under
+            'rsi_condition': rsi_n1 >= 45                 # RSI ≥ 45
         }
     }
     
     return analysis
 
-def check_all_conditions(analysis):
+def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=None):
     """
     Vérifie toutes les conditions pour chaque stratégie.
     
     :param analysis: dict retourné par analyze_candles()
+    :param last_position_type: type de la dernière position (pour LONG_REENTRY)
+    :param vi1_phase_timestamp: timestamp du dernier changement de phase VI1
     :return: dict avec les résultats des vérifications
     """
-    long1_conditions = analysis['long1_conditions']
-    long2_conditions = analysis['long2_conditions']
+    import time
+    
     short_conditions = analysis['short_conditions']
-    safety_rule = analysis['safety_rule']
+    long_vi1_conditions = analysis['long_vi1_conditions']
+    long_vi2_conditions = analysis['long_vi2_conditions']
+    long_reentry_conditions = analysis['long_reentry_conditions']
     
-    # Vérification de la règle de sécurité
-    if safety_rule['rsi_extreme_high'] or safety_rule['rsi_extreme_low']:
-        # RSI en zone extrême, trading bloqué
-        return {
-            'trading_allowed': False,
-            'reason': 'RSI en zone extrême (RSI < 10 ou RSI > 86)',
-            'long1_ready': False,
-            'long2_ready': False,
-            'short_ready': False
-        }
+    # Vérification de la règle de protection temporelle VI1 (72h)
+    vi1_protection_active = False
+    if vi1_phase_timestamp is not None:
+        current_time = time.time()
+        time_elapsed = current_time - vi1_phase_timestamp
+        vi1_protection_active = time_elapsed < 259200  # 72h en secondes
+        
+        if vi1_protection_active:
+            hours_remaining = (259200 - time_elapsed) / 3600
+            logger.log_protection_activation("VI1 (72h)", f"Protection active, {hours_remaining:.1f}h restantes")
     
-    # Vérification long1 (toutes les conditions doivent être vraies)
-    long1_ready = all(long1_conditions.values())
-    
-    # Vérification long2 (toutes les conditions doivent être vraies)
-    long2_ready = all(long2_conditions.values())
-    
-    # Vérification short (toutes les conditions doivent être vraies)
+    # Vérification SHORT
     short_ready = all(short_conditions.values())
+    if vi1_protection_active and analysis['vi1_above_close']:
+        short_ready = False  # Interdire SHORT si protection active
+        logger.log_protection_activation("SHORT", "Bloqué par protection VI1 (72h)")
+    
+    # Vérification LONG_VI1
+    long_vi1_ready = all(long_vi1_conditions.values())
+    if vi1_protection_active and not analysis['vi1_above_close']:
+        long_vi1_ready = False  # Interdire LONGS si protection active
+        logger.log_protection_activation("LONG_VI1", "Bloqué par protection VI1 (72h)")
+    
+    # Vérification LONG_VI2
+    long_vi2_ready = all(long_vi2_conditions.values())
+    if vi1_protection_active and not analysis['vi1_above_close']:
+        long_vi2_ready = False  # Interdire LONGS si protection active
+        logger.log_protection_activation("LONG_VI2", "Bloqué par protection VI1 (72h)")
+    
+    # Vérification LONG_REENTRY
+    long_reentry_ready = all(long_reentry_conditions.values())
+    if last_position_type == "LONG_REENTRY":
+        long_reentry_ready = False  # Interdire LONG_REENTRY consécutif
+        logger.log_protection_activation("LONG_REENTRY", "Bloqué: LONG_REENTRY consécutif interdit")
+    if vi1_protection_active and not analysis['vi1_above_close']:
+        long_reentry_ready = False  # Interdire LONGS si protection active
+        logger.log_protection_activation("LONG_REENTRY", "Bloqué par protection VI1 (72h)")
     
     return {
         'trading_allowed': True,
         'reason': 'Conditions normales',
-        'long1_ready': long1_ready,
-        'long2_ready': long2_ready,
         'short_ready': short_ready,
+        'long_vi1_ready': long_vi1_ready,
+        'long_vi2_ready': long_vi2_ready,
+        'long_reentry_ready': long_reentry_ready,
+        'vi1_protection_active': vi1_protection_active,
         'details': {
-            'long1': long1_conditions,
-            'long2': long2_conditions,
-            'short': short_conditions
+            'short': short_conditions,
+            'long_vi1': long_vi1_conditions,
+            'long_vi2': long_vi2_conditions,
+            'long_reentry': long_reentry_conditions
         }
     }
 
@@ -144,27 +180,31 @@ def get_analysis_summary(analysis, conditions_check):
     :return: str avec le résumé
     """
     summary = []
-    summary.append("📊 ANALYSE TECHNIQUE (bougies Kraken temps réel):")
+    summary.append("📊 ANALYSE TECHNIQUE (nouvelle stratégie):")
     summary.append(f"   RSI N-2: {analysis['rsi_n2']:.2f}")
     summary.append(f"   RSI N-1: {analysis['rsi_n1']:.2f}")
     summary.append(f"   Variation RSI: {analysis['rsi_change']:+.2f}")
-    summary.append(f"   Trades N-2 (count): {analysis['count_n2']}")
-    summary.append(f"   Trades N-1 (count): {analysis['count_n1']}")
-    summary.append(f"   Delta Trades: {analysis['delta_count']:.3f}")
+    summary.append(f"   VI1: {analysis['vi1_n1']:.2f} ({'au-dessus' if analysis['vi1_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI2: {analysis['vi2_n1']:.2f} ({'au-dessus' if analysis['vi2_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI3: {analysis['vi3_n1']:.2f} ({'au-dessus' if analysis['vi3_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   Close: {analysis['close_n1']:.2f}")
     
-    if not conditions_check['trading_allowed']:
-        summary.append(f"   ❌ TRADING BLOQUÉ: {conditions_check['reason']}")
-    else:
-        summary.append("   ✅ TRADING AUTORISÉ")
-        if conditions_check['long1_ready']:
-            summary.append("   🟢 LONG1: Conditions remplies")
-        if conditions_check['long2_ready']:
-            summary.append("   🟢 LONG2: Conditions remplies")
-        if conditions_check['short_ready']:
-            summary.append("   🟢 SHORT: Conditions remplies")
-        
-        if not any([conditions_check['long1_ready'], conditions_check['long2_ready'], conditions_check['short_ready']]):
-            summary.append("   ⚪ Aucune stratégie prête")
+    if conditions_check['vi1_protection_active']:
+        summary.append("   ⚠️ PROTECTION VI1 ACTIVE (72h)")
+    
+    summary.append("   ✅ TRADING AUTORISÉ")
+    if conditions_check['short_ready']:
+        summary.append("   🟢 SHORT: Conditions remplies")
+    if conditions_check['long_vi1_ready']:
+        summary.append("   🟢 LONG_VI1: Conditions remplies")
+    if conditions_check['long_vi2_ready']:
+        summary.append("   🟢 LONG_VI2: Conditions remplies")
+    if conditions_check['long_reentry_ready']:
+        summary.append("   🟢 LONG_REENTRY: Conditions remplies")
+    
+    if not any([conditions_check['short_ready'], conditions_check['long_vi1_ready'], 
+                conditions_check['long_vi2_ready'], conditions_check['long_reentry_ready']]):
+        summary.append("   ⚪ Aucune stratégie prête")
     
     return "\n".join(summary)
 
@@ -172,15 +212,19 @@ def get_analysis_summary(analysis, conditions_check):
 if __name__ == "__main__":
     # Données de test
     test_candles = [
-        {'close': 40000, 'volume': 50, 'count': 10},   # N-2
-        {'close': 40100, 'volume': 95, 'count': 20}    # N-1
+        {'close': 40000, 'high': 40100, 'low': 39900},   # N-2
+        {'close': 40100, 'high': 40200, 'low': 40000}    # N-1
     ]
     
-    # RSI fictif pour test
-    import pandas as pd
-    test_rsi = pd.Series([25.0, 29.0])  # RSI N-2=25, N-1=29
+    # Indicateurs fictifs pour test
+    test_indicators = {
+        'RSI': 55.0,
+        'VI1': 40200,
+        'VI2': 40150,
+        'VI3': 40100
+    }
     
-    analysis = analyze_candles(test_candles, test_rsi)
+    analysis = analyze_candles(test_candles, test_indicators)
     conditions = check_all_conditions(analysis)
     summary = get_analysis_summary(analysis, conditions)
     

@@ -1,9 +1,9 @@
 # BitSniper
 
-Bot de trading automatique pour BTC/USD sur Kraken Futures, basé sur l'analyse technique pure avec gestion avancée des erreurs réseau.
+Bot de trading automatique pour BTC/USD sur Kraken Futures, basé sur l'analyse technique avec RSI et Volatility Indexes avec gestion avancée des erreurs réseau.
 
 ## Fonctionnalités principales
-- Analyse technique avancée (RSI, MACD, moyennes mobiles, etc.)
+- Analyse technique avancée (RSI 40, 3 Volatility Indexes Wilder)
 - Prise de position automatique sur Kraken Futures
 - Stratégie de gestion du risque optimisée
 - Gestion automatique des TP, SL, et clôture des positions
@@ -16,20 +16,146 @@ Bot de trading automatique pour BTC/USD sur Kraken Futures, basé sur l'analyse 
 
 ### Configuration générale
 - **Timeframe** : Bougies de 15 minutes
-- **Indicateurs** : RSI(12), Volume SMA (fourni par Kraken)
+- **Indicateurs** : RSI(40), 3 Volatility Indexes Wilder
 - **Position sizing** : Maximum possible (soit "MAX" soit calculé selon le portefeuille disponible)
 - **Unité minimum** : 0.0001 BTC (≈ 10,74€ actuellement)
 - **Décision** : Toutes les décisions (entrée, sortie, SL) sont basées sur le closing de la bougie précédente (N-1).
 - **Exécution** : L'action (prise ou sortie de position) est réalisée au tout début de la bougie suivante (N), au prix d'ouverture de N.
 
-### Précisions importantes
-- **Volume SMA** : On utilise la valeur affichée par Kraken (ex : 55 sur le graphique), qui semble être en BTC. On prend ce chiffre tel quel, sans conversion.
-- **Conditions d'entrée** : Toutes les conditions d'entrée listées pour chaque position doivent être réunies simultanément (logique ET stricte) pour autoriser une prise de position.
+### Indicateurs techniques
+
+#### RSI(40)
+- **Période** : 40
+- **Utilisation** : Conditions d'entrée et calcul des exits
+- **Conditions d'entrée** :
+  - **LONGS** : RSI ≥ 45
+  - **SHORTS** : RSI ≤ 50
+
+#### Volatility Indexes (3)
+- **Période** : 28 pour tous
+- **Méthode** : Wilder Smoothing
+- **Multiplicateurs ATR** :
+  - **VI1** : ATR Mult 19
+  - **VI2** : ATR Mult 10
+  - **VI3** : ATR Mult 6
+
+#### Règle de protection temporelle VI1
+- **Délai minimum** : 72 heures minimum entre deux changements de phase VI1 - close
+- **Logique** : Éviter les faux signaux trop rapprochés
+- **Application** : Interdiction des positions inverses pendant 72h
+- **Phase "SHORT"** (VI1 au-dessus du close) : Interdire tous les LONGS
+- **Phase "LONG"** (VI1 en-dessous du close) : Interdire SHORT
+
+### Types de positions
+
+#### SHORT
+**Conditions d'entrée** :
+- VI1 passe **au-dessus** du prix de clôture
+- VI2 et VI3 déjà **au-dessus** du prix de clôture
+- RSI ≤ 50
+
+**Conditions de sortie** :
+- **Exit principal** : Basé sur la différence RSI (entrée vs sortie)
+  - RSI entrée 45-50 : -10
+  - RSI entrée 40-45 : -7.5
+  - RSI entrée 35-40 : -3.5
+  - RSI entrée 30-35 : -1.75
+  - RSI entrée < 30 : -1
+- **Exit de dernier recours** : VI1 repasse en-dessous du prix de clôture
+
+#### LONG_VI1
+**Conditions d'entrée** :
+- VI1 passe **en-dessous** du prix de clôture
+- VI2 et VI3 déjà **en-dessous** du prix de clôture
+- RSI ≥ 45
+
+**Conditions de sortie** :
+- **Exit principal** : Basé sur la différence RSI (entrée vs sortie)
+  - RSI entrée 45-50 : +20
+  - RSI entrée 50-55 : +15
+  - RSI entrée 55-60 : +9
+  - RSI entrée 60-65 : +4.5
+  - RSI entrée 65-70 : +3
+  - RSI entrée > 70 : +1
+- **Exit de dernier recours** : VI1 repasse au-dessus du prix de clôture
+
+#### LONG_VI2
+**Conditions d'entrée** :
+- VI1 déjà **en-dessous** du prix de clôture
+- VI2 et/ou VI3 étaient au-dessus, puis passent **en-dessous**
+- **Déclencheur** : VI2 crossing-under (jamais VI1)
+- RSI ≥ 45
+
+**Conditions de sortie** :
+- **Exit principal** : Basé sur la différence RSI (entrée vs sortie)
+  - RSI entrée 45-50 : +9
+  - RSI entrée 50-55 : +6.5
+  - RSI entrée 55-60 : +3.5
+  - RSI entrée 60-65 : +1.25
+  - RSI entrée 65-70 : +0.5
+  - RSI entrée > 70 : +0.5
+- **Exit de dernier recours** : VI1 repasse au-dessus du prix de clôture
+
+#### LONG_REENTRY
+**Conditions d'entrée** :
+- Après sortie d'une position LONG
+- VI1 pas encore repassé au-dessus du prix de clôture
+- VI3 sous le prix de clôture
+- VI2 au-dessus du prix de clôture
+- **Déclencheur** : VI2 crossing-under
+- RSI ≥ 45
+- **Protection** : Pas de LONG_REENTRY consécutif (interdit après exit d'un LONG_REENTRY)
+- **Ré-autorisation** : Après prise d'un autre type de position (LONG_VI1, LONG_VI2, SHORT)
+
+**Conditions de sortie** :
+- **Exit principal** : Basé sur la différence RSI (entrée vs sortie)
+  - RSI entrée 45-50 : +18
+  - RSI entrée 50-55 : +13
+  - RSI entrée 55-60 : +7
+  - RSI entrée 60-65 : +2.5
+  - RSI entrée 65-70 : +1
+  - RSI entrée > 70 : +1
+- **Exit de dernier recours** : VI1 repasse au-dessus du prix de clôture
 
 ### Règles d'exécution
 - **Timing** : Toutes les logiques (entrée, sortie, SL) sont basées sur les valeurs de clôture de la bougie N-1. L'action (prise ou sortie de position) est exécutée immédiatement après la clôture, au tout début de la bougie N (au prix d'ouverture de N).
 - **Données utilisées** : Bougie N-1 (qui vient de se fermer) et Bougie N-2 (celle d'avant)
-- **SL personnalisé** : Pas de SL Kraken, mais logique d'exit programmée quand position perdante
+- **Enregistrement** : RSI d'entrée doit être enregistré pour calculer les exits
+
+### Règles de protection et gestion du risque
+
+#### Protection temporelle générale
+- **Délai minimum** : Aucun exit autorisé pendant les 7 premières heures après l'entrée en position
+- **Conservation** : Le RSI de sortie attendu est conservé et appliqué après les 7 heures
+- **Exception LONG_VI2** : Aucun délai de 7 heures, sortie immédiate si RSI de sortie atteint
+
+#### Règles spéciales pour SHORTS
+
+**Contrôle à 3 heures** :
+- **Timing** : 3 heures après l'entrée (depuis la bougie d'entrée)
+- **Calcul** : Écart = (Close actuel - Close entrée) / Close entrée
+- **Condition de sortie** : Si écart ≥ 1%, sortie immédiate
+- **Logique** : Si le RSI monte de 1% en 3h, c'est généralement mauvais signe
+
+**Emergency exit** :
+- **Condition** : RSI monté de plus de 18 points (après les délais de 3h et 7h)
+- **Action** : Sortie immédiate de la position
+- **Logique** : Protection contre les mouvements défavorables majeurs
+
+#### Règles pour LONGS
+- **Aucun stop loss** : Basé sur l'historique des 9 derniers mois (seulement 3 erreurs)
+- **Logique** : Éviter de passer à côté de gros upsides
+
+#### Gestion des transitions de positions
+- **Sortie de dernier recours** : Si RSI de sortie non atteint, sortie quand VI1 change de côté
+- **Transition immédiate** : Si les conditions d'entrée pour la position inverse sont réunies au moment de la sortie de dernier recours, prise immédiate de la nouvelle position
+- **Logique** : Éviter de rester en cash quand une opportunité se présente
+
+#### Suivi des positions pour règles de protection
+- **Variable d'état** : `last_position_type` (None, "SHORT", "LONG_VI1", "LONG_VI2", "LONG_REENTRY")
+- **Mise à jour** : À chaque exit de position
+- **Utilisation** : Vérification des règles de protection (LONG_REENTRY consécutif, etc.)
+- **Stockage** : Dans le state_manager pour persistance
 
 ### Règle générale de sécurité
 
@@ -41,6 +167,7 @@ Bot de trading automatique pour BTC/USD sur Kraken Futures, basé sur l'analyse 
 #### Conditions d'entrée (au closing de Bougie N-1)
 - **Pas de position en cours**
 - **Volume** : Volume Bougie N-1 ≥ 90
+- **Ratio Volume** : 0,3 ≤ (Volume Bougie N-1 / Volume Bougie N-2) ≤ 1,8
 - **Bougie N-2** : 26 ≥ RSI Bougie N-2 ≥ 10
 - **Bougie N-1** : RSI Bougie N-1 - RSI Bougie N-2 ≥ 4
 - **Bougie N-1** : RSI Bougie N-1 < 40 (ne pas ouvrir si le RSI est déjà supérieur ou égal à 40)
@@ -55,7 +182,7 @@ Bot de trading automatique pour BTC/USD sur Kraken Futures, basé sur l'analyse 
 - **Pas de position en cours**
 - **Volume** : Volume Bougie N-1 ≥ 90
 - **Volume** : Volume Bougie N-1 > Volume Bougie N-2
-- **Delta Volume** : 1 < (Volume Bougie N-1 / Volume Bougie N-2) ≤ 1,8
+- **Ratio Volume** : (Volume Bougie N-1 / Volume Bougie N-2) > 1
 - **Bougie N-2** : 72 ≤ RSI Bougie N-2 ≤ 86
 - **Bougie N-1** : RSI Bougie N-2 - RSI Bougie N-1 ≥ 2,5 (baisse du RSI)
 
@@ -73,7 +200,7 @@ Bot de trading automatique pour BTC/USD sur Kraken Futures, basé sur l'analyse 
 - **Pas de position en cours**
 - **Volume** : Volume Bougie N-1 ≥ 90
 - **Volume** : Volume Bougie N-1 < Volume Bougie N-2
-- **Delta Volume** : 0,7 ≤ (Volume Bougie N-1 / Volume Bougie N-2) < 1
+- **Ratio Volume** : 0,7 ≤ (Volume Bougie N-1 / Volume Bougie N-2) < 1
 - **Bougie N-2** : 72 ≤ RSI Bougie N-2 ≤ 83
 - **Bougie N-1** : RSI Bougie N-2 - RSI Bougie N-1 ≥ 3,5 (baisse du RSI)
 - **Bougie N-1** : RSI Bougie N-1 > 60 (ne pas ouvrir si le RSI est déjà inférieur ou égal à 60)

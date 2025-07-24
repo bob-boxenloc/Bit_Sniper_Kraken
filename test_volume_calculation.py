@@ -7,7 +7,7 @@ import requests
 import time
 import json
 from kraken.futures import Market
-
+    
 def test_kraken_api():
     """Test direct de l'API Kraken pour voir les données retournées"""
     
@@ -52,7 +52,7 @@ def test_kraken_api():
                     print("❌ Count absent")
         else:
             print("❌ Pas de 'candles' dans la réponse")
-            
+        
     except Exception as e:
         print(f"Erreur: {e}")
     
@@ -88,7 +88,7 @@ def test_kraken_api():
                     print("❌ Volume absent")
         else:
             print("❌ Pas de 'candles' dans la réponse")
-            
+        
     except Exception as e:
         print(f"Erreur: {e}")
     

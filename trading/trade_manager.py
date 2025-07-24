@@ -1,6 +1,6 @@
 """
 Module de gestion des trades pour BitSniper
-Implémente l'ouverture et la fermeture des positions via l'API Kraken Futures
+Implémente l'ouverture et la fermeture des positions via l'API Kraken Futures pour la nouvelle stratégie
 """
 
 import time
@@ -105,20 +105,19 @@ class TradeManager:
         """
         Ferme une position longue (sell pour fermer un long).
         
-        :param size: Taille de la position à fermer en BTC
+        :param size: Taille de la position en BTC (ex: 0.001)
         :param order_type: Type d'ordre ("mkt" pour market, "lmt" pour limit)
         :return: dict avec le résultat de l'ordre
         """
         try:
             self.logger.info(f"Fermeture position LONG: {size:.4f} BTC ({order_type})")
             
-            # Pour fermer un long, on vend (sell)
+            # Selon la doc Kraken Futures API
             order = self.trade.create_order(
                 orderType=order_type,
                 side="sell",
                 size=size,
-                symbol=self.symbol,
-                reduceOnly=True  # S'assurer qu'on ferme seulement, pas d'ouverture
+                symbol=self.symbol
             )
             
             result = {
@@ -146,20 +145,19 @@ class TradeManager:
         """
         Ferme une position courte (buy pour fermer un short).
         
-        :param size: Taille de la position à fermer en BTC
+        :param size: Taille de la position en BTC (ex: 0.001)
         :param order_type: Type d'ordre ("mkt" pour market, "lmt" pour limit)
         :return: dict avec le résultat de l'ordre
         """
         try:
             self.logger.info(f"Fermeture position SHORT: {size:.4f} BTC ({order_type})")
             
-            # Pour fermer un short, on achète (buy)
+            # Selon la doc Kraken Futures API
             order = self.trade.create_order(
                 orderType=order_type,
                 side="buy",
                 size=size,
-                symbol=self.symbol,
-                reduceOnly=True  # S'assurer qu'on ferme seulement, pas d'ouverture
+                symbol=self.symbol
             )
             
             result = {
@@ -184,7 +182,7 @@ class TradeManager:
     
     def execute_decision(self, decision, account_summary):
         """
-        Exécute une décision de trading.
+        Exécute une décision de trading pour la nouvelle stratégie.
         
         :param decision: dict retourné par decide_action()
         :param account_summary: dict retourné par get_account_summary()
@@ -209,27 +207,31 @@ class TradeManager:
                     'decision': decision
                 }
         
-        # Exécuter l'action
-        if action == 'enter_long1' or action == 'enter_long2':
+        # Exécuter l'action selon la nouvelle stratégie
+        if action in ['enter_long_vi1', 'enter_long_vi2', 'enter_long_reentry']:
             result = self.open_long_position(decision['size'])
             result['decision'] = decision
+            result['position_type'] = decision['position_type']
             return result
             
         elif action == 'enter_short':
             result = self.open_short_position(decision['size'])
             result['decision'] = decision
+            result['position_type'] = decision['position_type']
             return result
             
         elif action == 'exit_long':
             position = decision['position']
             result = self.close_long_position(position['size'])
             result['decision'] = decision
+            result['position_type'] = position.get('type', 'LONG')
             return result
             
         elif action == 'exit_short':
             position = decision['position']
             result = self.close_short_position(position['size'])
             result['decision'] = decision
+            result['position_type'] = position.get('type', 'SHORT')
             return result
         
         else:
@@ -241,7 +243,7 @@ class TradeManager:
     
     def get_execution_summary(self, execution_result):
         """
-        Génère un résumé lisible du résultat d'exécution.
+        Génère un résumé lisible du résultat d'exécution pour la nouvelle stratégie.
         
         :param execution_result: dict retourné par execute_decision()
         :return: str avec le résumé
@@ -254,16 +256,16 @@ class TradeManager:
         
         # Succès
         action = execution_result['decision']['action']
+        position_type = execution_result.get('position_type', 'UNKNOWN')
+        
         if action.startswith('enter_'):
-            strategy = action.replace('enter_', '').upper()
             size = execution_result['decision']['size']
             price = execution_result.get('price', 'N/A')
-            return f"✅ POSITION {strategy} OUVERTE: {size:.4f} BTC @ ${price}"
+            return f"✅ POSITION {position_type} OUVERTE: {size:.4f} BTC @ ${price}"
         elif action.startswith('exit_'):
-            side = action.replace('exit_', '').upper()
             price = execution_result.get('price', 'N/A')
             reason = execution_result['decision']['reason']
-            return f"✅ POSITION {side} FERMÉE @ ${price} - {reason}"
+            return f"✅ POSITION {position_type} FERMÉE @ ${price} - {reason}"
         
         return "✅ Action exécutée avec succès"
 
@@ -276,12 +278,14 @@ if __name__ == "__main__":
     
     tm = TradeManager(api_key, api_secret)
     
-    # Test de décision fictive
+    # Test de décision fictive pour la nouvelle stratégie
     test_decision = {
-        'action': 'enter_long1',
+        'action': 'enter_long_vi1',
         'size': 0.001,
         'entry_price': 40000,
-        'entry_rsi': 35.0
+        'entry_rsi': 55.0,
+        'position_type': 'LONG_VI1',
+        'entry_time': time.time()
     }
     
     test_account = {

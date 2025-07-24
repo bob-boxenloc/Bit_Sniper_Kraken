@@ -207,21 +207,26 @@ class BitSniperLogger:
     
     def log_technical_analysis(self, analysis, conditions_check):
         """
-        Log l'analyse technique avec les conditions de trading.
+        Log l'analyse technique avec les conditions de trading pour la nouvelle stratégie.
         """
         try:
             # Log de base
-            self.logger.info("Analyse technique effectuée", extra={
+            self.logger.info("Analyse technique effectuée (Nouvelle Stratégie)", extra={
                 'rsi_n1': analysis['rsi_n1'],
                 'rsi_n2': analysis['rsi_n2'],
                 'rsi_change': analysis['rsi_change'],
-                'count_n1': analysis.get('count_n1'),
-                'count_n2': analysis.get('count_n2'),
-                'delta_count': analysis.get('delta_count'),
+                'vi1_n1': analysis['vi1_n1'],
+                'vi2_n1': analysis['vi2_n1'],
+                'vi3_n1': analysis['vi3_n1'],
+                'vi1_above_close': analysis['vi1_above_close'],
+                'vi2_above_close': analysis['vi2_above_close'],
+                'vi3_above_close': analysis['vi3_above_close'],
                 'trading_allowed': conditions_check['trading_allowed'],
-                'long1_ready': conditions_check['long1_ready'],
-                'long2_ready': conditions_check['long2_ready'],
-                'short_ready': conditions_check['short_ready']
+                'short_ready': conditions_check['short_ready'],
+                'long_vi1_ready': conditions_check['long_vi1_ready'],
+                'long_vi2_ready': conditions_check['long_vi2_ready'],
+                'long_reentry_ready': conditions_check['long_reentry_ready'],
+                'vi1_protection_active': conditions_check.get('vi1_protection_active', False)
             })
             
             # Log JSON détaillé pour debug
@@ -252,27 +257,32 @@ class BitSniperLogger:
                     'rsi_n2': analysis['rsi_n2'],
                     'rsi_change': analysis['rsi_change']
                 },
-                'count_data': {
-                    'count_n1': analysis.get('count_n1'),
-                    'count_n2': analysis.get('count_n2'),
-                    'delta_count': analysis.get('delta_count')
+                'volatility_indexes': {
+                    'vi1_n1': analysis['vi1_n1'],
+                    'vi2_n1': analysis['vi2_n1'],
+                    'vi3_n1': analysis['vi3_n1'],
+                    'vi1_above_close': analysis['vi1_above_close'],
+                    'vi2_above_close': analysis['vi2_above_close'],
+                    'vi3_above_close': analysis['vi3_above_close']
                 },
                 'price_data': {
                     'close_n1': analysis['close_n1'],
                     'close_n2': analysis['close_n2']
                 },
                 'conditions': {
-                    'long1': analysis['long1_conditions'],
-                    'long2': analysis['long2_conditions'],
                     'short': analysis['short_conditions'],
-                    'safety': analysis['safety_rule']
+                    'long_vi1': analysis['long_vi1_conditions'],
+                    'long_vi2': analysis['long_vi2_conditions'],
+                    'long_reentry': analysis['long_reentry_conditions']
                 },
                 'trading_decision': {
                     'trading_allowed': conditions_check['trading_allowed'],
                     'reason': conditions_check.get('reason', 'N/A'),
-                    'long1_ready': conditions_check['long1_ready'],
-                    'long2_ready': conditions_check['long2_ready'],
-                    'short_ready': conditions_check['short_ready']
+                    'short_ready': conditions_check['short_ready'],
+                    'long_vi1_ready': conditions_check['long_vi1_ready'],
+                    'long_vi2_ready': conditions_check['long_vi2_ready'],
+                    'long_reentry_ready': conditions_check['long_reentry_ready'],
+                    'vi1_protection_active': conditions_check.get('vi1_protection_active', False)
                 }
             }
             
@@ -281,44 +291,192 @@ class BitSniperLogger:
             
         except Exception as e:
             self.logger.error(f"Erreur lors du logging de l'analyse technique: {e}")
+    
+    def log_indicators_calculation(self, indicators):
+        """
+        Log le calcul des indicateurs pour la nouvelle stratégie.
+        """
+        try:
+            self.logger.info("Calcul des indicateurs (Nouvelle Stratégie)", extra={
+                'rsi': indicators.get('RSI'),
+                'vi1': indicators.get('VI1'),
+                'vi2': indicators.get('VI2'),
+                'vi3': indicators.get('VI3')
+            })
+            
+            # Log JSON détaillé
+            indicators_debug = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'indicators': {
+                    'RSI': indicators.get('RSI'),
+                    'VI1': indicators.get('VI1'),
+                    'VI2': indicators.get('VI2'),
+                    'VI3': indicators.get('VI3')
+                }
+            }
+            
+            self.logger.info(f"INDICATEURS_CALCULES_JSON: {json.dumps(indicators_debug, indent=2)}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging des indicateurs: {e}")
+    
+    def log_vi1_phase_change(self, old_phase, new_phase, timestamp):
+        """
+        Log le changement de phase VI1.
+        """
+        try:
+            self.logger.info("Changement de phase VI1", extra={
+                'old_phase': old_phase,
+                'new_phase': new_phase,
+                'timestamp': timestamp,
+                'event': 'vi1_phase_change'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging du changement de phase VI1: {e}")
+    
+    def log_protection_activation(self, protection_type, details):
+        """
+        Log l'activation des protections temporelles.
+        """
+        try:
+            self.logger.info(f"Protection {protection_type} activée", extra={
+                'protection_type': protection_type,
+                'details': details,
+                'event': 'protection_activation'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de la protection: {e}")
+    
+    def log_position_exit_conditions(self, position_type, current_rsi, entry_rsi, hours_elapsed, exit_reason):
+        """
+        Log les conditions de sortie de position.
+        """
+        try:
+            self.logger.info("Vérification conditions de sortie", extra={
+                'position_type': position_type,
+                'current_rsi': current_rsi,
+                'entry_rsi': entry_rsi,
+                'hours_elapsed': hours_elapsed,
+                'exit_reason': exit_reason,
+                'event': 'position_exit_check'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging des conditions de sortie: {e}")
+    
+    def log_new_strategy_state(self, state_manager):
+        """
+        Log l'état de la nouvelle stratégie.
+        """
+        try:
+            last_position_type = state_manager.get_last_position_type()
+            vi1_phase = state_manager.get_vi1_current_phase()
+            vi1_timestamp = state_manager.get_vi1_phase_timestamp()
+            
+            self.logger.info("État nouvelle stratégie", extra={
+                'last_position_type': last_position_type,
+                'vi1_current_phase': vi1_phase,
+                'vi1_phase_timestamp': vi1_timestamp,
+                'event': 'new_strategy_state'
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de l'état nouvelle stratégie: {e}")
     def log_trading_decision(self, decision):
-        """Log la décision de trading."""
-        self.logger.info("Décision trading", extra={
-            'event': 'trading_decision',
-            'action': decision['action'],
-            'reason': decision['reason']
-        })
+        """Log la décision de trading pour la nouvelle stratégie."""
+        try:
+            # Log de base
+            self.logger.info("Décision trading (Nouvelle Stratégie)", extra={
+                'event': 'trading_decision',
+                'action': decision['action'],
+                'reason': decision['reason'],
+                'position_type': decision.get('position_type'),
+                'entry_rsi': decision.get('entry_rsi'),
+                'entry_time': decision.get('entry_time')
+            })
+            
+            # Log JSON détaillé
+            decision_debug = {
+                'timestamp': datetime.utcnow().isoformat(),
+                'decision': {
+                    'action': decision['action'],
+                    'reason': decision['reason'],
+                    'position_type': decision.get('position_type'),
+                    'entry_price': decision.get('entry_price'),
+                    'entry_rsi': decision.get('entry_rsi'),
+                    'entry_time': decision.get('entry_time'),
+                    'size': decision.get('size')
+                }
+            }
+            
+            self.logger.info(f"DECISION_TRADING_JSON: {json.dumps(decision_debug, indent=2)}")
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de la décision: {e}")
     
     def log_order_execution(self, execution_result):
-        """Log l'exécution d'un ordre."""
-        if execution_result.get('success', False):
-            self.logger.info("Ordre exécuté", extra={
-                'event': 'order_execution',
-                'success': True,
-                'action': execution_result['decision']['action'],
-                'order_id': execution_result.get('order_id'),
-                'filled_size': execution_result.get('filled_size'),
-                'price': execution_result.get('price')
-            })
-        else:
-            self.logger.error("Échec exécution ordre", extra={
-                'event': 'order_execution',
-                'success': False,
-                'action': execution_result.get('action', 'unknown'),
-                'error': execution_result.get('error', 'unknown error')
-            })
+        """Log l'exécution d'un ordre pour la nouvelle stratégie."""
+        try:
+            if execution_result.get('success', False):
+                self.logger.info("Ordre exécuté (Nouvelle Stratégie)", extra={
+                    'event': 'order_execution',
+                    'success': True,
+                    'action': execution_result['decision']['action'],
+                    'position_type': execution_result.get('position_type'),
+                    'order_id': execution_result.get('order_id'),
+                    'filled_size': execution_result.get('filled_size'),
+                    'price': execution_result.get('price')
+                })
+                
+                # Log JSON détaillé
+                execution_debug = {
+                    'timestamp': datetime.utcnow().isoformat(),
+                    'execution': {
+                        'success': True,
+                        'action': execution_result['decision']['action'],
+                        'position_type': execution_result.get('position_type'),
+                        'order_id': execution_result.get('order_id'),
+                        'filled_size': execution_result.get('filled_size'),
+                        'price': execution_result.get('price'),
+                        'reason': execution_result['decision'].get('reason')
+                    }
+                }
+                
+                self.logger.info(f"EXECUTION_ORDRE_JSON: {json.dumps(execution_debug, indent=2)}")
+                
+            else:
+                self.logger.error("Erreur exécution ordre", extra={
+                    'event': 'order_execution',
+                    'success': False,
+                    'action': execution_result['decision']['action'],
+                    'error': execution_result.get('error'),
+                    'reason': execution_result.get('reason')
+                })
+                
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de l'exécution: {e}")
     
     def log_state_update(self, state_manager):
-        """Log la mise à jour de l'état."""
-        current_pos = state_manager.get_current_position()
-        long2_rsi = state_manager.get_long2_entry_rsi()
-        
-        self.logger.info("État mis à jour", extra={
-            'event': 'state_update',
-            'has_open_position': current_pos is not None,
-            'position_type': current_pos['type'] if current_pos else None,
-            'long2_entry_rsi': long2_rsi
-        })
+        """Log la mise à jour de l'état pour la nouvelle stratégie."""
+        try:
+            current_pos = state_manager.get_current_position()
+            last_position_type = state_manager.get_last_position_type()
+            vi1_phase = state_manager.get_vi1_current_phase()
+            vi1_timestamp = state_manager.get_vi1_phase_timestamp()
+            
+            self.logger.info("État mis à jour (Nouvelle Stratégie)", extra={
+                'event': 'state_update',
+                'has_open_position': current_pos is not None,
+                'position_type': current_pos['type'] if current_pos else None,
+                'last_position_type': last_position_type,
+                'vi1_current_phase': vi1_phase,
+                'vi1_phase_timestamp': vi1_timestamp
+            })
+            
+        except Exception as e:
+            self.logger.error(f"Erreur lors du logging de l'état: {e}")
     
     def log_error(self, error_msg, error_details=None):
         """Log une erreur."""
@@ -380,16 +538,32 @@ if __name__ == "__main__":
     logger.log_warning("Test d'avertissement")
     logger.log_error("Test d'erreur")
     
-    # Test avec données structurées
+    # Test avec données structurées pour nouvelle stratégie
     test_analysis = {
-        'rsi_n1': 35.0,
-        'rsi_n2': 30.0,
-        'volume_n1': 95.0
+        'rsi_n1': 55.0,
+        'rsi_n2': 50.0,
+        'rsi_change': 5.0,
+        'vi1_n1': 40200.0,
+        'vi2_n1': 40150.0,
+        'vi3_n1': 40100.0,
+        'vi1_above_close': False,
+        'vi2_above_close': False,
+        'vi3_above_close': False,
+        'close_n1': 40000.0,
+        'close_n2': 39900.0,
+        'short_conditions': True,
+        'long_vi1_conditions': True,
+        'long_vi2_conditions': False,
+        'long_reentry_conditions': False
     }
     
     test_conditions = {
         'trading_allowed': True,
-        'long1_ready': True
+        'short_ready': True,
+        'long_vi1_ready': True,
+        'long_vi2_ready': False,
+        'long_reentry_ready': False,
+        'vi1_protection_active': False
     }
     
     logger.log_technical_analysis(test_analysis, test_conditions)

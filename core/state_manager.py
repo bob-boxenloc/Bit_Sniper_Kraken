@@ -1,18 +1,19 @@
 """
 Module de gestion de l'état pour BitSniper
-Gère la persistance des données et l'état du bot
+Gère la persistance des données et l'état du bot pour la nouvelle stratégie
 """
 
 import json
 import os
 import logging
+import time
 from datetime import datetime
 from typing import Dict, Any, Optional
 
 class StateManager:
     """
-    Gère l'état du bot et la persistance des données.
-        """
+    Gère l'état du bot et la persistance des données pour la nouvelle stratégie.
+    """
         
     def __init__(self, state_file: str = "bot_state.json"):
         self.state_file = state_file
@@ -26,11 +27,21 @@ class StateManager:
                 with open(self.state_file, 'r') as f:
                     state = json.load(f)
                 
+                # Vérifier et ajouter les nouvelles clés pour la nouvelle stratégie
+                if 'new_strategy_state' not in state:
+                    state['new_strategy_state'] = {
+                        'last_position_type': None,
+                        'vi1_phase_timestamp': None,
+                        'vi1_current_phase': None,
+                        'last_position_exit_time': None
+                    }
+                    self.logger.info("Clé new_strategy_state ajoutée à l'état existant")
+                
                 # Vérifier si data_progression existe, sinon l'ajouter
                 if 'data_progression' not in state:
                     state['data_progression'] = {
                         'kraken_candles_count': 0,
-                        'total_required': 80,
+                        'total_required': 50,  # Réduit pour RSI(40) + ATR(28)
                         'last_transition_date': None,
                         'is_transition_complete': False
                     }
@@ -39,15 +50,21 @@ class StateManager:
                 self.logger.info(f"État chargé depuis {self.state_file}")
                 return state
             else:
-                # État initial
+                # État initial pour la nouvelle stratégie
                 initial_state = {
                     'created_at': datetime.now().isoformat(),
                     'last_updated': datetime.now().isoformat(),
                     'current_position': None,
                     'position_history': [],
+                    'new_strategy_state': {
+                        'last_position_type': None,
+                        'vi1_phase_timestamp': None,
+                        'vi1_current_phase': None,
+                        'last_position_exit_time': None
+                    },
                     'data_progression': {
-                        'kraken_candles_count': 0,  # Nombre de bougies Kraken récupérées
-                        'total_required': 80,        # Total requis pour la transition complète
+                        'kraken_candles_count': 0,
+                        'total_required': 50,  # Réduit pour les nouveaux indicateurs
                         'last_transition_date': None,
                         'is_transition_complete': False
                     },
@@ -55,7 +72,11 @@ class StateManager:
                         'total_trades': 0,
                         'winning_trades': 0,
                         'losing_trades': 0,
-                        'total_pnl': 0.0
+                        'total_pnl': 0.0,
+                        'shorts_count': 0,
+                        'long_vi1_count': 0,
+                        'long_vi2_count': 0,
+                        'long_reentry_count': 0
                     }
                 }
                 self._save_state(initial_state)
@@ -73,6 +94,65 @@ class StateManager:
             self.logger.debug(f"État sauvegardé dans {self.state_file}")
         except Exception as e:
             self.logger.error(f"Erreur lors de la sauvegarde de l'état: {e}")
+    
+    # Méthodes pour la nouvelle stratégie
+    
+    def get_last_position_type(self) -> Optional[str]:
+        """Récupère le type de la dernière position."""
+        return self.state.get('new_strategy_state', {}).get('last_position_type')
+    
+    def set_last_position_type(self, position_type: str) -> None:
+        """Définit le type de la dernière position."""
+        if 'new_strategy_state' not in self.state:
+            self.state['new_strategy_state'] = {}
+        self.state['new_strategy_state']['last_position_type'] = position_type
+        self._save_state(self.state)
+        self.logger.info(f"Type de dernière position mis à jour: {position_type}")
+    
+    def get_vi1_phase_timestamp(self) -> Optional[float]:
+        """Récupère le timestamp du dernier changement de phase VI1."""
+        return self.state.get('new_strategy_state', {}).get('vi1_phase_timestamp')
+    
+    def set_vi1_phase_timestamp(self, timestamp: float) -> None:
+        """Définit le timestamp du dernier changement de phase VI1."""
+        if 'new_strategy_state' not in self.state:
+            self.state['new_strategy_state'] = {}
+        self.state['new_strategy_state']['vi1_phase_timestamp'] = timestamp
+        self._save_state(self.state)
+        self.logger.info(f"Timestamp phase VI1 mis à jour: {timestamp}")
+    
+    def get_vi1_current_phase(self) -> Optional[str]:
+        """Récupère la phase actuelle VI1 ('SHORT' ou 'LONG')."""
+        return self.state.get('new_strategy_state', {}).get('vi1_current_phase')
+    
+    def set_vi1_current_phase(self, phase: str) -> None:
+        """Définit la phase actuelle VI1."""
+        if 'new_strategy_state' not in self.state:
+            self.state['new_strategy_state'] = {}
+        self.state['new_strategy_state']['vi1_current_phase'] = phase
+        self._save_state(self.state)
+        self.logger.info(f"Phase VI1 mise à jour: {phase}")
+    
+    def update_vi1_phase(self, new_phase: str) -> None:
+        """Met à jour la phase VI1 et enregistre le timestamp."""
+        current_phase = self.get_vi1_current_phase()
+        if current_phase != new_phase:
+            self.set_vi1_current_phase(new_phase)
+            self.set_vi1_phase_timestamp(time.time())
+            self.logger.info(f"Changement de phase VI1: {current_phase} → {new_phase}")
+    
+    def get_last_position_exit_time(self) -> Optional[float]:
+        """Récupère le timestamp de la dernière sortie de position."""
+        return self.state.get('new_strategy_state', {}).get('last_position_exit_time')
+    
+    def set_last_position_exit_time(self, timestamp: float) -> None:
+        """Définit le timestamp de la dernière sortie de position."""
+        if 'new_strategy_state' not in self.state:
+            self.state['new_strategy_state'] = {}
+        self.state['new_strategy_state']['last_position_exit_time'] = timestamp
+        self._save_state(self.state)
+    
+    # Méthodes existantes adaptées
     
     def update_data_progression(self, kraken_candles_count: int) -> None:
         """
@@ -104,9 +184,9 @@ class StateManager:
 
     def update_position(self, position_type: str, action: str, data: Dict[str, Any]) -> None:
         """
-        Met à jour la position actuelle.
+        Met à jour la position actuelle pour la nouvelle stratégie.
         
-        :param position_type: Type de position (long1, long2, short)
+        :param position_type: Type de position (SHORT, LONG_VI1, LONG_VI2, LONG_REENTRY)
         :param action: Action (open, close)
         :param data: Données de la position
         """
@@ -116,6 +196,9 @@ class StateManager:
                 'entry_time': datetime.now().isoformat(),
                 'entry_data': data
             }
+            # Mettre à jour le type de dernière position
+            self.set_last_position_type(position_type)
+            
         elif action == 'close':
             if self.state['current_position']:
                 # Ajouter à l'historique
@@ -134,6 +217,20 @@ class StateManager:
                     else:
                         self.state['trading_stats']['losing_trades'] += 1
                     self.state['trading_stats']['total_pnl'] += data['pnl']
+                
+                # Mettre à jour les stats par type de position
+                position_type = self.state['current_position']['type']
+                if position_type == 'SHORT':
+                    self.state['trading_stats']['shorts_count'] += 1
+                elif position_type == 'LONG_VI1':
+                    self.state['trading_stats']['long_vi1_count'] += 1
+                elif position_type == 'LONG_VI2':
+                    self.state['trading_stats']['long_vi2_count'] += 1
+                elif position_type == 'LONG_REENTRY':
+                    self.state['trading_stats']['long_reentry_count'] += 1
+                
+                # Enregistrer le timestamp de sortie
+                self.set_last_position_exit_time(time.time())
             
             self.state['current_position'] = None
         
@@ -143,22 +240,15 @@ class StateManager:
         """Récupère la position actuelle."""
         return self.state.get('current_position')
     
-    def get_long2_entry_rsi(self) -> Optional[float]:
-        """Récupère le RSI d'entrée pour une position long2."""
-        current_pos = self.get_current_position()
-        if current_pos and current_pos['type'] == 'long2':
-            return current_pos['entry_data'].get('entry_rsi')
-        return None
-    
     def get_state_summary(self) -> str:
-        """Génère un résumé de l'état du bot."""
+        """Génère un résumé de l'état du bot pour la nouvelle stratégie."""
         summary = []
-        summary.append("📊 ÉTAT DU BOT:")
+        summary.append("📊 ÉTAT DU BOT (Nouvelle Stratégie):")
         
         # Progression des données
         progression = self.get_data_progression()
         kraken_count = progression.get('kraken_candles_count', 0)
-        total_required = progression.get('total_required', 80)
+        total_required = progression.get('total_required', 50)
         is_complete = progression.get('is_transition_complete', False)
         
         if is_complete:
@@ -167,10 +257,17 @@ class StateManager:
             progress_pct = (kraken_count / total_required) * 100
             summary.append(f"   🔄 Progression données: {kraken_count}/{total_required} ({progress_pct:.1f}%)")
         
+        # État VI1
+        vi1_phase = self.get_vi1_current_phase()
+        vi1_timestamp = self.get_vi1_phase_timestamp()
+        if vi1_phase and vi1_timestamp:
+            hours_since_change = (time.time() - vi1_timestamp) / 3600
+            summary.append(f"   📈 Phase VI1: {vi1_phase} (depuis {hours_since_change:.1f}h)")
+        
         # Position actuelle
         current_pos = self.get_current_position()
         if current_pos:
-            summary.append(f"   📈 Position ouverte: {current_pos['type'].upper()}")
+            summary.append(f"   📈 Position ouverte: {current_pos['type']}")
             summary.append(f"      Entrée: ${current_pos['entry_data'].get('entry_price', 0):.2f}")
             summary.append(f"      RSI: {current_pos['entry_data'].get('entry_rsi', 0):.2f}")
         else:
@@ -183,5 +280,9 @@ class StateManager:
             win_rate = (stats.get('winning_trades', 0) / total_trades) * 100
             summary.append(f"   📊 Stats: {total_trades} trades, {win_rate:.1f}% win rate")
             summary.append(f"      PnL total: ${stats.get('total_pnl', 0):.2f}")
+            summary.append(f"      Répartition: SHORT={stats.get('shorts_count', 0)}, "
+                         f"LONG_VI1={stats.get('long_vi1_count', 0)}, "
+                         f"LONG_VI2={stats.get('long_vi2_count', 0)}, "
+                         f"LONG_REENTRY={stats.get('long_reentry_count', 0)}")
         
         return "\n".join(summary)
