@@ -2,16 +2,16 @@ import pandas as pd
 import logging
 import numpy as np
 
-def calculate_rsi_wilder(closes: list, length: int = 40) -> float:
+def calculate_rsi_simple(closes: list, length: int = 40) -> float:
     """
-    Calcule le RSI selon la méthode Wilder (lissage exponentiel discret).
+    Calcule le RSI simple sur 40 périodes (pas Wilder).
     
     Args:
         closes: Liste des prix de clôture (du plus ancien au plus récent)
         length: Période du RSI (défaut: 40 pour la nouvelle stratégie)
     
     Returns:
-        RSI Wilder pour la dernière période
+        RSI simple pour la dernière période
     """
     if len(closes) < length + 1:
         return None
@@ -25,14 +25,9 @@ def calculate_rsi_wilder(closes: list, length: int = 40) -> float:
     gains = [max(delta, 0) for delta in deltas]
     losses = [max(-delta, 0) for delta in deltas]
     
-    # Première moyenne (initialisation) - SMA sur les 'length' premières périodes
-    avg_gain = sum(gains[:length]) / length
-    avg_loss = sum(losses[:length]) / length
-    
-    # Lissage récursif de Wilder pour les périodes suivantes
-    for i in range(length, len(deltas)):
-        avg_gain = (avg_gain * (length - 1) + gains[i]) / length
-        avg_loss = (avg_loss * (length - 1) + losses[i]) / length
+    # Calculer les moyennes sur les 'length' dernières périodes
+    avg_gain = sum(gains[-length:]) / length
+    avg_loss = sum(losses[-length:]) / length
     
     # Calcul du RSI
     if avg_loss == 0:
@@ -45,7 +40,7 @@ def calculate_rsi_wilder(closes: list, length: int = 40) -> float:
 
 def calculate_atr(highs: list, lows: list, closes: list, period: int = 28) -> float:
     """
-    Calcule l'Average True Range (ATR) selon la méthode Wilder.
+    Calcule l'Average True Range (ATR) selon la méthode Wilder Smoothing.
     
     Args:
         highs: Liste des prix hauts
@@ -68,7 +63,7 @@ def calculate_atr(highs: list, lows: list, closes: list, period: int = 28) -> fl
         true_range = max(high_low, high_close_prev, low_close_prev)
         true_ranges.append(true_range)
     
-    # Première moyenne (initialisation)
+    # Première moyenne (initialisation) - SMA sur les 'period' premières périodes
     atr = sum(true_ranges[:period]) / period
     
     # Lissage récursif de Wilder pour les périodes suivantes
@@ -104,15 +99,19 @@ def calculate_volatility_index(highs: list, lows: list, closes: list,
     current_close = closes[-1]
     volatility_index = current_close + (atr * atr_multiplier)
     
+    # Debug: afficher les valeurs pour comprendre
+    logger = logging.getLogger(__name__)
+    logger.debug(f"VI Debug - Close: {current_close}, ATR: {atr}, Multiplier: {atr_multiplier}, VI: {volatility_index}")
+    
     return volatility_index
 
 def compute_rsi_40(closes, period=40):
     """
-    Calcule le RSI(40) selon la méthode Wilder.
+    Calcule le RSI(40) selon la méthode simple.
     
     :param closes: liste ou Series de prix de clôture
     :param period: période du RSI (par défaut 40)
-    :return: RSI Wilder pour la dernière période
+    :return: RSI simple pour la dernière période
     """
     logger = logging.getLogger(__name__)
     
@@ -121,18 +120,18 @@ def compute_rsi_40(closes, period=40):
         closes = closes.tolist()
     
     # Log des données d'entrée pour debug
-    logger.debug(f"Calcul RSI Wilder({period}) - {len(closes)} prix de clôture")
+    logger.debug(f"Calcul RSI Simple({period}) - {len(closes)} prix de clôture")
     
-    # Utiliser la méthode Wilder
-    rsi_wilder = calculate_rsi_wilder(closes, period)
+    # Utiliser la méthode simple
+    rsi_simple = calculate_rsi_simple(closes, period)
     
-    if rsi_wilder is None:
-        logger.warning(f"Impossible de calculer RSI Wilder - données insuffisantes")
+    if rsi_simple is None:
+        logger.warning(f"Impossible de calculer RSI Simple - données insuffisantes")
         return None
     
-    logger.debug(f"RSI Wilder({period}): {rsi_wilder}")
+    logger.debug(f"RSI Simple({period}): {rsi_simple}")
     
-    return rsi_wilder
+    return rsi_simple
 
 def compute_volatility_indexes(highs, lows, closes):
     """
@@ -213,7 +212,10 @@ def get_indicators_with_validation(candles, rsi_period=40):
     highs = [float(c['high']) for c in candles]
     lows = [float(c['low']) for c in candles]
     
+    # RSI actuel (dernière bougie)
     rsi = compute_rsi_40(closes, rsi_period)
+    
+    # Volatility Indexes actuels
     volatility_indexes = compute_volatility_indexes(highs, lows, closes)
     
     indicators = {

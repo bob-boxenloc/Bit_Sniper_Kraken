@@ -44,7 +44,7 @@ def check_exit_conditions(analysis, open_positions, state_manager):
         return {'action': 'hold', 'reason': 'Aucune position à vérifier'}
     
     position = open_positions[0]  # On ne gère qu'une position à la fois
-    current_rsi = analysis['rsi_n1']
+    current_rsi = analysis['rsi']
     current_close = analysis['close_n1']
     entry_price = position['price']
     position_type = position.get('type', 'unknown')
@@ -139,7 +139,7 @@ def check_short_exit_conditions(analysis, position, current_rsi, current_close,
                 'position': position,
                 'exit_type': 'target'
             }
-    
+        
     # Exit de dernier recours: VI1 repasse en-dessous du close
     if not analysis['vi1_above_close']:
         logger.log_position_exit_conditions("SHORT", current_rsi, entry_rsi, hours_elapsed, "VI1 repasse en-dessous du close")
@@ -232,7 +232,7 @@ def check_long_exit_conditions(analysis, position, current_rsi, current_close,
             'reason': 'VI1 repasse au-dessus du close',
             'position': position,
             'exit_type': 'last_resort'
-        }
+            }
     
     # Aucune condition de sortie remplie
     return {

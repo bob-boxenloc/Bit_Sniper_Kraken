@@ -212,12 +212,10 @@ class BitSniperLogger:
         try:
             # Log de base
             self.logger.info("Analyse technique effectuée (Nouvelle Stratégie)", extra={
-                'rsi_n1': analysis['rsi_n1'],
-                'rsi_n2': analysis['rsi_n2'],
-                'rsi_change': analysis['rsi_change'],
-                'vi1_n1': analysis['vi1_n1'],
-                'vi2_n1': analysis['vi2_n1'],
-                'vi3_n1': analysis['vi3_n1'],
+                'rsi': analysis['rsi'],
+                'vi1': analysis['vi1'],
+                'vi2': analysis['vi2'],
+                'vi3': analysis['vi3'],
                 'vi1_above_close': analysis['vi1_above_close'],
                 'vi2_above_close': analysis['vi2_above_close'],
                 'vi3_above_close': analysis['vi3_above_close'],
@@ -252,15 +250,11 @@ class BitSniperLogger:
                         'count': analysis['candle_n2'].get('count', None)
                     }
                 },
-                'rsi_data': {
-                    'rsi_n1': analysis['rsi_n1'],
-                    'rsi_n2': analysis['rsi_n2'],
-                    'rsi_change': analysis['rsi_change']
-                },
-                'volatility_indexes': {
-                    'vi1_n1': analysis['vi1_n1'],
-                    'vi2_n1': analysis['vi2_n1'],
-                    'vi3_n1': analysis['vi3_n1'],
+                'indicators': {
+                    'rsi': analysis['rsi'],
+                    'vi1': analysis['vi1'],
+                    'vi2': analysis['vi2'],
+                    'vi3': analysis['vi3'],
                     'vi1_above_close': analysis['vi1_above_close'],
                     'vi2_above_close': analysis['vi2_above_close'],
                     'vi3_above_close': analysis['vi3_above_close']
@@ -540,12 +534,10 @@ if __name__ == "__main__":
     
     # Test avec données structurées pour nouvelle stratégie
     test_analysis = {
-        'rsi_n1': 55.0,
-        'rsi_n2': 50.0,
-        'rsi_change': 5.0,
-        'vi1_n1': 40200.0,
-        'vi2_n1': 40150.0,
-        'vi3_n1': 40100.0,
+        'rsi': 55.0,
+        'vi1': 40200.0,
+        'vi2': 40150.0,
+        'vi3': 40100.0,
         'vi1_above_close': False,
         'vi2_above_close': False,
         'vi3_above_close': False,

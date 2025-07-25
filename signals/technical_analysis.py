@@ -22,56 +22,48 @@ def analyze_candles(candles, indicators):
     candle_n1 = candles[-1]  # Dernière bougie Kraken temps réel
     candle_n2 = candles[-2]  # Avant-dernière bougie Kraken temps réel
     
-    # RSI N-1 et N-2
-    rsi_n1 = float(indicators['RSI'])
-    rsi_n2 = float(indicators.get('RSI_N2', rsi_n1))  # RSI N-2 si disponible
+    # RSI actuel
+    rsi = float(indicators['RSI'])
     
     # Volatility Indexes actuels
-    vi1_n1 = float(indicators['VI1'])
-    vi2_n1 = float(indicators['VI2'])
-    vi3_n1 = float(indicators['VI3'])
+    vi1 = float(indicators['VI1'])
+    vi2 = float(indicators['VI2'])
+    vi3 = float(indicators['VI3'])
     
     # Prix de clôture des bougies Kraken temps réel
     close_n1 = float(candle_n1['close'])
     close_n2 = float(candle_n2['close'])
     
-    # Calculs dérivés
-    rsi_change = rsi_n1 - rsi_n2  # Variation du RSI
-    
     # Positions des VI par rapport au close
-    vi1_above_close = vi1_n1 > close_n1
-    vi2_above_close = vi2_n1 > close_n1
-    vi3_above_close = vi3_n1 > close_n1
+    vi1_above_close = vi1 > close_n1
+    vi2_above_close = vi2 > close_n1
+    vi3_above_close = vi3 > close_n1
     
     # Analyse complète
     analysis = {
         # Données brutes (bougies Kraken temps réel)
         'candle_n1': candle_n1,
         'candle_n2': candle_n2,
-        'rsi_n1': rsi_n1,
-        'rsi_n2': rsi_n2,
+        'rsi': rsi,
         'close_n1': close_n1,
         'close_n2': close_n2,
         
         # Volatility Indexes
-        'vi1_n1': vi1_n1,
-        'vi2_n1': vi2_n1,
-        'vi3_n1': vi3_n1,
+        'vi1': vi1,
+        'vi2': vi2,
+        'vi3': vi3,
         
         # Positions des VI par rapport au close
         'vi1_above_close': vi1_above_close,
         'vi2_above_close': vi2_above_close,
         'vi3_above_close': vi3_above_close,
         
-        # Calculs dérivés
-        'rsi_change': rsi_change,
-        
         # Conditions pour SHORT
         'short_conditions': {
             'vi1_crossing_over': vi1_above_close,  # VI1 au-dessus du close
             'vi2_above_close': vi2_above_close,     # VI2 au-dessus du close
             'vi3_above_close': vi3_above_close,     # VI3 au-dessus du close
-            'rsi_condition': rsi_n1 <= 50           # RSI ≤ 50
+            'rsi_condition': rsi <= 50              # RSI ≤ 50
         },
         
         # Conditions pour LONG_VI1
@@ -79,14 +71,14 @@ def analyze_candles(candles, indicators):
             'vi1_crossing_under': not vi1_above_close,  # VI1 en-dessous du close
             'vi2_above_close': not vi2_above_close,     # VI2 en-dessous du close
             'vi3_above_close': not vi3_above_close,     # VI3 en-dessous du close
-            'rsi_condition': rsi_n1 >= 45               # RSI ≥ 45
+            'rsi_condition': rsi >= 45                   # RSI ≥ 45
         },
         
         # Conditions pour LONG_VI2
         'long_vi2_conditions': {
             'vi1_already_under': not vi1_above_close,   # VI1 déjà en-dessous du close
             'vi2_crossing_under': not vi2_above_close,  # VI2 crossing-under
-            'rsi_condition': rsi_n1 >= 45               # RSI ≥ 45
+            'rsi_condition': rsi >= 45                   # RSI ≥ 45
         },
         
         # Conditions pour LONG_REENTRY
@@ -95,7 +87,7 @@ def analyze_candles(candles, indicators):
             'vi3_under_close': not vi3_above_close,       # VI3 sous le close
             'vi2_above_close': vi2_above_close,           # VI2 au-dessus du close
             'vi2_crossing_under': not vi2_above_close,    # VI2 crossing-under
-            'rsi_condition': rsi_n1 >= 45                 # RSI ≥ 45
+            'rsi_condition': rsi >= 45                     # RSI ≥ 45
         }
     }
     
@@ -181,12 +173,10 @@ def get_analysis_summary(analysis, conditions_check):
     """
     summary = []
     summary.append("📊 ANALYSE TECHNIQUE (nouvelle stratégie):")
-    summary.append(f"   RSI N-2: {analysis['rsi_n2']:.2f}")
-    summary.append(f"   RSI N-1: {analysis['rsi_n1']:.2f}")
-    summary.append(f"   Variation RSI: {analysis['rsi_change']:+.2f}")
-    summary.append(f"   VI1: {analysis['vi1_n1']:.2f} ({'au-dessus' if analysis['vi1_above_close'] else 'en-dessous'} du close)")
-    summary.append(f"   VI2: {analysis['vi2_n1']:.2f} ({'au-dessus' if analysis['vi2_above_close'] else 'en-dessous'} du close)")
-    summary.append(f"   VI3: {analysis['vi3_n1']:.2f} ({'au-dessus' if analysis['vi3_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   RSI: {analysis['rsi']:.2f}")
+    summary.append(f"   VI1: {analysis['vi1']:.2f} ({'au-dessus' if analysis['vi1_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI2: {analysis['vi2']:.2f} ({'au-dessus' if analysis['vi2_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI3: {analysis['vi3']:.2f} ({'au-dessus' if analysis['vi3_above_close'] else 'en-dessous'} du close)")
     summary.append(f"   Close: {analysis['close_n1']:.2f}")
     
     if conditions_check['vi1_protection_active']:
