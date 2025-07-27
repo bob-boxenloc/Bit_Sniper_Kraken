@@ -14,13 +14,11 @@ def analyze_candles(candles, indicators):
     :param indicators: dict avec RSI et Volatility Indexes calculés
     :return: dict avec tous les indicateurs calculés et conditions
     """
-    if len(candles) < 2:
-        raise ValueError("Il faut au moins 2 bougies pour l'analyse")
+    if len(candles) < 1:
+        raise ValueError("Il faut au moins 1 bougie pour l'analyse")
     
-    # IMPORTANT: Utiliser les bougies Kraken temps réel pour les décisions
-    # Les 2 dernières bougies de la liste sont les bougies Kraken temps réel
-    candle_n1 = candles[-1]  # Dernière bougie Kraken temps réel
-    candle_n2 = candles[-2]  # Avant-dernière bougie Kraken temps réel
+    # Utiliser la bougie actuelle (dernière bougie fermée)
+    current_candle = candles[-1]
     
     # RSI actuel
     rsi = float(indicators['RSI'])
@@ -30,23 +28,20 @@ def analyze_candles(candles, indicators):
     vi2 = float(indicators['VI2'])
     vi3 = float(indicators['VI3'])
     
-    # Prix de clôture des bougies Kraken temps réel
-    close_n1 = float(candle_n1['close'])
-    close_n2 = float(candle_n2['close'])
+    # Prix de clôture de la bougie actuelle
+    current_close = float(current_candle['close'])
     
     # Positions des VI par rapport au close
-    vi1_above_close = vi1 > close_n1
-    vi2_above_close = vi2 > close_n1
-    vi3_above_close = vi3 > close_n1
+    vi1_above_close = vi1 > current_close
+    vi2_above_close = vi2 > current_close
+    vi3_above_close = vi3 > current_close
     
     # Analyse complète
     analysis = {
-        # Données brutes (bougies Kraken temps réel)
-        'candle_n1': candle_n1,
-        'candle_n2': candle_n2,
+        # Données de la bougie actuelle
+        'current_candle': current_candle,
         'rsi': rsi,
-        'close_n1': close_n1,
-        'close_n2': close_n2,
+        'current_close': current_close,
         
         # Volatility Indexes
         'vi1': vi1,
@@ -177,7 +172,7 @@ def get_analysis_summary(analysis, conditions_check):
     summary.append(f"   VI1: {analysis['vi1']:.2f} ({'au-dessus' if analysis['vi1_above_close'] else 'en-dessous'} du close)")
     summary.append(f"   VI2: {analysis['vi2']:.2f} ({'au-dessus' if analysis['vi2_above_close'] else 'en-dessous'} du close)")
     summary.append(f"   VI3: {analysis['vi3']:.2f} ({'au-dessus' if analysis['vi3_above_close'] else 'en-dessous'} du close)")
-    summary.append(f"   Close: {analysis['close_n1']:.2f}")
+    summary.append(f"   Close: {analysis['current_close']:.2f}")
     
     if conditions_check['vi1_protection_active']:
         summary.append("   ⚠️ PROTECTION VI1 ACTIVE (72h)")

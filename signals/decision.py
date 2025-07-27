@@ -45,7 +45,7 @@ def check_exit_conditions(analysis, open_positions, state_manager):
     
     position = open_positions[0]  # On ne gère qu'une position à la fois
     current_rsi = analysis['rsi']
-    current_close = analysis['close_n1']
+    current_close = analysis['current_close']
     entry_price = position['price']
     position_type = position.get('type', 'unknown')
     entry_rsi = position.get('entry_rsi')

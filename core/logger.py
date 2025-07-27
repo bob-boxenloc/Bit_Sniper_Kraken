@@ -230,25 +230,14 @@ class BitSniperLogger:
             # Log JSON détaillé pour debug
             detailed_analysis = {
                 'timestamp': datetime.utcnow().isoformat(),
-                'candles_data': {
-                    'candle_n1': {
-                        'time': analysis['candle_n1']['time'],
-                        'datetime': analysis['candle_n1']['datetime'].isoformat() if hasattr(analysis['candle_n1']['datetime'], 'isoformat') else str(analysis['candle_n1']['datetime']),
-                        'open': analysis['candle_n1']['open'],
-                        'high': analysis['candle_n1']['high'],
-                        'low': analysis['candle_n1']['low'],
-                        'close': analysis['candle_n1']['close'],
-                        'count': analysis['candle_n1'].get('count', None)
-                    },
-                    'candle_n2': {
-                        'time': analysis['candle_n2']['time'],
-                        'datetime': analysis['candle_n2']['datetime'].isoformat() if hasattr(analysis['candle_n2']['datetime'], 'isoformat') else str(analysis['candle_n2']['datetime']),
-                        'open': analysis['candle_n2']['open'],
-                        'high': analysis['candle_n2']['high'],
-                        'low': analysis['candle_n2']['low'],
-                        'close': analysis['candle_n2']['close'],
-                        'count': analysis['candle_n2'].get('count', None)
-                    }
+                'current_candle': {
+                    'time': analysis['current_candle']['time'],
+                    'datetime': analysis['current_candle']['datetime'].isoformat() if hasattr(analysis['current_candle']['datetime'], 'isoformat') else str(analysis['current_candle']['datetime']),
+                    'open': analysis['current_candle']['open'],
+                    'high': analysis['current_candle']['high'],
+                    'low': analysis['current_candle']['low'],
+                    'close': analysis['current_candle']['close'],
+                    'count': analysis['current_candle'].get('count', None)
                 },
                 'indicators': {
                     'rsi': analysis['rsi'],
@@ -260,8 +249,7 @@ class BitSniperLogger:
                     'vi3_above_close': analysis['vi3_above_close']
                 },
                 'price_data': {
-                    'close_n1': analysis['close_n1'],
-                    'close_n2': analysis['close_n2']
+                    'current_close': analysis['current_close']
                 },
                 'conditions': {
                     'short': analysis['short_conditions'],
@@ -541,8 +529,16 @@ if __name__ == "__main__":
         'vi1_above_close': False,
         'vi2_above_close': False,
         'vi3_above_close': False,
-        'close_n1': 40000.0,
-        'close_n2': 39900.0,
+        'current_close': 40000.0,
+        'current_candle': {
+            'time': 1234567890,
+            'datetime': '2025-07-25T10:00:00',
+            'open': '40000',
+            'high': '40100',
+            'low': '39900',
+            'close': '40000',
+            'count': 100
+        },
         'short_conditions': True,
         'long_vi1_conditions': True,
         'long_vi2_conditions': False,
