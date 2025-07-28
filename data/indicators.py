@@ -223,6 +223,10 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     # Les closes ont 960 valeurs
     # Donc on aligne : close[i] correspond à atr[i-1]
     for i in range(27, len(closes)):
+        # Vérifier qu'on ne dépasse pas les indices
+        if i >= len(closes) or (i - 1) >= len(atr_rma_history):
+            break
+            
         close = closes[i]
         atr = atr_rma_history[i - 1]  # ATR correspondant à la même période
         
