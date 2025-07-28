@@ -333,10 +333,6 @@ def trading_loop():
         print(f"   VI1: {current_vi1:.2f}")
         print(f"   VI2: {current_vi2:.2f}")
         print(f"   VI3: {current_vi3:.2f}")
-        
-        # Debug: Afficher les valeurs utilisées pour l'analyse
-        print(f"🔧 DEBUG ANALYSE - Close actuel: {float(last_candle['close']):.2f}")
-        print(f"   VI1 vs Close: {current_vi1:.2f} vs {float(last_candle['close']):.2f}")
     else:
         # Fallback vers l'ancienne méthode si l'historique n'est pas initialisé
         indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
@@ -360,6 +356,10 @@ def trading_loop():
     print(f"🎯 BOUGIES UTILISÉES POUR DÉCISIONS:")
     print(f"   N-2 ({prev_candle['datetime']}): Close={prev_candle['close']}, Volume={prev_candle.get('volume', 'N/A')}, Count={prev_candle['count']}")
     print(f"   N-1 ({last_candle['datetime']}): Close={last_candle['close']}, Volume={last_candle.get('volume', 'N/A')}, Count={last_candle['count']}")
+    
+    # Debug: Afficher les valeurs utilisées pour l'analyse
+    print(f"🔧 DEBUG ANALYSE - Close actuel: {float(last_candle['close']):.2f}")
+    print(f"   VI1 vs Close: {current_vi1:.2f} vs {float(last_candle['close']):.2f}")
     
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie)")
