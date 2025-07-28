@@ -256,15 +256,15 @@ def trading_loop():
                     print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle['count']}")
                 else:
                     print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
-                
-                # Mettre à jour l'historique des indicateurs dans tous les cas
-                print("🔄 Tentative de mise à jour de l'historique des indicateurs...")
-                if update_indicator_history(new_candle):
-                    print("✅ Historique des indicateurs mis à jour")
-                else:
-                    print("⚠️  Impossible de mettre à jour l'historique des indicateurs")
             else:
                 print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
+            
+            # Mettre à jour l'historique des indicateurs dans tous les cas
+            print("🔄 Tentative de mise à jour de l'historique des indicateurs...")
+            if update_indicator_history(new_candle):
+                print("✅ Historique des indicateurs mis à jour")
+            else:
+                print("⚠️  Impossible de mettre à jour l'historique des indicateurs")
             
             # Afficher le statut du buffer
             status = candle_buffer.get_status()
