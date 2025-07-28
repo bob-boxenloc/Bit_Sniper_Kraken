@@ -106,9 +106,12 @@ def update_indicator_history(new_candle):
     """
     global indicator_history
     
+    print("🔄 update_indicator_history appelée !")
+    
     # Récupérer toutes les bougies du buffer
     candles = candle_buffer.get_candles()
     if len(candles) < 41:  # Minimum pour RSI(40) + ATR(28)
+        print("❌ Pas assez de bougies pour recalculer")
         return False
     
     print("🔄 Recalcul de l'historique complet des indicateurs...")
@@ -255,6 +258,7 @@ def trading_loop():
                     print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
                 
                 # Mettre à jour l'historique des indicateurs dans tous les cas
+                print("🔄 Tentative de mise à jour de l'historique des indicateurs...")
                 if update_indicator_history(new_candle):
                     print("✅ Historique des indicateurs mis à jour")
                 else:
