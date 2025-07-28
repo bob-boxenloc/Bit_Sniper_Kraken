@@ -371,8 +371,8 @@ class BitSniperLogger:
         try:
             # Log de base
             self.logger.info("Décision trading (Nouvelle Stratégie)", extra={
-                'event': 'trading_decision',
-                'action': decision['action'],
+            'event': 'trading_decision',
+            'action': decision['action'],
                 'reason': decision['reason'],
                 'position_type': decision.get('position_type'),
                 'entry_rsi': decision.get('entry_rsi'),
@@ -401,16 +401,16 @@ class BitSniperLogger:
     def log_order_execution(self, execution_result):
         """Log l'exécution d'un ordre pour la nouvelle stratégie."""
         try:
-            if execution_result.get('success', False):
+        if execution_result.get('success', False):
                 self.logger.info("Ordre exécuté (Nouvelle Stratégie)", extra={
-                    'event': 'order_execution',
-                    'success': True,
-                    'action': execution_result['decision']['action'],
+                'event': 'order_execution',
+                'success': True,
+                'action': execution_result['decision']['action'],
                     'position_type': execution_result.get('position_type'),
-                    'order_id': execution_result.get('order_id'),
-                    'filled_size': execution_result.get('filled_size'),
-                    'price': execution_result.get('price')
-                })
+                'order_id': execution_result.get('order_id'),
+                'filled_size': execution_result.get('filled_size'),
+                'price': execution_result.get('price')
+            })
                 
                 # Log JSON détaillé
                 execution_debug = {
@@ -428,14 +428,14 @@ class BitSniperLogger:
                 
                 self.logger.info(f"EXECUTION_ORDRE_JSON: {json.dumps(execution_debug, indent=2)}")
                 
-            else:
+        else:
                 self.logger.error("Erreur exécution ordre", extra={
-                    'event': 'order_execution',
-                    'success': False,
+                'event': 'order_execution',
+                'success': False,
                     'action': execution_result['decision']['action'],
                     'error': execution_result.get('error'),
                     'reason': execution_result.get('reason')
-                })
+            })
                 
         except Exception as e:
             self.logger.error(f"Erreur lors du logging de l'exécution: {e}")
@@ -443,19 +443,19 @@ class BitSniperLogger:
     def log_state_update(self, state_manager):
         """Log la mise à jour de l'état pour la nouvelle stratégie."""
         try:
-            current_pos = state_manager.get_current_position()
+        current_pos = state_manager.get_current_position()
             last_position_type = state_manager.get_last_position_type()
             vi1_phase = state_manager.get_vi1_current_phase()
             vi1_timestamp = state_manager.get_vi1_phase_timestamp()
-            
+        
             self.logger.info("État mis à jour (Nouvelle Stratégie)", extra={
-                'event': 'state_update',
-                'has_open_position': current_pos is not None,
-                'position_type': current_pos['type'] if current_pos else None,
+            'event': 'state_update',
+            'has_open_position': current_pos is not None,
+            'position_type': current_pos['type'] if current_pos else None,
                 'last_position_type': last_position_type,
                 'vi1_current_phase': vi1_phase,
                 'vi1_phase_timestamp': vi1_timestamp
-            })
+        })
             
         except Exception as e:
             self.logger.error(f"Erreur lors du logging de l'état: {e}")

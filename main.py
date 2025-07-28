@@ -49,18 +49,31 @@ def trading_loop():
     try:
         md = MarketData()
         
-        # Initialisation du buffer si c'est la première fois
+        # Initialisation du buffer - RÉCUPÉRATION FORCÉE D'HISTORIQUE
         if not candle_buffer.get_candles():
-            print("🔄 Initialisation avec buffer vide - attente des données Kraken")
+            print("🔄 Buffer vide - RÉCUPÉRATION FORCÉE D'HISTORIQUE")
             
-            # Initialiser avec un buffer vide
-            initial_candles, initial_rsi, initial_volume = initialize_bot()
+            # Récupérer 60 bougies historiques pour avoir assez de données
+            print("📥 Récupération de 60 bougies historiques...")
+            historical_candles = md.get_ohlcv_15m(limit=60)
             
-            # Le buffer reste vide - on attend les données Kraken
-            print("✅ Buffer initialisé (vide) - attente des données Kraken")
-            print("📊 " + candle_buffer.get_buffer_summary())
+            if historical_candles and len(historical_candles) >= 50:
+                # Ajouter toutes les bougies historiques au buffer
+                for candle in historical_candles:
+                    candle_buffer.add_candle(candle)
+                
+                print(f"✅ {len(historical_candles)} bougies historiques ajoutées au buffer")
+                print(f"📊 Buffer: {len(candle_buffer.get_candles())}/{candle_buffer.max_candles} bougies")
+                
+                # Afficher le résumé détaillé du buffer
+                print("📋 " + candle_buffer.get_buffer_summary())
+            else:
+                print("❌ Impossible de récupérer l'historique - attente des données Kraken")
+                return
+        else:
+            print("✅ Buffer déjà initialisé avec données")
         
-        # Récupérer les dernières bougies fermées de Kraken
+        # Récupérer les dernières bougies fermées de Kraken (mise à jour)
         print("🔄 Récupération des dernières bougies fermées")
         new_candles = md.get_ohlcv_15m(limit=5)  # Récupérer 5 bougies pour avoir assez de données fermées
         
@@ -81,6 +94,13 @@ def trading_loop():
             
             # Récupérer toutes les bougies pour les calculs
             candles = candle_buffer.get_candles()
+            
+            # Vérifier qu'on a assez de données pour les indicateurs
+            if len(candles) < 41:  # Minimum pour RSI(40) + ATR(28)
+                logger.log_warning(f"Pas assez de données historiques: {len(candles)}/41")
+                print(f"❌ TRADING IMPOSSIBLE: Pas assez de données historiques ({len(candles)}/41)")
+                print("   Le bot attendra d'avoir au moins 41 bougies.")
+                return
             
             # Récupérer les 2 dernières bougies pour les décisions
             latest_candles = candle_buffer.get_latest_candles(2)
