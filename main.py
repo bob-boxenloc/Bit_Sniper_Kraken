@@ -21,7 +21,6 @@ indicator_history = {
     'vi1_history': [],
     'vi2_history': [],
     'vi3_history': [],
-    'basis_history': [],
     'atr_history': [],
     'true_ranges': [],
     'rsi_avg_gain': None,  # Dernière moyenne des gains pour RSI
@@ -84,7 +83,6 @@ def initialize_indicator_history(candles):
         indicator_history['vi1_history'] = vi_history['VI1_history']
         indicator_history['vi2_history'] = vi_history['VI2_history']
         indicator_history['vi3_history'] = vi_history['VI3_history']
-        indicator_history['basis_history'] = vi_history['basis_history']
         indicator_history['atr_history'] = vi_history['atr_history']
         indicator_history['true_ranges'] = vi_history['true_ranges']
         
@@ -161,7 +159,6 @@ def update_indicator_history(new_candle):
         indicator_history['vi1_history'] = vi_history['VI1_history']
         indicator_history['vi2_history'] = vi_history['VI2_history']
         indicator_history['vi3_history'] = vi_history['VI3_history']
-        indicator_history['basis_history'] = vi_history['basis_history']
         indicator_history['atr_history'] = vi_history['atr_history']
         indicator_history['true_ranges'] = vi_history['true_ranges']
         
