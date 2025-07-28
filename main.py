@@ -244,10 +244,15 @@ def trading_loop():
         print("🔄 Récupération de la dernière bougie fermée")
         new_candles = md.get_ohlcv_15m(limit=1)  # Récupérer seulement la dernière bougie
         
+        print(f"🔄 DEBUG: new_candles récupérées: {len(new_candles) if new_candles else 0}")
+        
         if new_candles:
             # Vérifier si la bougie n'est pas déjà dans le buffer
             new_candle = new_candles[0]  # La dernière bougie
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
+            
+            print(f"🔄 DEBUG: new_candle time: {new_candle['time']}")
+            print(f"🔄 DEBUG: buffer_times contient {new_candle['time']}: {new_candle['time'] in buffer_times}")
             
             if new_candle['time'] not in buffer_times:
                 candle_added = candle_buffer.add_candle(new_candle)
@@ -261,6 +266,7 @@ def trading_loop():
             
             # Mettre à jour l'historique des indicateurs dans tous les cas
             print("🔄 Tentative de mise à jour de l'historique des indicateurs...")
+            print(f"🔄 DEBUG: Appel de update_indicator_history avec {new_candle['datetime']}")
             if update_indicator_history(new_candle):
                 print("✅ Historique des indicateurs mis à jour")
             else:
@@ -316,7 +322,7 @@ def trading_loop():
     
     # Utiliser l'historique initialisé pour des calculs précis
     if indicator_history['rsi_history'] and indicator_history['vi1_history']:
-        # Utiliser les dernières valeurs de l'historique
+        # Utiliser les dernières valeurs de l'historique (après mise à jour)
         current_rsi = indicator_history['rsi_history'][-1]
         current_vi1 = indicator_history['vi1_history'][-1]
         current_vi2 = indicator_history['vi2_history'][-1]
@@ -330,7 +336,7 @@ def trading_loop():
         }
         
         indicators_success = True
-        indicators_message = "Indicateurs calculés avec l'historique initialisé"
+        indicators_message = "Indicateurs calculés avec l'historique mis à jour"
         
         print(f"✅ {indicators_message}")
         print(f"   RSI: {current_rsi:.2f}")
