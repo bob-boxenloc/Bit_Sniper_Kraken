@@ -101,93 +101,77 @@ def initialize_indicator_history(candles):
 
 def update_indicator_history(new_candle):
     """
-    Met à jour l'historique des indicateurs avec une nouvelle bougie.
-    Continue le calcul RMA récursif pour maintenir la précision.
-    Limite l'historique à 672 valeurs maximum (7 jours).
+    Recalcule l'historique complet des indicateurs avec toutes les bougies du buffer.
+    Cela garantit que les calculs RMA sont corrects et cohérents.
     """
     global indicator_history
     
-    if not indicator_history['rsi_history'] or not indicator_history['vi1_history']:
+    # Récupérer toutes les bougies du buffer
+    candles = candle_buffer.get_candles()
+    if len(candles) < 41:  # Minimum pour RSI(40) + ATR(28)
         return False
     
-    # Extraire les données de la nouvelle bougie
-    new_close = float(new_candle['close'])
-    new_high = float(new_candle['high'])
-    new_low = float(new_candle['low'])
+    print("🔄 Recalcul de l'historique complet des indicateurs...")
     
-    # Mettre à jour l'historique RSI (calcul récursif)
-    if len(indicator_history['rsi_history']) > 0 and indicator_history['rsi_avg_gain'] is not None:
-        # Récupérer la dernière bougie pour calculer le delta
-        candles = candle_buffer.get_candles()
-        if len(candles) >= 2:
-            last_close = float(candles[-2]['close'])  # Bougie précédente
-            delta = new_close - last_close
-            gain = max(delta, 0)
-            loss = max(-delta, 0)
-            
-            # Continuer le calcul RMA récursif pour RSI(40)
-            avg_gain = indicator_history['rsi_avg_gain']
-            avg_loss = indicator_history['rsi_avg_loss']
-            
-            # Calculer les nouvelles moyennes RMA
-            new_avg_gain = (avg_gain * 39 + gain) / 40
-            new_avg_loss = (avg_loss * 39 + loss) / 40
-            
-            # Calculer le nouveau RSI
-            if new_avg_loss == 0:
-                new_rsi = 100.0
-            else:
-                rs = new_avg_gain / new_avg_loss
-                new_rsi = 100 - (100 / (1 + rs))
-            
-            # Mettre à jour l'historique
-            indicator_history['rsi_history'].append(new_rsi)
-            indicator_history['rsi_avg_gain'] = new_avg_gain
-            indicator_history['rsi_avg_loss'] = new_avg_loss
+    # Extraire les données pour le recalcul
+    closes = [float(c['close']) for c in candles]
+    highs = [float(c['high']) for c in candles]
+    lows = [float(c['low']) for c in candles]
     
-    # Mettre à jour l'historique des Volatility Indexes
-    if len(indicator_history['basis_history']) > 0 and len(indicator_history['atr_history']) > 0:
-        # Continuer le calcul RMA pour le basis
-        last_basis = indicator_history['basis_history'][-1]
-        new_basis = (last_basis * 27 + new_close) / 28
-        indicator_history['basis_history'].append(new_basis)
+    # Recalculer l'historique complet du RSI
+    print("📊 Recalcul RSI(40)...")
+    rsi_history = calculate_complete_rsi_history(closes, 40)
+    if rsi_history:
+        indicator_history['rsi_history'] = rsi_history
         
-        # Calculer le nouveau True Range
-        if len(indicator_history['true_ranges']) > 0:
-            last_close = indicator_history['true_ranges'][-1]  # Ce n'est pas le bon, mais pour l'exemple
-            high_low = new_high - new_low
-            high_close_prev = abs(new_high - last_close)
-            low_close_prev = abs(new_low - last_close)
-            new_true_range = max(high_low, high_close_prev, low_close_prev)
-            
-            # Continuer le calcul RMA pour l'ATR
-            last_atr = indicator_history['atr_history'][-1]
-            new_atr = (last_atr * 27 + new_true_range) / 28
-            indicator_history['atr_history'].append(new_atr)
-            
-            # Calculer les nouveaux VI
-            new_vi1 = new_basis + (new_atr * 19)
-            new_vi2 = new_basis + (new_atr * 10)
-            new_vi3 = new_basis + (new_atr * 6)
-            
-            indicator_history['vi1_history'].append(new_vi1)
-            indicator_history['vi2_history'].append(new_vi2)
-            indicator_history['vi3_history'].append(new_vi3)
-            
-            # LIMITER L'HISTORIQUE À 672 VALEURS MAXIMUM (7 jours)
-            max_history = 672
-            if len(indicator_history['basis_history']) > max_history:
-                indicator_history['basis_history'] = indicator_history['basis_history'][-max_history:]
-                indicator_history['atr_history'] = indicator_history['atr_history'][-max_history:]
-                indicator_history['vi1_history'] = indicator_history['vi1_history'][-max_history:]
-                indicator_history['vi2_history'] = indicator_history['vi2_history'][-max_history:]
-                indicator_history['vi3_history'] = indicator_history['vi3_history'][-max_history:]
-                indicator_history['true_ranges'] = indicator_history['true_ranges'][-max_history:]
-                indicator_history['rsi_history'] = indicator_history['rsi_history'][-max_history:]
-            
-            return True
+        # Calculer et stocker les moyennes RMA finales pour continuer le calcul récursif
+        deltas = []
+        for i in range(1, len(closes)):
+            deltas.append(closes[i] - closes[i-1])
+        
+        gains = [max(delta, 0) for delta in deltas]
+        losses = [max(-delta, 0) for delta in deltas]
+        
+        # Calculer les moyennes RMA finales (après 40 périodes)
+        avg_gain = sum(gains[:40]) / 40
+        avg_loss = sum(losses[:40]) / 40
+        
+        # Continuer le calcul RMA pour toutes les périodes suivantes
+        for i in range(40, len(deltas)):
+            avg_gain = (avg_gain * 39 + gains[i]) / 40
+            avg_loss = (avg_loss * 39 + losses[i]) / 40
+        
+        # Stocker les moyennes finales pour continuer le calcul récursif
+        indicator_history['rsi_avg_gain'] = avg_gain
+        indicator_history['rsi_avg_loss'] = avg_loss
+        
+        print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
+        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+    else:
+        print("❌ Impossible de recalculer l'historique RSI")
+        return False
     
-    return False
+    # Recalculer l'historique complet des Volatility Indexes
+    print("📊 Recalcul Volatility Indexes...")
+    vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
+    if vi_history:
+        indicator_history['vi1_history'] = vi_history['VI1_history']
+        indicator_history['vi2_history'] = vi_history['VI2_history']
+        indicator_history['vi3_history'] = vi_history['VI3_history']
+        indicator_history['basis_history'] = vi_history['basis_history']
+        indicator_history['atr_history'] = vi_history['atr_history']
+        indicator_history['true_ranges'] = vi_history['true_ranges']
+        
+        print(f"✅ VI recalculés: {len(vi_history['VI1_history'])} valeurs")
+        print(f"   VI1: {vi_history['VI1_history'][-1]:.2f}")
+        print(f"   VI2: {vi_history['VI2_history'][-1]:.2f}")
+        print(f"   VI3: {vi_history['VI3_history'][-1]:.2f}")
+    else:
+        print("❌ Impossible de recalculer l'historique VI")
+        return False
+    
+    print("✅ Historique complet recalculé avec succès")
+    return True
 
 def trading_loop():
     logger.log_scheduler_tick()
@@ -349,6 +333,10 @@ def trading_loop():
         print(f"   VI1: {current_vi1:.2f}")
         print(f"   VI2: {current_vi2:.2f}")
         print(f"   VI3: {current_vi3:.2f}")
+        
+        # Debug: Afficher les valeurs utilisées pour l'analyse
+        print(f"🔧 DEBUG ANALYSE - Close actuel: {float(last_candle['close']):.2f}")
+        print(f"   VI1 vs Close: {current_vi1:.2f} vs {float(last_candle['close']):.2f}")
     else:
         # Fallback vers l'ancienne méthode si l'historique n'est pas initialisé
         indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
