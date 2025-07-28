@@ -70,9 +70,9 @@ def calculate_volatility_indexes(highs, lows, closes):
     """
     Calcule les 3 Volatility Indexes selon la vraie formule TradingView.
     
-    :param highs: liste des prix hauts
-    :param lows: liste des prix bas
-    :param closes: liste des prix de clôture
+    :param highs: liste des prix hauts (du plus ancien au plus récent)
+    :param lows: liste des prix bas (du plus ancien au plus récent)
+    :param closes: liste des prix de clôture (du plus ancien au plus récent)
     :return: dict avec les 3 VI (VI1, VI2, VI3)
     """
     logger = logging.getLogger(__name__)
@@ -85,7 +85,12 @@ def calculate_volatility_indexes(highs, lows, closes):
     if isinstance(closes, pd.Series):
         closes = closes.tolist()
     
-    # Calculer les True Ranges
+    # Vérifier qu'on a assez de données (au moins 28 + 1 = 29 bougies)
+    if len(closes) < 29:
+        logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 29, Disponible: {len(closes)}")
+        return {'VI1': None, 'VI2': None, 'VI3': None}
+    
+    # Calculer les True Ranges (à partir de la 2ème bougie)
     true_ranges = []
     for i in range(1, len(highs)):
         high_low = highs[i] - lows[i]
@@ -94,17 +99,24 @@ def calculate_volatility_indexes(highs, lows, closes):
         true_range = max(high_low, high_close_prev, low_close_prev)
         true_ranges.append(true_range)
     
+    # Vérifier qu'on a assez de True Ranges
+    if len(true_ranges) < 28:
+        logger.warning(f"Pas assez de True Ranges pour calculer l'ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
+        return {'VI1': None, 'VI2': None, 'VI3': None}
+    
     # Calculer la ligne centrale (RMA des clôtures sur 28 périodes)
     basis_rma = rma(closes, 28)
     if basis_rma is None:
+        logger.warning("Impossible de calculer le basis RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
     # Calculer l'ATR (RMA des True Ranges sur 28 périodes)
     atr_rma = rma(true_ranges, 28)
     if atr_rma is None:
+        logger.warning("Impossible de calculer l'ATR RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
-    # Prendre les dernières valeurs
+    # Prendre les dernières valeurs (les plus récentes)
     basis = basis_rma[-1]
     atr = atr_rma[-1]
     
@@ -121,8 +133,163 @@ def calculate_volatility_indexes(highs, lows, closes):
     
     logger.debug(f"Volatility Indexes calculés: {result}")
     logger.debug(f"Basis (RMA close 28): {basis}, ATR (RMA TR 28): {atr}")
+    logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
     
     return result
+
+def calculate_complete_rma_history(values, period):
+    """
+    Calcule l'historique complet du RMA pour toutes les valeurs.
+    Cette fonction est utilisée au démarrage pour initialiser correctement les indicateurs.
+    
+    :param values: liste des valeurs (du plus ancien au plus récent)
+    :param period: période du RMA
+    :return: liste des valeurs RMA calculées
+    """
+    if len(values) < period:
+        return None
+    
+    # Initialisation : SMA sur les 'period' premières valeurs
+    rmas = [sum(values[:period]) / period]
+    
+    # Lissage Wilder pour toutes les valeurs suivantes
+    for v in values[period:]:
+        rmas.append((rmas[-1] * (period - 1) + v) / period)
+    
+    return rmas
+
+def calculate_complete_volatility_indexes_history(highs, lows, closes):
+    """
+    Calcule l'historique complet des Volatility Indexes.
+    Cette fonction est utilisée au démarrage pour initialiser correctement les indicateurs.
+    
+    :param highs: liste des prix hauts (du plus ancien au plus récent)
+    :param lows: liste des prix bas (du plus ancien au plus récent)
+    :param closes: liste des prix de clôture (du plus ancien au plus récent)
+    :return: dict avec l'historique complet des VI
+    """
+    logger = logging.getLogger(__name__)
+    
+    # Convertir en listes si ce sont des Series
+    if isinstance(highs, pd.Series):
+        highs = highs.tolist()
+    if isinstance(lows, pd.Series):
+        lows = lows.tolist()
+    if isinstance(closes, pd.Series):
+        closes = closes.tolist()
+    
+    # Vérifier qu'on a assez de données (au moins 28 + 1 = 29 bougies)
+    if len(closes) < 29:
+        logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 29, Disponible: {len(closes)}")
+        return None
+    
+    # Calculer les True Ranges (à partir de la 2ème bougie)
+    true_ranges = []
+    for i in range(1, len(highs)):
+        high_low = highs[i] - lows[i]
+        high_close_prev = abs(highs[i] - closes[i-1])
+        low_close_prev = abs(lows[i] - closes[i-1])
+        true_range = max(high_low, high_close_prev, low_close_prev)
+        true_ranges.append(true_range)
+    
+    # Vérifier qu'on a assez de True Ranges
+    if len(true_ranges) < 28:
+        logger.warning(f"Pas assez de True Ranges pour calculer l'historique ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
+        return None
+    
+    # Calculer l'historique complet du basis (RMA des clôtures sur 28 périodes)
+    basis_rma_history = calculate_complete_rma_history(closes, 28)
+    if basis_rma_history is None:
+        logger.warning("Impossible de calculer l'historique du basis RMA")
+        return None
+    
+    # Calculer l'historique complet de l'ATR (RMA des True Ranges sur 28 périodes)
+    atr_rma_history = calculate_complete_rma_history(true_ranges, 28)
+    if atr_rma_history is None:
+        logger.warning("Impossible de calculer l'historique de l'ATR RMA")
+        return None
+    
+    # Calculer l'historique complet des 3 Volatility Indexes
+    vi1_history = []
+    vi2_history = []
+    vi3_history = []
+    
+    # On commence à partir de l'index 27 (28ème bougie) car on a besoin de 28 périodes pour le RMA
+    for i in range(27, len(basis_rma_history)):
+        basis = basis_rma_history[i]
+        atr = atr_rma_history[i - 27]  # ATR correspondant à la même période
+        
+        vi1 = basis + (atr * 19)
+        vi2 = basis + (atr * 10)
+        vi3 = basis + (atr * 6)
+        
+        vi1_history.append(vi1)
+        vi2_history.append(vi2)
+        vi3_history.append(vi3)
+    
+    result = {
+        'VI1_history': vi1_history,
+        'VI2_history': vi2_history,
+        'VI3_history': vi3_history,
+        'basis_history': basis_rma_history,
+        'atr_history': atr_rma_history,
+        'true_ranges': true_ranges
+    }
+    
+    logger.info(f"Historique complet des VI calculé: {len(vi1_history)} valeurs")
+    logger.debug(f"Première valeur VI1: {vi1_history[0] if vi1_history else 'N/A'}")
+    logger.debug(f"Dernière valeur VI1: {vi1_history[-1] if vi1_history else 'N/A'}")
+    
+    return result
+
+def calculate_complete_rsi_history(closes, period=40):
+    """
+    Calcule l'historique complet du RSI avec la méthode Wilder Smoothing.
+    Cette fonction est utilisée au démarrage pour initialiser correctement les indicateurs.
+    
+    :param closes: liste des prix de clôture (du plus ancien au plus récent)
+    :param period: période du RSI (défaut: 40)
+    :return: liste des valeurs RSI calculées
+    """
+    if len(closes) < period + 1:
+        return None
+    
+    # Calculer les deltas
+    deltas = []
+    for i in range(1, len(closes)):
+        deltas.append(closes[i] - closes[i-1])
+    
+    # Séparer gains et pertes
+    gains = [max(delta, 0) for delta in deltas]
+    losses = [max(-delta, 0) for delta in deltas]
+    
+    # Première moyenne (initialisation) - SMA sur les 'period' premières périodes
+    avg_gain = sum(gains[:period]) / period
+    avg_loss = sum(losses[:period]) / period
+    
+    # Calculer le premier RSI
+    if avg_loss == 0:
+        first_rsi = 100.0
+    else:
+        rs = avg_gain / avg_loss
+        first_rsi = 100 - (100 / (1 + rs))
+    
+    rsi_history = [first_rsi]
+    
+    # Lissage récursif de Wilder pour les périodes suivantes
+    for i in range(period, len(deltas)):
+        avg_gain = (avg_gain * (period - 1) + gains[i]) / period
+        avg_loss = (avg_loss * (period - 1) + losses[i]) / period
+        
+        if avg_loss == 0:
+            rsi = 100.0
+        else:
+            rs = avg_gain / avg_loss
+            rsi = 100 - (100 / (1 + rs))
+        
+        rsi_history.append(rsi)
+    
+    return rsi_history
 
 def compute_rsi_40(closes, period=40):
     """
@@ -141,8 +308,10 @@ def has_sufficient_history_for_indicators(candles, rsi_period=40, vi_period=28):
     :param vi_period: période pour les VI (par défaut 28)
     :return: (bool, str) - (suffisant, message d'erreur)
     """
-    # Total nécessaire : max(rsi_period, vi_period) + 1 pour avoir une valeur valide
-    total_needed = max(rsi_period, vi_period) + 1
+    # Pour les VI, on a besoin d'au moins vi_period + 1 bougies (28 + 1 = 29)
+    # Pour le RSI, on a besoin d'au moins rsi_period + 1 bougies (40 + 1 = 41)
+    # On prend le maximum des deux
+    total_needed = max(rsi_period + 1, vi_period + 1)
     
     if len(candles) < total_needed:
         return False, f"Pas assez d'historique. Nécessaire: {total_needed}, Disponible: {len(candles)}"
@@ -158,7 +327,7 @@ def has_sufficient_history_for_indicators(candles, rsi_period=40, vi_period=28):
     # Vérifier que tous les indicateurs sont calculables
     if rsi is None or any(v is None for v in volatility_indexes.values()):
         return False, f"Indicateurs pas encore calculables avec {len(closes)} bougies"
-    
+
     return True, f"Historique suffisant pour le trading (RSI({rsi_period}), VI)"
 
 def get_indicators_with_validation(candles, rsi_period=40):
