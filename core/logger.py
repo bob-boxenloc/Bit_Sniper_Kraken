@@ -48,9 +48,9 @@ class BitSniperLogger:
         )
         file_handler.setFormatter(file_formatter)
         
-        # Handler pour console (INFO et plus)
+        # Handler pour console (DEBUG et plus pour voir tous les logs détaillés)
         console_handler = logging.StreamHandler()
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(logging.DEBUG)
         
         # Format pour console
         console_formatter = logging.Formatter(
