@@ -215,6 +215,7 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     vi3_history = []
     
     # On commence à partir de l'index 27 (28ème bougie) car on a besoin de 28 périodes pour le RMA
+    # L'ATR et le basis doivent correspondre à la même période
     for i in range(27, len(basis_rma_history)):
         basis = basis_rma_history[i]
         atr = atr_rma_history[i - 27]  # ATR correspondant à la même période
@@ -239,6 +240,15 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     logger.info(f"Historique complet des VI calculé: {len(vi1_history)} valeurs")
     logger.debug(f"Première valeur VI1: {vi1_history[0] if vi1_history else 'N/A'}")
     logger.debug(f"Dernière valeur VI1: {vi1_history[-1] if vi1_history else 'N/A'}")
+    
+    # Debug: Afficher les dernières valeurs pour vérification
+    if vi1_history:
+        print(f"🔧 DEBUG VI CALCUL - Dernière bougie:")
+        print(f"   Basis: {basis_rma_history[-1]:.2f}")
+        print(f"   ATR: {atr_rma_history[-1]:.2f}")
+        print(f"   VI1: {vi1_history[-1]:.2f}")
+        print(f"   VI2: {vi2_history[-1]:.2f}")
+        print(f"   VI3: {vi3_history[-1]:.2f}")
     
     return result
 
