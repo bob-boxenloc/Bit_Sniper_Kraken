@@ -124,7 +124,7 @@ class CandleBuffer:
             self.logger.info("Buffer vide après initialisation")
     
     def add_candle(self, new_candle):
-        """Ajoute une nouvelle bougie et supprime la plus ancienne si nécessaire"""
+        """Ajoute une nouvelle bougie et supprime la plus ancienne si nécessaire. Retourne True si ajoutée, False si déjà présente."""
         # Log avant ajout
         self.logger.info(f"Ajout bougie: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle.get('count', 'N/A')}")
         
@@ -132,7 +132,7 @@ class CandleBuffer:
         existing_times = [c['time'] for c in self.candles]
         if new_candle['time'] in existing_times:
             self.logger.warning(f"Bougie déjà présente dans le buffer: {new_candle['datetime']}")
-            return
+            return False
         
         self.candles.append(new_candle)
         
@@ -149,6 +149,8 @@ class CandleBuffer:
             self.logger.info("Contenu actuel du buffer:")
             for i, candle in enumerate(self.candles):
                 self.logger.info(f"  [{i+1}] {candle['datetime']} - Close: {candle['close']} - Volume: {candle.get('volume', 'N/A')} - Count: {candle.get('count', 'N/A')}")
+        
+        return True
     
     def get_candles(self):
         """Retourne la liste des bougies pour les calculs"""

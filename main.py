@@ -253,22 +253,30 @@ def trading_loop():
         else:
             print("✅ Buffer déjà initialisé avec données")
         
-        # Récupérer les dernières bougies fermées de Kraken (mise à jour)
-        print("🔄 Récupération des dernières bougies fermées")
-        new_candles = md.get_ohlcv_15m(limit=5)  # Récupérer 5 bougies pour avoir assez de données fermées
+        # Récupérer la dernière bougie fermée de Kraken
+        print("🔄 Récupération de la dernière bougie fermée")
+        new_candles = md.get_ohlcv_15m(limit=1)  # Récupérer seulement la dernière bougie
         
         if new_candles:
-            # Utiliser la dernière bougie fermée (celle avec le volume le plus élevé parmi les récentes)
-            new_candle = new_candles[-1]  # La dernière bougie fermée
-            candle_buffer.add_candle(new_candle)
+            # Vérifier si la bougie n'est pas déjà dans le buffer
+            new_candle = new_candles[0]  # La dernière bougie
+            buffer_times = [c['time'] for c in candle_buffer.get_candles()]
             
-            print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle['count']}")
-            
-            # Mettre à jour l'historique des indicateurs avec la nouvelle bougie
-            if update_indicator_history(new_candle):
-                print("✅ Historique des indicateurs mis à jour")
+            if new_candle['time'] not in buffer_times:
+                candle_added = candle_buffer.add_candle(new_candle)
+                
+                if candle_added:
+                    print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle['count']}")
+                    
+                    # Mettre à jour l'historique des indicateurs avec la nouvelle bougie
+                    if update_indicator_history(new_candle):
+                        print("✅ Historique des indicateurs mis à jour")
+                    else:
+                        print("⚠️  Impossible de mettre à jour l'historique des indicateurs")
+                else:
+                    print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
             else:
-                print("⚠️  Impossible de mettre à jour l'historique des indicateurs")
+                print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
             
             # Afficher le statut du buffer
             status = candle_buffer.get_status()
@@ -302,8 +310,7 @@ def trading_loop():
                 if float(candle['volume']) == 0:
                     logger.log_warning(f"Bougie {i+1} a un volume de 0 (non fermée)")
                     print(f"⚠️  BOUGIE N-{2-i} NON FERMÉE: Volume = 0")
-                    print("   Le bot attendra la prochaine bougie fermée.")
-                return
+                    print("   Le bot continue avec les données disponibles...")
         
         else:
             logger.log_warning("Aucune bougie récupérée de Kraken")
