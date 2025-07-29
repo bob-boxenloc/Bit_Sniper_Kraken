@@ -176,6 +176,16 @@ class StateManager:
     
     def is_transition_complete(self) -> bool:
         """Vérifie si la transition vers les données temps réel est complète."""
+        # Vérifier d'abord si on a assez de données historiques (960 bougies)
+        try:
+            from data.market_data import candle_buffer
+            current_candles = len(candle_buffer.get_candles())
+            if current_candles >= 960:
+                return True
+        except Exception as e:
+            self.logger.warning(f"Erreur lors de la vérification du buffer: {e}")
+        
+        # Fallback vers l'ancienne logique
         return self.state.get('data_progression', {}).get('is_transition_complete', False)
     
     def get_kraken_candles_count(self) -> int:
@@ -245,17 +255,26 @@ class StateManager:
         summary = []
         summary.append("📊 ÉTAT DU BOT (Nouvelle Stratégie):")
         
-        # Progression des données
-        progression = self.get_data_progression()
-        kraken_count = progression.get('kraken_candles_count', 0)
-        total_required = progression.get('total_required', 50)
-        is_complete = progression.get('is_transition_complete', False)
+        # Vérifier si on a assez de données historiques (960 bougies)
+        # Si oui, considérer la transition comme complète
+        from data.market_data import candle_buffer
+        current_candles = len(candle_buffer.get_candles())
         
-        if is_complete:
-            summary.append("   ✅ Transition vers données temps réel: TERMINÉE")
+        if current_candles >= 960:
+            summary.append("   ✅ Données historiques complètes (960 bougies)")
+            summary.append("   ✅ Prêt pour le trading")
         else:
-            progress_pct = (kraken_count / total_required) * 100
-            summary.append(f"   🔄 Progression données: {kraken_count}/{total_required} ({progress_pct:.1f}%)")
+            # Progression des données (fallback)
+            progression = self.get_data_progression()
+            kraken_count = progression.get('kraken_candles_count', 0)
+            total_required = progression.get('total_required', 50)
+            is_complete = progression.get('is_transition_complete', False)
+            
+            if is_complete:
+                summary.append("   ✅ Transition vers données temps réel: TERMINÉE")
+            else:
+                progress_pct = (kraken_count / total_required) * 100
+                summary.append(f"   🔄 Progression données: {kraken_count}/{total_required} ({progress_pct:.1f}%)")
         
         # État VI1
         vi1_phase = self.get_vi1_current_phase()
