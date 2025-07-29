@@ -24,78 +24,73 @@ indicator_history = {
     'atr_history': [],
     'true_ranges': [],
     'rsi_avg_gain': None,  # Dernière moyenne des gains pour RSI
-    'rsi_avg_loss': None   # Dernière moyenne des pertes pour RSI
+    'rsi_avg_loss': None,  # Dernière moyenne des pertes pour RSI
+    # Nouvelles clés pour les bandes VI
+    'vi1_upper_history': [],
+    'vi1_lower_history': [],
+    'vi2_upper_history': [],
+    'vi2_lower_history': [],
+    'vi3_upper_history': [],
+    'vi3_lower_history': [],
+    'center_line_history': []
 }
 
 def initialize_indicator_history(candles):
     """
-    Initialise l'historique complet des indicateurs au démarrage.
-    Cette fonction calcule l'historique RMA pour avoir des calculs précis dès le début.
+    Initialise l'historique complet des indicateurs avec les données historiques.
+    Cette fonction est appelée au démarrage du bot.
+    
+    :param candles: liste des bougies historiques
+    :return: True si l'initialisation réussit, False sinon
     """
     global indicator_history
     
-    print("🔄 INITIALISATION DE L'HISTORIQUE DES INDICATEURS")
-    
-    # Extraire les données
-    closes = [float(c['close']) for c in candles]
-    highs = [float(c['high']) for c in candles]
-    lows = [float(c['low']) for c in candles]
-    
-    # Calculer l'historique complet du RSI
-    print("📊 Calcul de l'historique RSI(40)...")
-    rsi_history = calculate_complete_rsi_history(closes, 40)
-    if rsi_history:
+    try:
+        # Extraire les données OHLC
+        highs = [float(candle['high']) for candle in candles]
+        lows = [float(candle['low']) for candle in candles]
+        closes = [float(candle['close']) for candle in candles]
+        
+        print(f"🔧 Initialisation de l'historique des indicateurs avec {len(candles)} bougies")
+        
+        # Calculer l'historique complet du RSI
+        rsi_history = calculate_complete_rsi_history(closes, 40)
+        if rsi_history is None:
+            print("❌ Impossible de calculer l'historique RSI")
+            return False
+        
+        # Calculer l'historique complet des Volatility Indexes
+        vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
+        if vi_history is None:
+            print("❌ Impossible de calculer l'historique des VI")
+            return False
+        
+        # Initialiser l'historique global
         indicator_history['rsi_history'] = rsi_history
-        
-        # Calculer et stocker les moyennes RMA finales pour continuer le calcul récursif
-        deltas = []
-        for i in range(1, len(closes)):
-            deltas.append(closes[i] - closes[i-1])
-        
-        gains = [max(delta, 0) for delta in deltas]
-        losses = [max(-delta, 0) for delta in deltas]
-        
-        # Calculer les moyennes RMA finales (après 40 périodes)
-        avg_gain = sum(gains[:40]) / 40
-        avg_loss = sum(losses[:40]) / 40
-        
-        # Continuer le calcul RMA pour toutes les périodes suivantes
-        for i in range(40, len(deltas)):
-            avg_gain = (avg_gain * 39 + gains[i]) / 40
-            avg_loss = (avg_loss * 39 + losses[i]) / 40
-        
-        # Stocker les moyennes finales pour continuer le calcul récursif
-        indicator_history['rsi_avg_gain'] = avg_gain
-        indicator_history['rsi_avg_loss'] = avg_loss
-        
-        print(f"✅ Historique RSI calculé: {len(rsi_history)} valeurs")
-        print(f"   Première valeur: {rsi_history[0]:.2f}")
-        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
-        print(f"   Moyennes RMA finales - Gain: {avg_gain:.4f}, Loss: {avg_loss:.4f}")
-    else:
-        print("❌ Impossible de calculer l'historique RSI")
-        return False
-    
-    # Calculer l'historique complet des Volatility Indexes
-    print("📊 Calcul de l'historique Volatility Indexes...")
-    vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
-    if vi_history:
-        indicator_history['vi1_history'] = vi_history['VI1_history']
-        indicator_history['vi2_history'] = vi_history['VI2_history']
-        indicator_history['vi3_history'] = vi_history['VI3_history']
+        indicator_history['vi1_history'] = vi_history['VI1_selected_history']
+        indicator_history['vi2_history'] = vi_history['VI2_selected_history']
+        indicator_history['vi3_history'] = vi_history['VI3_selected_history']
         indicator_history['atr_history'] = vi_history['atr_history']
         indicator_history['true_ranges'] = vi_history['true_ranges']
         
-        print(f"✅ Historique VI calculé: {len(vi_history['VI1_history'])} valeurs")
-        print(f"   VI1: {vi_history['VI1_history'][-1]:.2f}")
-        print(f"   VI2: {vi_history['VI2_history'][-1]:.2f}")
-        print(f"   VI3: {vi_history['VI3_history'][-1]:.2f}")
-    else:
-        print("❌ Impossible de calculer l'historique VI")
+        # Stocker aussi les bandes pour la logique dynamique future
+        indicator_history['vi1_upper_history'] = vi_history['VI1_upper_history']
+        indicator_history['vi1_lower_history'] = vi_history['VI1_lower_history']
+        indicator_history['vi2_upper_history'] = vi_history['VI2_upper_history']
+        indicator_history['vi2_lower_history'] = vi_history['VI2_lower_history']
+        indicator_history['vi3_upper_history'] = vi_history['VI3_upper_history']
+        indicator_history['vi3_lower_history'] = vi_history['VI3_lower_history']
+        indicator_history['center_line_history'] = vi_history['center_line_history']
+        
+        print(f"✅ Historique initialisé: {len(rsi_history)} valeurs RSI, {len(vi_history['VI1_selected_history'])} valeurs VI")
+        print(f"   Dernier RSI: {rsi_history[-1]:.2f}")
+        print(f"   Dernier VI1: {vi_history['VI1_selected_history'][-1]:.2f}")
+        
+        return True
+        
+    except Exception as e:
+        print(f"❌ Erreur lors de l'initialisation de l'historique: {e}")
         return False
-    
-    print("✅ INITIALISATION TERMINÉE - Calculs précis dès le début")
-    return True
 
 def update_indicator_history(new_candle):
     """
@@ -156,16 +151,25 @@ def update_indicator_history(new_candle):
     print("📊 Recalcul Volatility Indexes...")
     vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
     if vi_history:
-        indicator_history['vi1_history'] = vi_history['VI1_history']
-        indicator_history['vi2_history'] = vi_history['VI2_history']
-        indicator_history['vi3_history'] = vi_history['VI3_history']
+        indicator_history['vi1_history'] = vi_history['VI1_selected_history']
+        indicator_history['vi2_history'] = vi_history['VI2_selected_history']
+        indicator_history['vi3_history'] = vi_history['VI3_selected_history']
         indicator_history['atr_history'] = vi_history['atr_history']
         indicator_history['true_ranges'] = vi_history['true_ranges']
         
-        print(f"✅ VI recalculés: {len(vi_history['VI1_history'])} valeurs")
-        print(f"   VI1: {vi_history['VI1_history'][-1]:.2f}")
-        print(f"   VI2: {vi_history['VI2_history'][-1]:.2f}")
-        print(f"   VI3: {vi_history['VI3_history'][-1]:.2f}")
+        # Stocker aussi les bandes pour la logique dynamique future
+        indicator_history['vi1_upper_history'] = vi_history['VI1_upper_history']
+        indicator_history['vi1_lower_history'] = vi_history['VI1_lower_history']
+        indicator_history['vi2_upper_history'] = vi_history['VI2_upper_history']
+        indicator_history['vi2_lower_history'] = vi_history['VI2_lower_history']
+        indicator_history['vi3_upper_history'] = vi_history['VI3_upper_history']
+        indicator_history['vi3_lower_history'] = vi_history['VI3_lower_history']
+        indicator_history['center_line_history'] = vi_history['center_line_history']
+        
+        print(f"✅ VI recalculés: {len(vi_history['VI1_selected_history'])} valeurs")
+        print(f"   VI1: {vi_history['VI1_selected_history'][-1]:.2f}")
+        print(f"   VI2: {vi_history['VI2_selected_history'][-1]:.2f}")
+        print(f"   VI3: {vi_history['VI3_selected_history'][-1]:.2f}")
     else:
         print("❌ Impossible de recalculer l'historique VI")
         return False

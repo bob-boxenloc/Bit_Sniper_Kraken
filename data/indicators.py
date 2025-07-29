@@ -68,31 +68,23 @@ def rma(values, period):
 
 def calculate_volatility_indexes(highs, lows, closes):
     """
-    Calcule les 3 Volatility Indexes selon la vraie formule TradingView.
+    Calcule les Volatility Indexes en temps réel avec la méthode Wilder Smoothing.
+    Cette fonction est utilisée pour les calculs en temps réel.
     
     :param highs: liste des prix hauts (du plus ancien au plus récent)
     :param lows: liste des prix bas (du plus ancien au plus récent)
     :param closes: liste des prix de clôture (du plus ancien au plus récent)
-    :return: dict avec les 3 VI (VI1, VI2, VI3)
+    :return: dictionnaire avec les VI calculés
     """
     logger = logging.getLogger(__name__)
     
-    # Convertir en listes si ce sont des Series
-    if isinstance(highs, pd.Series):
-        highs = highs.tolist()
-    if isinstance(lows, pd.Series):
-        lows = lows.tolist()
-    if isinstance(closes, pd.Series):
-        closes = closes.tolist()
-    
-    # Vérifier qu'on a assez de données (au moins 28 + 1 = 29 bougies)
-    if len(closes) < 29:
-        logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 29, Disponible: {len(closes)}")
+    if len(closes) < 28:
+        logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 28, Disponible: {len(closes)}")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
-    # Calculer les True Ranges (à partir de la 2ème bougie)
+    # Calculer les True Ranges
     true_ranges = []
-    for i in range(1, len(highs)):
+    for i in range(1, len(closes)):
         high_low = highs[i] - lows[i]
         high_close_prev = abs(highs[i] - closes[i-1])
         low_close_prev = abs(lows[i] - closes[i-1])
@@ -110,37 +102,58 @@ def calculate_volatility_indexes(highs, lows, closes):
         logger.warning("Impossible de calculer l'ATR RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
+    # Calculer la ligne centrale (RMA des closes sur 28 périodes)
+    center_line_rma = rma(closes, 28)
+    if center_line_rma is None:
+        logger.warning("Impossible de calculer la ligne centrale RMA")
+        return {'VI1': None, 'VI2': None, 'VI3': None}
+    
     # Prendre les dernières valeurs (les plus récentes)
     atr = atr_rma[-1]
+    center_line = center_line_rma[-1]
     close = closes[-1]  # Dernier close
     
-    # Calculer les Volatility Indexes
+    # Calculer les Volatility Indexes basés sur la ligne centrale
     # VI = ATR × multiplicateur
     vi1_value = atr * 19
     vi2_value = atr * 10
     vi3_value = atr * 6
     
     # Calculer les bandes
-    vi1_upper = close + vi1_value
-    vi1_lower = close - vi1_value
-    vi2_upper = close + vi2_value
-    vi2_lower = close - vi2_value
-    vi3_upper = close + vi3_value
-    vi3_lower = close - vi3_value
+    vi1_upper = center_line + vi1_value
+    vi1_lower = center_line - vi1_value
+    vi2_upper = center_line + vi2_value
+    vi2_lower = center_line - vi2_value
+    vi3_upper = center_line + vi3_value
+    vi3_lower = center_line - vi3_value
     
-    # Pour l'instant, on retourne les bandes inférieures (on ajustera plus tard selon la logique)
-    vi1 = vi1_lower
-    vi2 = vi2_lower
-    vi3 = vi3_lower
+    # Logique de sélection dynamique des bandes
+    # Si close > ligne_centrale → utiliser bande inférieure (support)
+    # Si close < ligne_centrale → utiliser bande supérieure (résistance)
+    if close > center_line:
+        vi1 = vi1_lower
+        vi2 = vi2_lower
+        vi3 = vi3_lower
+    else:
+        vi1 = vi1_upper
+        vi2 = vi2_upper
+        vi3 = vi3_upper
     
     result = {
         'VI1': vi1,
         'VI2': vi2,
-        'VI3': vi3
+        'VI3': vi3,
+        'VI1_upper': vi1_upper,
+        'VI1_lower': vi1_lower,
+        'VI2_upper': vi2_upper,
+        'VI2_lower': vi2_lower,
+        'VI3_upper': vi3_upper,
+        'VI3_lower': vi3_lower,
+        'center_line': center_line
     }
     
     logger.debug(f"Volatility Indexes calculés: {result}")
-    logger.debug(f"Close: {close}, ATR (RMA TR 28): {atr}")
+    logger.debug(f"Close: {close}, Ligne centrale: {center_line}, ATR (RMA TR 28): {atr}")
     logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
     
     return result
@@ -168,32 +181,23 @@ def calculate_complete_rma_history(values, period):
 
 def calculate_complete_volatility_indexes_history(highs, lows, closes):
     """
-    Calcule l'historique complet des Volatility Indexes.
+    Calcule l'historique complet des Volatility Indexes avec la méthode Wilder Smoothing.
     Cette fonction est utilisée au démarrage pour initialiser correctement les indicateurs.
     
     :param highs: liste des prix hauts (du plus ancien au plus récent)
     :param lows: liste des prix bas (du plus ancien au plus récent)
     :param closes: liste des prix de clôture (du plus ancien au plus récent)
-    :return: dict avec l'historique complet des VI
+    :return: dictionnaire avec les historiques des VI et données associées
     """
     logger = logging.getLogger(__name__)
     
-    # Convertir en listes si ce sont des Series
-    if isinstance(highs, pd.Series):
-        highs = highs.tolist()
-    if isinstance(lows, pd.Series):
-        lows = lows.tolist()
-    if isinstance(closes, pd.Series):
-        closes = closes.tolist()
-    
-    # Vérifier qu'on a assez de données (au moins 28 + 1 = 29 bougies)
-    if len(closes) < 29:
-        logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 29, Disponible: {len(closes)}")
+    if len(closes) < 28:
+        logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 28, Disponible: {len(closes)}")
         return None
     
-    # Calculer les True Ranges (à partir de la 2ème bougie)
+    # Calculer les True Ranges
     true_ranges = []
-    for i in range(1, len(highs)):
+    for i in range(1, len(closes)):
         high_low = highs[i] - lows[i]
         high_close_prev = abs(highs[i] - closes[i-1])
         low_close_prev = abs(lows[i] - closes[i-1])
@@ -211,63 +215,105 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         logger.warning("Impossible de calculer l'historique de l'ATR RMA")
         return None
     
+    # Calculer l'historique complet de la ligne centrale (RMA des closes sur 28 périodes)
+    center_line_history = calculate_complete_rma_history(closes, 28)
+    if center_line_history is None:
+        logger.warning("Impossible de calculer l'historique de la ligne centrale RMA")
+        return None
+    
     # Calculer l'historique complet des Volatility Indexes
-    # VI = ATR × multiplicateur
-    # Puis on calcule les bandes : upper = close + VI, lower = close - VI
-    vi1_history = []
-    vi2_history = []
-    vi3_history = []
+    # Ligne centrale = RMA(close, 28)
+    # VI_upper = ligne_centrale + (ATR × multiplicateur)
+    # VI_lower = ligne_centrale - (ATR × multiplicateur)
+    vi1_upper_history = []
+    vi1_lower_history = []
+    vi2_upper_history = []
+    vi2_lower_history = []
+    vi3_upper_history = []
+    vi3_lower_history = []
+    
+    # Historique des bandes sélectionnées (pour la logique dynamique)
+    vi1_selected_history = []
+    vi2_selected_history = []
+    vi3_selected_history = []
     
     # On commence à partir de l'index 27 (28ème bougie) car on a besoin de 28 périodes pour le RMA
     # L'ATR a 959 valeurs (True Range commence à la 2ème bougie)
+    # La ligne centrale a 933 valeurs (RMA commence à la 28ème bougie)
     # Les closes ont 960 valeurs
-    # Donc on aligne : close[i] correspond à atr[i-1]
+    # Donc on aligne : close[i] correspond à atr[i-1] et center_line[i-27]
     for i in range(27, len(closes)):
         # Vérifier qu'on ne dépasse pas les indices
-        if i >= len(closes) or (i - 1) >= len(atr_rma_history):
+        if i >= len(closes) or (i - 1) >= len(atr_rma_history) or (i - 27) >= len(center_line_history):
             break
             
         close = closes[i]
         atr = atr_rma_history[i - 1]  # ATR correspondant à la même période
+        center_line = center_line_history[i - 27]  # Ligne centrale correspondante
         
-        # Calculer le VI
+        # Calculer les VI basés sur la ligne centrale
         vi1_value = atr * 19
         vi2_value = atr * 10
         vi3_value = atr * 6
         
         # Calculer les bandes
-        vi1_upper = close + vi1_value
-        vi1_lower = close - vi1_value
-        vi2_upper = close + vi2_value
-        vi2_lower = close - vi2_value
-        vi3_upper = close + vi3_value
-        vi3_lower = close - vi3_value
+        vi1_upper = center_line + vi1_value
+        vi1_lower = center_line - vi1_value
+        vi2_upper = center_line + vi2_value
+        vi2_lower = center_line - vi2_value
+        vi3_upper = center_line + vi3_value
+        vi3_lower = center_line - vi3_value
         
-        # Pour l'instant, on stocke les bandes inférieures (on ajustera plus tard selon la logique)
-        vi1_history.append(vi1_lower)
-        vi2_history.append(vi2_lower)
-        vi3_history.append(vi3_lower)
+        # Stocker les bandes
+        vi1_upper_history.append(vi1_upper)
+        vi1_lower_history.append(vi1_lower)
+        vi2_upper_history.append(vi2_upper)
+        vi2_lower_history.append(vi2_lower)
+        vi3_upper_history.append(vi3_upper)
+        vi3_lower_history.append(vi3_lower)
+        
+        # Logique de sélection dynamique des bandes
+        # Si close > ligne_centrale → utiliser bande inférieure (support)
+        # Si close < ligne_centrale → utiliser bande supérieure (résistance)
+        if close > center_line:
+            vi1_selected_history.append(vi1_lower)
+            vi2_selected_history.append(vi2_lower)
+            vi3_selected_history.append(vi3_lower)
+        else:
+            vi1_selected_history.append(vi1_upper)
+            vi2_selected_history.append(vi2_upper)
+            vi3_selected_history.append(vi3_upper)
     
     result = {
-        'VI1_history': vi1_history,
-        'VI2_history': vi2_history,
-        'VI3_history': vi3_history,
+        'VI1_upper_history': vi1_upper_history,
+        'VI1_lower_history': vi1_lower_history,
+        'VI1_selected_history': vi1_selected_history,
+        'VI2_upper_history': vi2_upper_history,
+        'VI2_lower_history': vi2_lower_history,
+        'VI2_selected_history': vi2_selected_history,
+        'VI3_upper_history': vi3_upper_history,
+        'VI3_lower_history': vi3_lower_history,
+        'VI3_selected_history': vi3_selected_history,
+        'center_line_history': center_line_history,
         'atr_history': atr_rma_history,
         'true_ranges': true_ranges
     }
     
-    logger.info(f"Historique complet des VI calculé: {len(vi1_history)} valeurs")
-    logger.debug(f"Première valeur VI1: {vi1_history[0] if vi1_history else 'N/A'}")
-    logger.debug(f"Dernière valeur VI1: {vi1_history[-1] if vi1_history else 'N/A'}")
+    logger.info(f"Historique complet des VI calculé: {len(vi1_selected_history)} valeurs")
+    logger.debug(f"Première valeur VI1: {vi1_selected_history[0] if vi1_selected_history else 'N/A'}")
+    logger.debug(f"Dernière valeur VI1: {vi1_selected_history[-1] if vi1_selected_history else 'N/A'}")
     
     # Debug: Afficher les dernières valeurs pour vérification
-    if vi1_history:
+    if vi1_selected_history:
         print(f"🔧 DEBUG VI CALCUL - Dernière bougie:")
         print(f"   Close: {closes[-1]:.2f}")
+        print(f"   Ligne centrale: {center_line_history[-1]:.2f}")
         print(f"   ATR: {atr_rma_history[-1]:.2f}")
-        print(f"   VI1: {vi1_history[-1]:.2f}")
-        print(f"   VI2: {vi2_history[-1]:.2f}")
-        print(f"   VI3: {vi3_history[-1]:.2f}")
+        print(f"   VI1 (sélectionné): {vi1_selected_history[-1]:.2f}")
+        print(f"   VI1 (upper): {vi1_upper_history[-1]:.2f}")
+        print(f"   VI1 (lower): {vi1_lower_history[-1]:.2f}")
+        print(f"   VI2 (sélectionné): {vi2_selected_history[-1]:.2f}")
+        print(f"   VI3 (sélectionné): {vi3_selected_history[-1]:.2f}")
     
     return result
 
