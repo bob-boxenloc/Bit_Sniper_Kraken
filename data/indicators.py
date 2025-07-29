@@ -128,16 +128,27 @@ def calculate_volatility_indexes(highs, lows, closes):
     vi3_lower = center_line - vi3_value
     
     # Logique de sélection dynamique des bandes
-    # Si close > ligne_centrale → utiliser bande inférieure (support)
-    # Si close < ligne_centrale → utiliser bande supérieure (résistance)
-    if close > center_line:
-        vi1 = vi1_lower
-        vi2 = vi2_lower
-        vi3 = vi3_lower
+    # Chaque VI a sa propre logique indépendante
+    # Si close > bande_supérieure → utiliser bande inférieure (support)
+    # Si close < bande_supérieure → utiliser bande supérieure (résistance)
+    
+    # VI1 - Logique individuelle
+    if close > vi1_upper:
+        vi1 = vi1_lower  # Support
     else:
-        vi1 = vi1_upper
-        vi2 = vi2_upper
-        vi3 = vi3_upper
+        vi1 = vi1_upper  # Résistance
+        
+    # VI2 - Logique individuelle
+    if close > vi2_upper:
+        vi2 = vi2_lower  # Support
+    else:
+        vi2 = vi2_upper  # Résistance
+        
+    # VI3 - Logique individuelle
+    if close > vi3_upper:
+        vi3 = vi3_lower  # Support
+    else:
+        vi3 = vi3_upper  # Résistance
     
     result = {
         'VI1': vi1,
@@ -154,6 +165,10 @@ def calculate_volatility_indexes(highs, lows, closes):
     
     logger.debug(f"Volatility Indexes calculés: {result}")
     logger.debug(f"Close: {close}, Ligne centrale: {center_line}, ATR (RMA TR 28): {atr}")
+    logger.debug(f"VI1 - Upper: {vi1_upper:.2f}, Lower: {vi1_lower:.2f}, Selected: {vi1:.2f}")
+    logger.debug(f"VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
+    logger.debug(f"VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
+    logger.debug(f"Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
     logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
     
     return result
@@ -273,16 +288,27 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         vi3_lower_history.append(vi3_lower)
         
         # Logique de sélection dynamique des bandes
-        # Si close > ligne_centrale → utiliser bande inférieure (support)
-        # Si close < ligne_centrale → utiliser bande supérieure (résistance)
-        if close > center_line:
-            vi1_selected_history.append(vi1_lower)
-            vi2_selected_history.append(vi2_lower)
-            vi3_selected_history.append(vi3_lower)
+        # Chaque VI a sa propre logique indépendante
+        # Si close > bande_supérieure → utiliser bande inférieure (support)
+        # Si close < bande_supérieure → utiliser bande supérieure (résistance)
+        
+        # VI1 - Logique individuelle
+        if close > vi1_upper:
+            vi1_selected_history.append(vi1_lower)  # Support
         else:
-            vi1_selected_history.append(vi1_upper)
-            vi2_selected_history.append(vi2_upper)
-            vi3_selected_history.append(vi3_upper)
+            vi1_selected_history.append(vi1_upper)  # Résistance
+            
+        # VI2 - Logique individuelle
+        if close > vi2_upper:
+            vi2_selected_history.append(vi2_lower)  # Support
+        else:
+            vi2_selected_history.append(vi2_upper)  # Résistance
+            
+        # VI3 - Logique individuelle
+        if close > vi3_upper:
+            vi3_selected_history.append(vi3_lower)  # Support
+        else:
+            vi3_selected_history.append(vi3_upper)  # Résistance
     
     result = {
         'VI1_upper_history': vi1_upper_history,
@@ -313,7 +339,12 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         print(f"   VI1 (upper): {vi1_upper_history[-1]:.2f}")
         print(f"   VI1 (lower): {vi1_lower_history[-1]:.2f}")
         print(f"   VI2 (sélectionné): {vi2_selected_history[-1]:.2f}")
+        print(f"   VI2 (upper): {vi2_upper_history[-1]:.2f}")
+        print(f"   VI2 (lower): {vi2_lower_history[-1]:.2f}")
         print(f"   VI3 (sélectionné): {vi3_selected_history[-1]:.2f}")
+        print(f"   VI3 (upper): {vi3_upper_history[-1]:.2f}")
+        print(f"   VI3 (lower): {vi3_lower_history[-1]:.2f}")
+        print(f"   Logique: Close > VI_upper ? VI1:{closes[-1] > vi1_upper_history[-1]}, VI2:{closes[-1] > vi2_upper_history[-1]}, VI3:{closes[-1] > vi3_upper_history[-1]}")
     
     return result
 
