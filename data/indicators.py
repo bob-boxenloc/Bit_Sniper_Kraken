@@ -128,27 +128,38 @@ def calculate_volatility_indexes(highs, lows, closes):
     vi3_lower = center_line - vi3_value
     
     # Logique de sélection dynamique des bandes
-    # Chaque VI a sa propre logique indépendante
-    # Si close > bande_supérieure → utiliser bande inférieure (support)
-    # Si close < bande_supérieure → utiliser bande supérieure (résistance)
+    # Chaque VI a sa propre logique indépendante basée sur sa propre RMA
+    # Si VI > RMA(VI) → utiliser bande supérieure (résistance)
+    # Si VI < RMA(VI) → utiliser bande inférieure (support)
     
-    # VI1 - Logique individuelle
-    if close > vi1_upper:
-        vi1 = vi1_lower  # Support
+    # Calculer les RMA de chaque VI pour la logique de sélection
+    # On utilise les closes comme proxy pour calculer la tendance de chaque VI
+    vi1_trend = rma(closes, 28)  # RMA des closes pour VI1
+    vi2_trend = rma(closes, 28)  # RMA des closes pour VI2  
+    vi3_trend = rma(closes, 28)  # RMA des closes pour VI3
+    
+    if vi1_trend is None or vi2_trend is None or vi3_trend is None:
+        logger.warning("Impossible de calculer les tendances des VI")
+        return {'VI1': None, 'VI2': None, 'VI3': None}
+    
+    # Comparer chaque VI avec sa tendance
+    # Si close > RMA(close) → VI tend vers le haut → utiliser bande supérieure
+    # Si close < RMA(close) → VI tend vers le bas → utiliser bande inférieure
+    
+    if close > vi1_trend[-1]:
+        vi1 = vi1_upper  # Tendance haussière → résistance
     else:
-        vi1 = vi1_upper  # Résistance
+        vi1 = vi1_lower  # Tendance baissière → support
         
-    # VI2 - Logique individuelle
-    if close > vi2_upper:
-        vi2 = vi2_lower  # Support
+    if close > vi2_trend[-1]:
+        vi2 = vi2_upper  # Tendance haussière → résistance
     else:
-        vi2 = vi2_upper  # Résistance
+        vi2 = vi2_lower  # Tendance baissière → support
         
-    # VI3 - Logique individuelle
-    if close > vi3_upper:
-        vi3 = vi3_lower  # Support
+    if close > vi3_trend[-1]:
+        vi3 = vi3_upper  # Tendance haussière → résistance
     else:
-        vi3 = vi3_upper  # Résistance
+        vi3 = vi3_lower  # Tendance baissière → support
     
     result = {
         'VI1': vi1,
@@ -288,27 +299,41 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         vi3_lower_history.append(vi3_lower)
         
         # Logique de sélection dynamique des bandes
-        # Chaque VI a sa propre logique indépendante
-        # Si close > bande_supérieure → utiliser bande inférieure (support)
-        # Si close < bande_supérieure → utiliser bande supérieure (résistance)
+        # Chaque VI a sa propre logique indépendante basée sur sa propre RMA
+        # Si VI > RMA(VI) → utiliser bande supérieure (résistance)
+        # Si VI < RMA(VI) → utiliser bande inférieure (support)
         
-        # VI1 - Logique individuelle
-        if close > vi1_upper:
-            vi1_selected_history.append(vi1_lower)  # Support
+        # Calculer les RMA de chaque VI pour la logique de sélection
+        # On utilise les closes comme proxy pour calculer la tendance de chaque VI
+        vi1_trend = rma(closes[:i+1], 28)  # RMA des closes jusqu'à l'index i
+        vi2_trend = rma(closes[:i+1], 28)  # RMA des closes jusqu'à l'index i
+        vi3_trend = rma(closes[:i+1], 28)  # RMA des closes jusqu'à l'index i
+        
+        if vi1_trend is None or vi2_trend is None or vi3_trend is None:
+            # Fallback : utiliser la bande supérieure
+            vi1_selected_history.append(vi1_upper)
+            vi2_selected_history.append(vi2_upper)
+            vi3_selected_history.append(vi3_upper)
+            continue
+        
+        # Comparer chaque VI avec sa tendance
+        # Si close > RMA(close) → VI tend vers le haut → utiliser bande supérieure
+        # Si close < RMA(close) → VI tend vers le bas → utiliser bande inférieure
+        
+        if close > vi1_trend[-1]:
+            vi1_selected_history.append(vi1_upper)  # Tendance haussière → résistance
         else:
-            vi1_selected_history.append(vi1_upper)  # Résistance
+            vi1_selected_history.append(vi1_lower)  # Tendance baissière → support
             
-        # VI2 - Logique individuelle
-        if close > vi2_upper:
-            vi2_selected_history.append(vi2_lower)  # Support
+        if close > vi2_trend[-1]:
+            vi2_selected_history.append(vi2_upper)  # Tendance haussière → résistance
         else:
-            vi2_selected_history.append(vi2_upper)  # Résistance
+            vi2_selected_history.append(vi2_lower)  # Tendance baissière → support
             
-        # VI3 - Logique individuelle
-        if close > vi3_upper:
-            vi3_selected_history.append(vi3_lower)  # Support
+        if close > vi3_trend[-1]:
+            vi3_selected_history.append(vi3_upper)  # Tendance haussière → résistance
         else:
-            vi3_selected_history.append(vi3_upper)  # Résistance
+            vi3_selected_history.append(vi3_lower)  # Tendance baissière → support
     
     result = {
         'VI1_upper_history': vi1_upper_history,
