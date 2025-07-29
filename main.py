@@ -489,7 +489,7 @@ def trading_loop():
         print("\n⏸️  AUCUNE ACTION À EXÉCUTER")
     
     # 7. Affichage de l'état du bot
-    print("\n" + sm.get_state_summary())
+    print("\n" + sm.get_state_summary(candle_buffer))
     logger.log_state_update(sm)
     
     # 8. Monitoring et sauvegarde des données

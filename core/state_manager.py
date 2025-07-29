@@ -174,19 +174,16 @@ class StateManager:
         """Récupère les informations de progression des données."""
         return self.state.get('data_progression', {})
     
-    def is_transition_complete(self) -> bool:
+    def is_transition_complete(self, candle_buffer=None) -> bool:
         """Vérifie si la transition vers les données temps réel est complète."""
         # Vérifier d'abord si on a assez de données historiques (960 bougies)
-        try:
-            import sys
-            import os
-            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            from main import candle_buffer
-            current_candles = len(candle_buffer.get_candles())
-            if current_candles >= 960:
-                return True
-        except Exception as e:
-            self.logger.warning(f"Erreur lors de la vérification du buffer: {e}")
+        if candle_buffer:
+            try:
+                current_candles = len(candle_buffer.get_candles())
+                if current_candles >= 960:
+                    return True
+            except Exception as e:
+                self.logger.warning(f"Erreur lors de la vérification du buffer: {e}")
         
         # Fallback vers l'ancienne logique
         return self.state.get('data_progression', {}).get('is_transition_complete', False)
@@ -253,38 +250,23 @@ class StateManager:
         """Récupère la position actuelle."""
         return self.state.get('current_position')
     
-    def get_state_summary(self) -> str:
+    def get_state_summary(self, candle_buffer=None) -> str:
         """Génère un résumé de l'état du bot pour la nouvelle stratégie."""
         summary = []
         summary.append("📊 ÉTAT DU BOT (Nouvelle Stratégie):")
         
         # Vérifier si on a assez de données historiques (960 bougies)
         # Si oui, considérer la transition comme complète
-        try:
-            # Importer depuis main.py où candle_buffer est défini
-            import sys
-            import os
-            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-            from main import candle_buffer
+        if candle_buffer:
             current_candles = len(candle_buffer.get_candles())
             
             if current_candles >= 960:
                 summary.append("   ✅ Données historiques complètes (960 bougies)")
                 summary.append("   ✅ Prêt pour le trading")
             else:
-                # Progression des données (fallback)
-                progression = self.get_data_progression()
-                kraken_count = progression.get('kraken_candles_count', 0)
-                total_required = progression.get('total_required', 50)
-                is_complete = progression.get('is_transition_complete', False)
-                
-                if is_complete:
-                    summary.append("   ✅ Transition vers données temps réel: TERMINÉE")
-                else:
-                    progress_pct = (kraken_count / total_required) * 100
-                    summary.append(f"   🔄 Progression données: {kraken_count}/{total_required} ({progress_pct:.1f}%)")
-        except Exception as e:
-            # Fallback si on ne peut pas accéder au buffer
+                summary.append(f"   🔄 Données en cours: {current_candles}/960 bougies")
+        else:
+            # Fallback vers l'ancienne logique si pas de buffer
             progression = self.get_data_progression()
             kraken_count = progression.get('kraken_candles_count', 0)
             total_required = progression.get('total_required', 50)
