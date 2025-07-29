@@ -12,7 +12,7 @@ def wait_until_next_15min():
         next_candle = now.replace(minute=next_minute, second=0, microsecond=0)
     wait_seconds = (next_candle - now).total_seconds()
     print(f"Attente jusqu'à la prochaine clôture de bougie 15m : {next_candle} UTC ({int(wait_seconds)}s)")
-    time.sleep(wait_seconds + 10)  # +10s pour être sûr que la bougie est bien close
+    time.sleep(wait_seconds + 20)  # +20s pour être sûr que la bougie est bien close
 
 
 def run_every_15min(task_func):
