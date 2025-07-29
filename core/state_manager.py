@@ -178,7 +178,10 @@ class StateManager:
         """Vérifie si la transition vers les données temps réel est complète."""
         # Vérifier d'abord si on a assez de données historiques (960 bougies)
         try:
-            from data.market_data import candle_buffer
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from main import candle_buffer
             current_candles = len(candle_buffer.get_candles())
             if current_candles >= 960:
                 return True
@@ -257,14 +260,31 @@ class StateManager:
         
         # Vérifier si on a assez de données historiques (960 bougies)
         # Si oui, considérer la transition comme complète
-        from data.market_data import candle_buffer
-        current_candles = len(candle_buffer.get_candles())
-        
-        if current_candles >= 960:
-            summary.append("   ✅ Données historiques complètes (960 bougies)")
-            summary.append("   ✅ Prêt pour le trading")
-        else:
-            # Progression des données (fallback)
+        try:
+            # Importer depuis main.py où candle_buffer est défini
+            import sys
+            import os
+            sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+            from main import candle_buffer
+            current_candles = len(candle_buffer.get_candles())
+            
+            if current_candles >= 960:
+                summary.append("   ✅ Données historiques complètes (960 bougies)")
+                summary.append("   ✅ Prêt pour le trading")
+            else:
+                # Progression des données (fallback)
+                progression = self.get_data_progression()
+                kraken_count = progression.get('kraken_candles_count', 0)
+                total_required = progression.get('total_required', 50)
+                is_complete = progression.get('is_transition_complete', False)
+                
+                if is_complete:
+                    summary.append("   ✅ Transition vers données temps réel: TERMINÉE")
+                else:
+                    progress_pct = (kraken_count / total_required) * 100
+                    summary.append(f"   🔄 Progression données: {kraken_count}/{total_required} ({progress_pct:.1f}%)")
+        except Exception as e:
+            # Fallback si on ne peut pas accéder au buffer
             progression = self.get_data_progression()
             kraken_count = progression.get('kraken_candles_count', 0)
             total_required = progression.get('total_required', 50)
