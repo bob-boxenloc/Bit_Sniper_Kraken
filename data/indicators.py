@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-from core.logger import logger
+from core.logger import BitSniperLogger
 
 def calculate_rsi_wilder(closes: list, length: int = 40) -> float:
     """
@@ -76,10 +76,11 @@ def calculate_volatility_indexes(highs, lows, closes):
     :param closes: liste des prix de clôture (du plus ancien au plus récent)
     :return: dictionnaire avec les VI calculés
     """
-    logger.info("🔧 DEBUG: Fonction calculate_volatility_indexes appelée")
+    logger = BitSniperLogger()
+    logger.logger.info("🔧 DEBUG: Fonction calculate_volatility_indexes appelée")
     
     if len(closes) < 28:
-        logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 28, Disponible: {len(closes)}")
+        logger.logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 28, Disponible: {len(closes)}")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
     # Calculer les True Ranges
@@ -93,19 +94,19 @@ def calculate_volatility_indexes(highs, lows, closes):
     
     # Vérifier qu'on a assez de True Ranges
     if len(true_ranges) < 28:
-        logger.warning(f"Pas assez de True Ranges pour calculer l'ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
+        logger.logger.warning(f"Pas assez de True Ranges pour calculer l'ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
     # Calculer l'ATR (RMA des True Ranges sur 28 périodes)
     atr_rma = rma(true_ranges, 28)
     if atr_rma is None:
-        logger.warning("Impossible de calculer l'ATR RMA")
+        logger.logger.warning("Impossible de calculer l'ATR RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
     # Calculer la ligne centrale (RMA des closes sur 28 périodes)
     center_line_rma = rma(closes, 28)
     if center_line_rma is None:
-        logger.warning("Impossible de calculer la ligne centrale RMA")
+        logger.logger.warning("Impossible de calculer la ligne centrale RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
     # Prendre les dernières valeurs (les plus récentes)
@@ -172,15 +173,15 @@ def calculate_volatility_indexes(highs, lows, closes):
         'center_line': center_line
     }
     
-    logger.info(f"🔧 VI CALCUL DÉTAILLÉ:")
-    logger.info(f"   Close: {close:.2f}")
-    logger.info(f"   Ligne centrale: {center_line:.2f}")
-    logger.info(f"   ATR (RMA TR 28): {atr:.2f}")
-    logger.info(f"   VI1 - Upper: {vi1_upper:.2f}, Lower: {vi1_lower:.2f}, Selected: {vi1:.2f}")
-    logger.info(f"   VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
-    logger.info(f"   VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
-    logger.info(f"   Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
-    logger.info(f"   Sélection finale: VI1:{vi1:.2f}, VI2:{vi2:.2f}, VI3:{vi3:.2f}")
+    logger.logger.info(f"🔧 VI CALCUL DÉTAILLÉ:")
+    logger.logger.info(f"   Close: {close:.2f}")
+    logger.logger.info(f"   Ligne centrale: {center_line:.2f}")
+    logger.logger.info(f"   ATR (RMA TR 28): {atr:.2f}")
+    logger.logger.info(f"   VI1 - Upper: {vi1_upper:.2f}, Lower: {vi1_lower:.2f}, Selected: {vi1:.2f}")
+    logger.logger.info(f"   VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
+    logger.logger.info(f"   VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
+    logger.logger.info(f"   Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
+    logger.logger.info(f"   Sélection finale: VI1:{vi1:.2f}, VI2:{vi2:.2f}, VI3:{vi3:.2f}")
     
     return result
 
@@ -215,10 +216,11 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     :param closes: liste des prix de clôture (du plus ancien au plus récent)
     :return: dictionnaire avec les historiques des VI et données associées
     """
-    logger.info("🔧 DEBUG: Fonction calculate_complete_volatility_indexes_history appelée")
+    logger = BitSniperLogger()
+    logger.logger.info("🔧 DEBUG: Fonction calculate_complete_volatility_indexes_history appelée")
     
     if len(closes) < 28:
-        logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 28, Disponible: {len(closes)}")
+        logger.logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 28, Disponible: {len(closes)}")
         return None
     
     # Calculer les True Ranges
@@ -232,19 +234,19 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     
     # Vérifier qu'on a assez de True Ranges
     if len(true_ranges) < 28:
-        logger.warning(f"Pas assez de True Ranges pour calculer l'historique ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
+        logger.logger.warning(f"Pas assez de True Ranges pour calculer l'historique ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
         return None
     
     # Calculer l'historique complet de l'ATR (RMA des True Ranges sur 28 périodes)
     atr_rma_history = calculate_complete_rma_history(true_ranges, 28)
     if atr_rma_history is None:
-        logger.warning("Impossible de calculer l'historique de l'ATR RMA")
+        logger.logger.warning("Impossible de calculer l'historique de l'ATR RMA")
         return None
     
     # Calculer l'historique complet de la ligne centrale (RMA des closes sur 28 périodes)
     center_line_history = calculate_complete_rma_history(closes, 28)
     if center_line_history is None:
-        logger.warning("Impossible de calculer l'historique de la ligne centrale RMA")
+        logger.logger.warning("Impossible de calculer l'historique de la ligne centrale RMA")
         return None
     
     # Calculer l'historique complet des Volatility Indexes
@@ -348,9 +350,9 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         'true_ranges': true_ranges
     }
     
-    logger.info(f"Historique complet des VI calculé: {len(vi1_selected_history)} valeurs")
-    logger.debug(f"Première valeur VI1: {vi1_selected_history[0] if vi1_selected_history else 'N/A'}")
-    logger.debug(f"Dernière valeur VI1: {vi1_selected_history[-1] if vi1_selected_history else 'N/A'}")
+    logger.logger.info(f"Historique complet des VI calculé: {len(vi1_selected_history)} valeurs")
+    logger.logger.debug(f"Première valeur VI1: {vi1_selected_history[0] if vi1_selected_history else 'N/A'}")
+    logger.logger.debug(f"Dernière valeur VI1: {vi1_selected_history[-1] if vi1_selected_history else 'N/A'}")
     
     # Debug: Afficher les dernières valeurs pour vérification
     if vi1_selected_history:
