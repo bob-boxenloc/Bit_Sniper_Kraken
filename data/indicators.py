@@ -85,12 +85,25 @@ def calculate_volatility_indexes(highs, lows, closes):
     
     # Calculer les True Ranges
     true_ranges = []
+    logger.logger.info(f"🔧 DEBUG ATR - Calcul des True Ranges:")
+    logger.logger.info(f"   Nombre de bougies: {len(closes)}")
+    logger.logger.info(f"   Dernières 3 bougies:")
+    for i in range(max(0, len(closes)-3), len(closes)):
+        logger.logger.info(f"     Bougie {i}: High={highs[i]}, Low={lows[i]}, Close={closes[i]}")
+    
     for i in range(1, len(closes)):
         high_low = highs[i] - lows[i]
         high_close_prev = abs(highs[i] - closes[i-1])
         low_close_prev = abs(lows[i] - closes[i-1])
         true_range = max(high_low, high_close_prev, low_close_prev)
         true_ranges.append(true_range)
+        
+        # Log des 3 derniers True Ranges
+        if i >= len(closes) - 3:
+            logger.logger.info(f"     True Range {i}: {true_range:.2f} (HL:{high_low:.2f}, HC:{high_close_prev:.2f}, LC:{low_close_prev:.2f})")
+    
+    logger.logger.info(f"   Nombre de True Ranges calculés: {len(true_ranges)}")
+    logger.logger.info(f"   Derniers True Ranges: {true_ranges[-3:] if len(true_ranges) >= 3 else true_ranges}")
     
     # Vérifier qu'on a assez de True Ranges
     if len(true_ranges) < 28:
@@ -103,11 +116,19 @@ def calculate_volatility_indexes(highs, lows, closes):
         logger.logger.warning("Impossible de calculer l'ATR RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
+    logger.logger.info(f"🔧 DEBUG ATR RMA:")
+    logger.logger.info(f"   Nombre de valeurs ATR RMA: {len(atr_rma)}")
+    logger.logger.info(f"   Dernières 3 valeurs ATR RMA: {atr_rma[-3:] if len(atr_rma) >= 3 else atr_rma}")
+    
     # Calculer la ligne centrale (RMA des closes sur 28 périodes)
     center_line_rma = rma(closes, 28)
     if center_line_rma is None:
         logger.logger.warning("Impossible de calculer la ligne centrale RMA")
         return {'VI1': None, 'VI2': None, 'VI3': None}
+    
+    logger.logger.info(f"🔧 DEBUG Center Line RMA:")
+    logger.logger.info(f"   Nombre de valeurs Center Line RMA: {len(center_line_rma)}")
+    logger.logger.info(f"   Dernières 3 valeurs Center Line RMA: {center_line_rma[-3:] if len(center_line_rma) >= 3 else center_line_rma}")
     
     # Prendre les dernières valeurs (les plus récentes)
     atr = atr_rma[-1]
