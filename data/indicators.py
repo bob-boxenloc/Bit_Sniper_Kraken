@@ -83,24 +83,21 @@ def calculate_volatility_indexes(highs, lows, closes):
         logger.logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 28, Disponible: {len(closes)}")
         return {'VI1': None, 'VI2': None, 'VI3': None}
     
-    # Calculer les True Ranges
+    # Calculer les True Ranges (méthode Close-Close)
     true_ranges = []
-    logger.logger.info(f"🔧 DEBUG ATR - Calcul des True Ranges:")
+    logger.logger.info(f"🔧 DEBUG ATR - Calcul des True Ranges (Close-Close):")
     logger.logger.info(f"   Nombre de bougies: {len(closes)}")
     logger.logger.info(f"   Dernières 3 bougies:")
     for i in range(max(0, len(closes)-3), len(closes)):
-        logger.logger.info(f"     Bougie {i}: High={highs[i]}, Low={lows[i]}, Close={closes[i]}")
+        logger.logger.info(f"     Bougie {i}: Close={closes[i]}")
     
     for i in range(1, len(closes)):
-        high_low = highs[i] - lows[i]
-        high_close_prev = abs(highs[i] - closes[i-1])
-        low_close_prev = abs(lows[i] - closes[i-1])
-        true_range = max(high_low, high_close_prev, low_close_prev)
+        true_range = abs(closes[i] - closes[i-1])  # |Close_t - Close_t-1|
         true_ranges.append(true_range)
         
         # Log des 3 derniers True Ranges
         if i >= len(closes) - 3:
-            logger.logger.info(f"     True Range {i}: {true_range:.2f} (HL:{high_low:.2f}, HC:{high_close_prev:.2f}, LC:{low_close_prev:.2f})")
+            logger.logger.info(f"     True Range {i}: {true_range:.2f} (|{closes[i]:.2f} - {closes[i-1]:.2f}|)")
     
     logger.logger.info(f"   Nombre de True Ranges calculés: {len(true_ranges)}")
     logger.logger.info(f"   Derniers True Ranges: {true_ranges[-3:] if len(true_ranges) >= 3 else true_ranges}")
@@ -238,13 +235,10 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         logger.logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 28, Disponible: {len(closes)}")
         return None
     
-    # Calculer les True Ranges
+    # Calculer les True Ranges (méthode Close-Close)
     true_ranges = []
     for i in range(1, len(closes)):
-        high_low = highs[i] - lows[i]
-        high_close_prev = abs(highs[i] - closes[i-1])
-        low_close_prev = abs(lows[i] - closes[i-1])
-        true_range = max(high_low, high_close_prev, low_close_prev)
+        true_range = abs(closes[i] - closes[i-1])  # |Close_t - Close_t-1|
         true_ranges.append(true_range)
     
     # Vérifier qu'on a assez de True Ranges
