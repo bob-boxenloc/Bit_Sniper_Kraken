@@ -174,15 +174,15 @@ def calculate_volatility_indexes(highs, lows, closes):
         'center_line': center_line
     }
     
-    logger.debug(f"Volatility Indexes calculés: {result}")
-    logger.debug(f"Close: {close}, Ligne centrale: {center_line}, ATR (RMA TR 28): {atr}")
-    logger.debug(f"VI1 - Upper: {vi1_upper:.2f}, Lower: {vi1_lower:.2f}, Selected: {vi1:.2f}")
-    logger.debug(f"VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
-    logger.debug(f"VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
-    logger.debug(f"Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
-    logger.debug(f"Sélection finale: VI1:{vi1:.2f}, VI2:{vi2:.2f}, VI3:{vi3:.2f}")
-    
-    logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
+    logger.info(f"🔧 VI CALCUL DÉTAILLÉ:")
+    logger.info(f"   Close: {close:.2f}")
+    logger.info(f"   Ligne centrale: {center_line:.2f}")
+    logger.info(f"   ATR (RMA TR 28): {atr:.2f}")
+    logger.info(f"   VI1 - Upper: {vi1_upper:.2f}, Lower: {vi1_lower:.2f}, Selected: {vi1:.2f}")
+    logger.info(f"   VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
+    logger.info(f"   VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
+    logger.info(f"   Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
+    logger.info(f"   Sélection finale: VI1:{vi1:.2f}, VI2:{vi2:.2f}, VI3:{vi3:.2f}")
     
     return result
 
