@@ -132,34 +132,74 @@ def calculate_volatility_indexes(highs, lows, closes):
     # Si VI > RMA(VI) → utiliser bande supérieure (résistance)
     # Si VI < RMA(VI) → utiliser bande inférieure (support)
     
-    # Calculer les RMA de chaque VI pour la logique de sélection
-    # On utilise les closes comme proxy pour calculer la tendance de chaque VI
-    vi1_trend = rma(closes, 28)  # RMA des closes pour VI1
-    vi2_trend = rma(closes, 28)  # RMA des closes pour VI2  
-    vi3_trend = rma(closes, 28)  # RMA des closes pour VI3
+    # Calculer les RMA de chaque VI individuellement
+    # On doit d'abord calculer l'historique complet de chaque VI pour avoir sa RMA
     
-    if vi1_trend is None or vi2_trend is None or vi3_trend is None:
-        logger.warning("Impossible de calculer les tendances des VI")
-        return {'VI1': None, 'VI2': None, 'VI3': None}
+    # Calculer l'historique complet des VI (sans sélection de bande) jusqu'à l'index i
+    vi1_raw_history = []
+    vi2_raw_history = []
+    vi3_raw_history = []
     
-    # Comparer chaque VI avec sa tendance
-    # Si close > RMA(close) → VI tend vers le haut → utiliser bande supérieure
-    # Si close < RMA(close) → VI tend vers le bas → utiliser bande inférieure
-    
-    if close > vi1_trend[-1]:
-        vi1 = vi1_upper  # Tendance haussière → résistance
-    else:
-        vi1 = vi1_lower  # Tendance baissière → support
+    # Utiliser les données jusqu'à l'index i pour calculer l'historique
+    for j in range(27, len(closes)):
+        if j >= len(closes) or (j - 1) >= len(atr_rma) or (j - 27) >= len(center_line_rma):
+            break
+            
+        close_j = closes[j]
+        atr_j = atr_rma[j - 1]
+        center_line_j = center_line_rma[j - 27]
         
-    if close > vi2_trend[-1]:
-        vi2 = vi2_upper  # Tendance haussière → résistance
-    else:
-        vi2 = vi2_lower  # Tendance baissière → support
+        # Calculer les VI basés sur la ligne centrale
+        vi1_value_j = atr_j * 19
+        vi2_value_j = atr_j * 10
+        vi3_value_j = atr_j * 6
         
-    if close > vi3_trend[-1]:
-        vi3 = vi3_upper  # Tendance haussière → résistance
+        # Calculer les bandes
+        vi1_upper_j = center_line_j + vi1_value_j
+        vi2_upper_j = center_line_j + vi2_value_j
+        vi3_upper_j = center_line_j + vi3_value_j
+        
+        # Stocker les bandes supérieures comme valeurs "brutes" pour calculer RMA
+        vi1_raw_history.append(vi1_upper_j)
+        vi2_raw_history.append(vi2_upper_j)
+        vi3_raw_history.append(vi3_upper_j)
+    
+    # Calculer RMA de chaque VI
+    if len(vi1_raw_history) >= 28:
+        vi1_rma = rma(vi1_raw_history, 28)
+        vi2_rma = rma(vi2_raw_history, 28)
+        vi3_rma = rma(vi3_raw_history, 28)
+        
+        if vi1_rma is not None and vi2_rma is not None and vi3_rma is not None:
+            # Comparer chaque VI avec sa propre RMA
+            current_vi1 = vi1_upper  # Valeur actuelle
+            current_vi2 = vi2_upper
+            current_vi3 = vi3_upper
+            
+            if current_vi1 > vi1_rma[-1]:
+                vi1 = vi1_upper  # VI1 > RMA(VI1) → résistance
+            else:
+                vi1 = vi1_lower  # VI1 < RMA(VI1) → support
+                
+            if current_vi2 > vi2_rma[-1]:
+                vi2 = vi2_upper  # VI2 > RMA(VI2) → résistance
+            else:
+                vi2 = vi2_lower  # VI2 < RMA(VI2) → support
+                
+            if current_vi3 > vi3_rma[-1]:
+                vi3 = vi3_upper  # VI3 > RMA(VI3) → résistance
+            else:
+                vi3 = vi3_lower  # VI3 < RMA(VI3) → support
+        else:
+            # Fallback : utiliser la bande supérieure
+            vi1 = vi1_upper
+            vi2 = vi2_upper
+            vi3 = vi3_upper
     else:
-        vi3 = vi3_lower  # Tendance baissière → support
+        # Fallback : utiliser la bande supérieure
+        vi1 = vi1_upper
+        vi2 = vi2_upper
+        vi3 = vi3_upper
     
     result = {
         'VI1': vi1,
@@ -303,37 +343,74 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         # Si VI > RMA(VI) → utiliser bande supérieure (résistance)
         # Si VI < RMA(VI) → utiliser bande inférieure (support)
         
-        # Calculer les RMA de chaque VI pour la logique de sélection
-        # On utilise les closes comme proxy pour calculer la tendance de chaque VI
-        vi1_trend = rma(closes[:i+1], 28)  # RMA des closes jusqu'à l'index i
-        vi2_trend = rma(closes[:i+1], 28)  # RMA des closes jusqu'à l'index i
-        vi3_trend = rma(closes[:i+1], 28)  # RMA des closes jusqu'à l'index i
+        # Calculer les RMA de chaque VI individuellement
+        # On doit d'abord calculer l'historique complet de chaque VI pour avoir sa RMA
         
-        if vi1_trend is None or vi2_trend is None or vi3_trend is None:
+        # Calculer l'historique complet des VI (sans sélection de bande) jusqu'à l'index i
+        vi1_raw_history = []
+        vi2_raw_history = []
+        vi3_raw_history = []
+        
+        # Utiliser les données jusqu'à l'index i pour calculer l'historique
+        for j in range(27, i + 1):
+            if j >= len(closes) or (j - 1) >= len(atr_rma_history) or (j - 27) >= len(center_line_history):
+                break
+                
+            close_j = closes[j]
+            atr_j = atr_rma_history[j - 1]
+            center_line_j = center_line_history[j - 27]
+            
+            # Calculer les VI basés sur la ligne centrale
+            vi1_value_j = atr_j * 19
+            vi2_value_j = atr_j * 10
+            vi3_value_j = atr_j * 6
+            
+            # Calculer les bandes
+            vi1_upper_j = center_line_j + vi1_value_j
+            vi2_upper_j = center_line_j + vi2_value_j
+            vi3_upper_j = center_line_j + vi3_value_j
+            
+            # Stocker les bandes supérieures comme valeurs "brutes" pour calculer RMA
+            vi1_raw_history.append(vi1_upper_j)
+            vi2_raw_history.append(vi2_upper_j)
+            vi3_raw_history.append(vi3_upper_j)
+        
+        # Calculer RMA de chaque VI
+        if len(vi1_raw_history) >= 28:
+            vi1_rma = rma(vi1_raw_history, 28)
+            vi2_rma = rma(vi2_raw_history, 28)
+            vi3_rma = rma(vi3_raw_history, 28)
+            
+            if vi1_rma is not None and vi2_rma is not None and vi3_rma is not None:
+                # Comparer chaque VI avec sa propre RMA
+                current_vi1 = vi1_upper  # Valeur actuelle
+                current_vi2 = vi2_upper
+                current_vi3 = vi3_upper
+                
+                if current_vi1 > vi1_rma[-1]:
+                    vi1_selected_history.append(vi1_upper)  # VI1 > RMA(VI1) → résistance
+                else:
+                    vi1_selected_history.append(vi1_lower)  # VI1 < RMA(VI1) → support
+                    
+                if current_vi2 > vi2_rma[-1]:
+                    vi2_selected_history.append(vi2_upper)  # VI2 > RMA(VI2) → résistance
+                else:
+                    vi2_selected_history.append(vi2_lower)  # VI2 < RMA(VI2) → support
+                    
+                if current_vi3 > vi3_rma[-1]:
+                    vi3_selected_history.append(vi3_upper)  # VI3 > RMA(VI3) → résistance
+                else:
+                    vi3_selected_history.append(vi3_lower)  # VI3 < RMA(VI3) → support
+            else:
+                # Fallback : utiliser la bande supérieure
+                vi1_selected_history.append(vi1_upper)
+                vi2_selected_history.append(vi2_upper)
+                vi3_selected_history.append(vi3_upper)
+        else:
             # Fallback : utiliser la bande supérieure
             vi1_selected_history.append(vi1_upper)
             vi2_selected_history.append(vi2_upper)
             vi3_selected_history.append(vi3_upper)
-            continue
-        
-        # Comparer chaque VI avec sa tendance
-        # Si close > RMA(close) → VI tend vers le haut → utiliser bande supérieure
-        # Si close < RMA(close) → VI tend vers le bas → utiliser bande inférieure
-        
-        if close > vi1_trend[-1]:
-            vi1_selected_history.append(vi1_upper)  # Tendance haussière → résistance
-        else:
-            vi1_selected_history.append(vi1_lower)  # Tendance baissière → support
-            
-        if close > vi2_trend[-1]:
-            vi2_selected_history.append(vi2_upper)  # Tendance haussière → résistance
-        else:
-            vi2_selected_history.append(vi2_lower)  # Tendance baissière → support
-            
-        if close > vi3_trend[-1]:
-            vi3_selected_history.append(vi3_upper)  # Tendance haussière → résistance
-        else:
-            vi3_selected_history.append(vi3_lower)  # Tendance baissière → support
     
     result = {
         'VI1_upper_history': vi1_upper_history,
