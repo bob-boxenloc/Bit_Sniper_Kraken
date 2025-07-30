@@ -319,40 +319,22 @@ def trading_loop():
         print("   Le bot attendra la prochaine bougie pour réessayer.")
         return
     
-    # 2. Calcul des indicateurs pour la nouvelle stratégie
+    # 2. Calcul des indicateurs en temps réel
     print("\n🔍 CALCUL DES INDICATEURS")
     
-    # Utiliser l'historique initialisé pour des calculs précis
-    if indicator_history['rsi_history'] and indicator_history['vi1_history']:
-        # Utiliser les dernières valeurs de l'historique (après mise à jour)
-        current_rsi = indicator_history['rsi_history'][-1]
-        current_vi1 = indicator_history['vi1_history'][-1]
-        current_vi2 = indicator_history['vi2_history'][-1]
-        current_vi3 = indicator_history['vi3_history'][-1]
-        
-        indicators = {
-            'RSI': current_rsi,
-            'VI1': current_vi1,
-            'VI2': current_vi2,
-            'VI3': current_vi3
-        }
-        
-        indicators_success = True
-        indicators_message = "Indicateurs calculés avec l'historique mis à jour"
-        
-        print(f"✅ {indicators_message}")
-        print(f"   RSI: {current_rsi:.2f}")
-        print(f"   VI1: {current_vi1:.2f}")
-        print(f"   VI2: {current_vi2:.2f}")
-        print(f"   VI3: {current_vi3:.2f}")
-    else:
-        # Fallback vers l'ancienne méthode si l'historique n'est pas initialisé
-        indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
-        
-        if not indicators_success:
-            logger.log_warning(f"Indicateurs non calculables: {indicators_message}")
-            print(f"❌ TRADING IMPOSSIBLE: {indicators_message}")
+    # Calculer les indicateurs en temps réel
+    indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
+    
+    if not indicators_success:
+        logger.log_warning(f"Indicateurs non calculables: {indicators_message}")
+        print(f"❌ TRADING IMPOSSIBLE: {indicators_message}")
         return
+    
+    print(f"✅ {indicators_message}")
+    print(f"   RSI: {indicators['RSI']:.2f}")
+    print(f"   VI1: {indicators['VI1']:.2f}")
+    print(f"   VI2: {indicators['VI2']:.2f}")
+    print(f"   VI3: {indicators['VI3']:.2f}")
     
     # Logger l'analyse des bougies
     logger.log_candle_analysis(candles, indicators_success, indicators_message)
@@ -371,7 +353,7 @@ def trading_loop():
     
     # Debug: Afficher les valeurs utilisées pour l'analyse
     print(f"🔧 DEBUG ANALYSE - Close actuel: {float(last_candle['close']):.2f}")
-    print(f"   VI1 vs Close: {current_vi1:.2f} vs {float(last_candle['close']):.2f}")
+    print(f"   VI1 vs Close: {indicators['VI1']:.2f} vs {float(last_candle['close']):.2f}")
     
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie)")
