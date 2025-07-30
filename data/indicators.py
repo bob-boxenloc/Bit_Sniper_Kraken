@@ -78,6 +78,8 @@ def calculate_volatility_indexes(highs, lows, closes):
     """
     logger = logging.getLogger(__name__)
     
+    logger.info("🔧 DEBUG: Fonction calculate_volatility_indexes appelée")
+    
     if len(closes) < 28:
         logger.warning(f"Pas assez de données pour calculer les VI. Nécessaire: 28, Disponible: {len(closes)}")
         return {'VI1': None, 'VI2': None, 'VI3': None}
@@ -265,6 +267,8 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     :return: dictionnaire avec les historiques des VI et données associées
     """
     logger = logging.getLogger(__name__)
+    
+    logger.info("🔧 DEBUG: Fonction calculate_complete_volatility_indexes_history appelée")
     
     if len(closes) < 28:
         logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 28, Disponible: {len(closes)}")
