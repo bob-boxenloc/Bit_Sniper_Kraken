@@ -129,79 +129,37 @@ def calculate_volatility_indexes(highs, lows, closes):
     vi3_upper = center_line + vi3_value
     vi3_lower = center_line - vi3_value
     
-    # Logique de sélection dynamique des bandes
-    # Chaque VI a sa propre logique indépendante basée sur sa propre RMA
-    # Si VI > RMA(VI) → utiliser bande supérieure (résistance)
-    # Si VI < RMA(VI) → utiliser bande inférieure (support)
+    # Logique de sélection des bandes basée sur la position du prix
+    # Si VI_upper < prix_actuel → utiliser VI_lower (le prix est au-dessus de la bande supérieure)
+    # Si VI_lower > prix_actuel → utiliser VI_upper (le prix est en-dessous de la bande inférieure)
+    # Sinon → utiliser le côté le plus proche du prix
     
-    # Calculer les RMA de chaque VI individuellement
-    # On doit d'abord calculer l'historique complet de chaque VI pour avoir sa RMA
-    
-    # Calculer l'historique complet des VI (sans sélection de bande) jusqu'à l'index i
-    vi1_raw_history = []
-    vi2_raw_history = []
-    vi3_raw_history = []
-    
-    # Utiliser les données jusqu'à l'index i pour calculer l'historique
-    for j in range(27, len(closes)):
-        if j >= len(closes) or (j - 1) >= len(atr_rma) or (j - 27) >= len(center_line_rma):
-            break
-            
-        close_j = closes[j]
-        atr_j = atr_rma[j - 1]
-        center_line_j = center_line_rma[j - 27]
-        
-        # Calculer les VI basés sur la ligne centrale
-        vi1_value_j = atr_j * 19
-        vi2_value_j = atr_j * 10
-        vi3_value_j = atr_j * 6
-        
-        # Calculer les bandes
-        vi1_upper_j = center_line_j + vi1_value_j
-        vi2_upper_j = center_line_j + vi2_value_j
-        vi3_upper_j = center_line_j + vi3_value_j
-        
-        # Stocker les bandes supérieures comme valeurs "brutes" pour calculer RMA
-        vi1_raw_history.append(vi1_upper_j)
-        vi2_raw_history.append(vi2_upper_j)
-        vi3_raw_history.append(vi3_upper_j)
-    
-    # Calculer RMA de chaque VI
-    if len(vi1_raw_history) >= 28:
-        vi1_rma = rma(vi1_raw_history, 28)
-        vi2_rma = rma(vi2_raw_history, 28)
-        vi3_rma = rma(vi3_raw_history, 28)
-        
-        if vi1_rma is not None and vi2_rma is not None and vi3_rma is not None:
-            # Comparer chaque VI avec sa propre RMA
-            current_vi1 = vi1_upper  # Valeur actuelle
-            current_vi2 = vi2_upper
-            current_vi3 = vi3_upper
-            
-            if current_vi1 > vi1_rma[-1]:
-                vi1 = vi1_upper  # VI1 > RMA(VI1) → résistance
-            else:
-                vi1 = vi1_lower  # VI1 < RMA(VI1) → support
-                
-            if current_vi2 > vi2_rma[-1]:
-                vi2 = vi2_upper  # VI2 > RMA(VI2) → résistance
-            else:
-                vi2 = vi2_lower  # VI2 < RMA(VI2) → support
-                
-            if current_vi3 > vi3_rma[-1]:
-                vi3 = vi3_upper  # VI3 > RMA(VI3) → résistance
-            else:
-                vi3 = vi3_lower  # VI3 < RMA(VI3) → support
-        else:
-            # Fallback : utiliser la bande supérieure
-            vi1 = vi1_upper
-            vi2 = vi2_upper
-            vi3 = vi3_upper
+    # Sélection pour VI1
+    if vi1_upper < close:
+        vi1 = vi1_lower  # Le prix est au-dessus de la bande supérieure → utiliser le support
+    elif vi1_lower > close:
+        vi1 = vi1_upper  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
     else:
-        # Fallback : utiliser la bande supérieure
-        vi1 = vi1_upper
-        vi2 = vi2_upper
-        vi3 = vi3_upper
+        # Le prix est entre les bandes → utiliser le côté le plus proche
+        vi1 = vi1_upper if abs(close - vi1_upper) < abs(close - vi1_lower) else vi1_lower
+    
+    # Sélection pour VI2
+    if vi2_upper < close:
+        vi2 = vi2_lower  # Le prix est au-dessus de la bande supérieure → utiliser le support
+    elif vi2_lower > close:
+        vi2 = vi2_upper  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+    else:
+        # Le prix est entre les bandes → utiliser le côté le plus proche
+        vi2 = vi2_upper if abs(close - vi2_upper) < abs(close - vi2_lower) else vi2_lower
+    
+    # Sélection pour VI3
+    if vi3_upper < close:
+        vi3 = vi3_lower  # Le prix est au-dessus de la bande supérieure → utiliser le support
+    elif vi3_lower > close:
+        vi3 = vi3_upper  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+    else:
+        # Le prix est entre les bandes → utiliser le côté le plus proche
+        vi3 = vi3_upper if abs(close - vi3_upper) < abs(close - vi3_lower) else vi3_lower
     
     result = {
         'VI1': vi1,
@@ -222,14 +180,7 @@ def calculate_volatility_indexes(highs, lows, closes):
     logger.debug(f"VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
     logger.debug(f"VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
     logger.debug(f"Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
-    
-    # Ajouter les logs des RMA de chaque VI
-    if len(vi1_raw_history) >= 28:
-        logger.info(f"RMA(VI1): {vi1_rma[-1]:.2f}, VI1 actuel: {current_vi1:.2f}, VI1 > RMA(VI1): {current_vi1 > vi1_rma[-1]}")
-        logger.info(f"RMA(VI2): {vi2_rma[-1]:.2f}, VI2 actuel: {current_vi2:.2f}, VI2 > RMA(VI2): {current_vi2 > vi2_rma[-1]}")
-        logger.info(f"RMA(VI3): {vi3_rma[-1]:.2f}, VI3 actuel: {current_vi3:.2f}, VI3 > RMA(VI3): {current_vi3 > vi3_rma[-1]}")
-    else:
-        logger.info("Pas assez de données pour calculer les RMA des VI")
+    logger.debug(f"Sélection finale: VI1:{vi1:.2f}, VI2:{vi2:.2f}, VI3:{vi3:.2f}")
     
     logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
     
@@ -250,7 +201,7 @@ def calculate_complete_rma_history(values, period):
     # Initialisation : SMA sur les 'period' premières valeurs
     rmas = [sum(values[:period]) / period]
     
-    # Lissage Wilder pour toutes les valeurs suivantes
+    # Lissage Wilder pour les valeurs suivantes
     for v in values[period:]:
         rmas.append((rmas[-1] * (period - 1) + v) / period)
     
@@ -351,79 +302,40 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         vi3_upper_history.append(vi3_upper)
         vi3_lower_history.append(vi3_lower)
         
-        # Logique de sélection dynamique des bandes
-        # Chaque VI a sa propre logique indépendante basée sur sa propre RMA
-        # Si VI > RMA(VI) → utiliser bande supérieure (résistance)
-        # Si VI < RMA(VI) → utiliser bande inférieure (support)
+        # Logique de sélection des bandes basée sur la position du prix
+        # Si VI_upper < prix_actuel → utiliser VI_lower (le prix est au-dessus de la bande supérieure)
+        # Si VI_lower > prix_actuel → utiliser VI_upper (le prix est en-dessous de la bande inférieure)
+        # Sinon → utiliser le côté le plus proche du prix
         
-        # Calculer les RMA de chaque VI individuellement
-        # On doit d'abord calculer l'historique complet de chaque VI pour avoir sa RMA
-        
-        # Calculer l'historique complet des VI (sans sélection de bande) jusqu'à l'index i
-        vi1_raw_history = []
-        vi2_raw_history = []
-        vi3_raw_history = []
-        
-        # Utiliser les données jusqu'à l'index i pour calculer l'historique
-        for j in range(27, i + 1):
-            if j >= len(closes) or (j - 1) >= len(atr_rma_history) or (j - 27) >= len(center_line_history):
-                break
-                
-            close_j = closes[j]
-            atr_j = atr_rma_history[j - 1]
-            center_line_j = center_line_history[j - 27]
-            
-            # Calculer les VI basés sur la ligne centrale
-            vi1_value_j = atr_j * 19
-            vi2_value_j = atr_j * 10
-            vi3_value_j = atr_j * 6
-            
-            # Calculer les bandes
-            vi1_upper_j = center_line_j + vi1_value_j
-            vi2_upper_j = center_line_j + vi2_value_j
-            vi3_upper_j = center_line_j + vi3_value_j
-            
-            # Stocker les bandes supérieures comme valeurs "brutes" pour calculer RMA
-            vi1_raw_history.append(vi1_upper_j)
-            vi2_raw_history.append(vi2_upper_j)
-            vi3_raw_history.append(vi3_upper_j)
-        
-        # Calculer RMA de chaque VI
-        if len(vi1_raw_history) >= 28:
-            vi1_rma = rma(vi1_raw_history, 28)
-            vi2_rma = rma(vi2_raw_history, 28)
-            vi3_rma = rma(vi3_raw_history, 28)
-            
-            if vi1_rma is not None and vi2_rma is not None and vi3_rma is not None:
-                # Comparer chaque VI avec sa propre RMA
-                current_vi1 = vi1_upper  # Valeur actuelle
-                current_vi2 = vi2_upper
-                current_vi3 = vi3_upper
-                
-                if current_vi1 > vi1_rma[-1]:
-                    vi1_selected_history.append(vi1_upper)  # VI1 > RMA(VI1) → résistance
-                else:
-                    vi1_selected_history.append(vi1_lower)  # VI1 < RMA(VI1) → support
-                    
-                if current_vi2 > vi2_rma[-1]:
-                    vi2_selected_history.append(vi2_upper)  # VI2 > RMA(VI2) → résistance
-                else:
-                    vi2_selected_history.append(vi2_lower)  # VI2 < RMA(VI2) → support
-                    
-                if current_vi3 > vi3_rma[-1]:
-                    vi3_selected_history.append(vi3_upper)  # VI3 > RMA(VI3) → résistance
-                else:
-                    vi3_selected_history.append(vi3_lower)  # VI3 < RMA(VI3) → support
-            else:
-                # Fallback : utiliser la bande supérieure
-                vi1_selected_history.append(vi1_upper)
-                vi2_selected_history.append(vi2_upper)
-                vi3_selected_history.append(vi3_upper)
+        # Sélection pour VI1
+        if vi1_upper < close:
+            vi1_selected_history.append(vi1_lower)  # Le prix est au-dessus de la bande supérieure → utiliser le support
+        elif vi1_lower > close:
+            vi1_selected_history.append(vi1_upper)  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
         else:
-            # Fallback : utiliser la bande supérieure
-            vi1_selected_history.append(vi1_upper)
-            vi2_selected_history.append(vi2_upper)
-            vi3_selected_history.append(vi3_upper)
+            # Le prix est entre les bandes → utiliser le côté le plus proche
+            vi1_selected = vi1_upper if abs(close - vi1_upper) < abs(close - vi1_lower) else vi1_lower
+            vi1_selected_history.append(vi1_selected)
+        
+        # Sélection pour VI2
+        if vi2_upper < close:
+            vi2_selected_history.append(vi2_lower)  # Le prix est au-dessus de la bande supérieure → utiliser le support
+        elif vi2_lower > close:
+            vi2_selected_history.append(vi2_upper)  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+        else:
+            # Le prix est entre les bandes → utiliser le côté le plus proche
+            vi2_selected = vi2_upper if abs(close - vi2_upper) < abs(close - vi2_lower) else vi2_lower
+            vi2_selected_history.append(vi2_selected)
+        
+        # Sélection pour VI3
+        if vi3_upper < close:
+            vi3_selected_history.append(vi3_lower)  # Le prix est au-dessus de la bande supérieure → utiliser le support
+        elif vi3_lower > close:
+            vi3_selected_history.append(vi3_upper)  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+        else:
+            # Le prix est entre les bandes → utiliser le côté le plus proche
+            vi3_selected = vi3_upper if abs(close - vi3_upper) < abs(close - vi3_lower) else vi3_lower
+            vi3_selected_history.append(vi3_selected)
     
     result = {
         'VI1_upper_history': vi1_upper_history,
@@ -460,14 +372,7 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         print(f"   VI3 (upper): {vi3_upper_history[-1]:.2f}")
         print(f"   VI3 (lower): {vi3_lower_history[-1]:.2f}")
         print(f"   Logique: Close > VI_upper ? VI1:{closes[-1] > vi1_upper_history[-1]}, VI2:{closes[-1] > vi2_upper_history[-1]}, VI3:{closes[-1] > vi3_upper_history[-1]}")
-        
-        # Ajouter les logs des RMA de chaque VI
-        if len(vi1_raw_history) >= 28:
-            print(f"   RMA(VI1): {vi1_rma[-1]:.2f}, VI1 actuel: {vi1_upper_history[-1]:.2f}, VI1 > RMA(VI1): {vi1_upper_history[-1] > vi1_rma[-1]}")
-            print(f"   RMA(VI2): {vi2_rma[-1]:.2f}, VI2 actuel: {vi2_upper_history[-1]:.2f}, VI2 > RMA(VI2): {vi2_upper_history[-1] > vi2_rma[-1]}")
-            print(f"   RMA(VI3): {vi3_rma[-1]:.2f}, VI3 actuel: {vi3_upper_history[-1]:.2f}, VI3 > RMA(VI3): {vi3_upper_history[-1] > vi3_rma[-1]}")
-        else:
-            print("   Pas assez de données pour calculer les RMA des VI")
+        print(f"   Sélection finale: VI1:{vi1_selected_history[-1]:.2f}, VI2:{vi2_selected_history[-1]:.2f}, VI3:{vi3_selected_history[-1]:.2f}")
     
     return result
 
