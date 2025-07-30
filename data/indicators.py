@@ -220,6 +220,15 @@ def calculate_volatility_indexes(highs, lows, closes):
     logger.debug(f"VI2 - Upper: {vi2_upper:.2f}, Lower: {vi2_lower:.2f}, Selected: {vi2:.2f}")
     logger.debug(f"VI3 - Upper: {vi3_upper:.2f}, Lower: {vi3_lower:.2f}, Selected: {vi3:.2f}")
     logger.debug(f"Logique: Close > VI_upper ? VI1:{close > vi1_upper}, VI2:{close > vi2_upper}, VI3:{close > vi3_upper}")
+    
+    # Ajouter les logs des RMA de chaque VI
+    if len(vi1_raw_history) >= 28:
+        logger.debug(f"RMA(VI1): {vi1_rma[-1]:.2f}, VI1 actuel: {current_vi1:.2f}, VI1 > RMA(VI1): {current_vi1 > vi1_rma[-1]}")
+        logger.debug(f"RMA(VI2): {vi2_rma[-1]:.2f}, VI2 actuel: {current_vi2:.2f}, VI2 > RMA(VI2): {current_vi2 > vi2_rma[-1]}")
+        logger.debug(f"RMA(VI3): {vi3_rma[-1]:.2f}, VI3 actuel: {current_vi3:.2f}, VI3 > RMA(VI3): {current_vi3 > vi3_rma[-1]}")
+    else:
+        logger.debug("Pas assez de données pour calculer les RMA des VI")
+    
     logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
     
     return result
@@ -447,6 +456,14 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         print(f"   VI3 (upper): {vi3_upper_history[-1]:.2f}")
         print(f"   VI3 (lower): {vi3_lower_history[-1]:.2f}")
         print(f"   Logique: Close > VI_upper ? VI1:{closes[-1] > vi1_upper_history[-1]}, VI2:{closes[-1] > vi2_upper_history[-1]}, VI3:{closes[-1] > vi3_upper_history[-1]}")
+        
+        # Ajouter les logs des RMA de chaque VI
+        if len(vi1_raw_history) >= 28:
+            print(f"   RMA(VI1): {vi1_rma[-1]:.2f}, VI1 actuel: {vi1_upper_history[-1]:.2f}, VI1 > RMA(VI1): {vi1_upper_history[-1] > vi1_rma[-1]}")
+            print(f"   RMA(VI2): {vi2_rma[-1]:.2f}, VI2 actuel: {vi2_upper_history[-1]:.2f}, VI2 > RMA(VI2): {vi2_upper_history[-1] > vi2_rma[-1]}")
+            print(f"   RMA(VI3): {vi3_rma[-1]:.2f}, VI3 actuel: {vi3_upper_history[-1]:.2f}, VI3 > RMA(VI3): {vi3_upper_history[-1] > vi3_rma[-1]}")
+        else:
+            print("   Pas assez de données pour calculer les RMA des VI")
     
     return result
 
