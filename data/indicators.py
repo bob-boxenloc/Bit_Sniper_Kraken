@@ -129,36 +129,26 @@ def calculate_volatility_indexes(highs, lows, closes):
     vi3_lower = center_line - vi3_value
     
     # Logique de sélection des bandes basée sur la position du prix
-    # Si VI_upper < prix_actuel → utiliser VI_lower (le prix est au-dessus de la bande supérieure)
-    # Si VI_lower > prix_actuel → utiliser VI_upper (le prix est en-dessous de la bande inférieure)
-    # Sinon → utiliser le côté le plus proche du prix
+    # Si close < VI_upper → utiliser VI_lower (le prix est en-dessous de la bande supérieure)
+    # Si close > VI_lower → utiliser VI_upper (le prix est au-dessus de la bande inférieure)
     
     # Sélection pour VI1
-    if vi1_upper < close:
-        vi1 = vi1_lower  # Le prix est au-dessus de la bande supérieure → utiliser le support
-    elif vi1_lower > close:
-        vi1 = vi1_upper  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+    if close < vi1_upper:
+        vi1 = vi1_lower  # Le prix est en-dessous de la bande supérieure → utiliser le support
     else:
-        # Le prix est entre les bandes → utiliser le côté le plus proche
-        vi1 = vi1_upper if abs(close - vi1_upper) < abs(close - vi1_lower) else vi1_lower
+        vi1 = vi1_upper  # Le prix est au-dessus de la bande inférieure → utiliser la résistance
     
     # Sélection pour VI2
-    if vi2_upper < close:
-        vi2 = vi2_lower  # Le prix est au-dessus de la bande supérieure → utiliser le support
-    elif vi2_lower > close:
-        vi2 = vi2_upper  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+    if close < vi2_upper:
+        vi2 = vi2_lower  # Le prix est en-dessous de la bande supérieure → utiliser le support
     else:
-        # Le prix est entre les bandes → utiliser le côté le plus proche
-        vi2 = vi2_upper if abs(close - vi2_upper) < abs(close - vi2_lower) else vi2_lower
+        vi2 = vi2_upper  # Le prix est au-dessus de la bande inférieure → utiliser la résistance
     
     # Sélection pour VI3
-    if vi3_upper < close:
-        vi3 = vi3_lower  # Le prix est au-dessus de la bande supérieure → utiliser le support
-    elif vi3_lower > close:
-        vi3 = vi3_upper  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+    if close < vi3_upper:
+        vi3 = vi3_lower  # Le prix est en-dessous de la bande supérieure → utiliser le support
     else:
-        # Le prix est entre les bandes → utiliser le côté le plus proche
-        vi3 = vi3_upper if abs(close - vi3_upper) < abs(close - vi3_lower) else vi3_lower
+        vi3 = vi3_upper  # Le prix est au-dessus de la bande inférieure → utiliser la résistance
     
     result = {
         'VI1': vi1,
@@ -301,39 +291,26 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         vi3_lower_history.append(vi3_lower)
         
         # Logique de sélection des bandes basée sur la position du prix
-        # Si VI_upper < prix_actuel → utiliser VI_lower (le prix est au-dessus de la bande supérieure)
-        # Si VI_lower > prix_actuel → utiliser VI_upper (le prix est en-dessous de la bande inférieure)
-        # Sinon → utiliser le côté le plus proche du prix
+        # Si close < VI_upper → utiliser VI_lower (le prix est en-dessous de la bande supérieure)
+        # Si close > VI_lower → utiliser VI_upper (le prix est au-dessus de la bande inférieure)
         
         # Sélection pour VI1
-        if vi1_upper < close:
-            vi1_selected_history.append(vi1_lower)  # Le prix est au-dessus de la bande supérieure → utiliser le support
-        elif vi1_lower > close:
-            vi1_selected_history.append(vi1_upper)  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+        if close < vi1_upper:
+            vi1_selected_history.append(vi1_lower)  # Le prix est en-dessous de la bande supérieure → utiliser le support
         else:
-            # Le prix est entre les bandes → utiliser le côté le plus proche
-            vi1_selected = vi1_upper if abs(close - vi1_upper) < abs(close - vi1_lower) else vi1_lower
-            vi1_selected_history.append(vi1_selected)
+            vi1_selected_history.append(vi1_upper)  # Le prix est au-dessus de la bande inférieure → utiliser la résistance
         
         # Sélection pour VI2
-        if vi2_upper < close:
-            vi2_selected_history.append(vi2_lower)  # Le prix est au-dessus de la bande supérieure → utiliser le support
-        elif vi2_lower > close:
-            vi2_selected_history.append(vi2_upper)  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+        if close < vi2_upper:
+            vi2_selected_history.append(vi2_lower)  # Le prix est en-dessous de la bande supérieure → utiliser le support
         else:
-            # Le prix est entre les bandes → utiliser le côté le plus proche
-            vi2_selected = vi2_upper if abs(close - vi2_upper) < abs(close - vi2_lower) else vi2_lower
-            vi2_selected_history.append(vi2_selected)
+            vi2_selected_history.append(vi2_upper)  # Le prix est au-dessus de la bande inférieure → utiliser la résistance
         
         # Sélection pour VI3
-        if vi3_upper < close:
-            vi3_selected_history.append(vi3_lower)  # Le prix est au-dessus de la bande supérieure → utiliser le support
-        elif vi3_lower > close:
-            vi3_selected_history.append(vi3_upper)  # Le prix est en-dessous de la bande inférieure → utiliser la résistance
+        if close < vi3_upper:
+            vi3_selected_history.append(vi3_lower)  # Le prix est en-dessous de la bande supérieure → utiliser le support
         else:
-            # Le prix est entre les bandes → utiliser le côté le plus proche
-            vi3_selected = vi3_upper if abs(close - vi3_upper) < abs(close - vi3_lower) else vi3_lower
-            vi3_selected_history.append(vi3_selected)
+            vi3_selected_history.append(vi3_upper)  # Le prix est au-dessus de la bande inférieure → utiliser la résistance
     
     result = {
         'VI1_upper_history': vi1_upper_history,
