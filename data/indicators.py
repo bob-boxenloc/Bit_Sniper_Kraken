@@ -1,6 +1,6 @@
 import pandas as pd
-import logging
 import numpy as np
+from core.logger import logger
 
 def calculate_rsi_wilder(closes: list, length: int = 40) -> float:
     """
@@ -76,8 +76,6 @@ def calculate_volatility_indexes(highs, lows, closes):
     :param closes: liste des prix de clôture (du plus ancien au plus récent)
     :return: dictionnaire avec les VI calculés
     """
-    logger = logging.getLogger(__name__)
-    
     logger.info("🔧 DEBUG: Fonction calculate_volatility_indexes appelée")
     
     if len(closes) < 28:
@@ -217,8 +215,6 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     :param closes: liste des prix de clôture (du plus ancien au plus récent)
     :return: dictionnaire avec les historiques des VI et données associées
     """
-    logger = logging.getLogger(__name__)
-    
     logger.info("🔧 DEBUG: Fonction calculate_complete_volatility_indexes_history appelée")
     
     if len(closes) < 28:
