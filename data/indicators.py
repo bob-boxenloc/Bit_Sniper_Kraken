@@ -223,11 +223,11 @@ def calculate_volatility_indexes(highs, lows, closes):
     
     # Ajouter les logs des RMA de chaque VI
     if len(vi1_raw_history) >= 28:
-        logger.debug(f"RMA(VI1): {vi1_rma[-1]:.2f}, VI1 actuel: {current_vi1:.2f}, VI1 > RMA(VI1): {current_vi1 > vi1_rma[-1]}")
-        logger.debug(f"RMA(VI2): {vi2_rma[-1]:.2f}, VI2 actuel: {current_vi2:.2f}, VI2 > RMA(VI2): {current_vi2 > vi2_rma[-1]}")
-        logger.debug(f"RMA(VI3): {vi3_rma[-1]:.2f}, VI3 actuel: {current_vi3:.2f}, VI3 > RMA(VI3): {current_vi3 > vi3_rma[-1]}")
+        logger.info(f"RMA(VI1): {vi1_rma[-1]:.2f}, VI1 actuel: {current_vi1:.2f}, VI1 > RMA(VI1): {current_vi1 > vi1_rma[-1]}")
+        logger.info(f"RMA(VI2): {vi2_rma[-1]:.2f}, VI2 actuel: {current_vi2:.2f}, VI2 > RMA(VI2): {current_vi2 > vi2_rma[-1]}")
+        logger.info(f"RMA(VI3): {vi3_rma[-1]:.2f}, VI3 actuel: {current_vi3:.2f}, VI3 > RMA(VI3): {current_vi3 > vi3_rma[-1]}")
     else:
-        logger.debug("Pas assez de données pour calculer les RMA des VI")
+        logger.info("Pas assez de données pour calculer les RMA des VI")
     
     logger.debug(f"Données utilisées: {len(closes)} closes, {len(true_ranges)} True Ranges")
     
