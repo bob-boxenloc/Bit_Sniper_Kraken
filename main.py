@@ -268,6 +268,7 @@ def trading_loop():
             # Mettre à jour l'historique des indicateurs dans tous les cas
             print("🔄 Tentative de mise à jour de l'historique des indicateurs...")
             print(f"🔄 DEBUG: Appel de update_indicator_history avec {new_candle['datetime']}")
+            print("🔧 DEBUG: Fonction update_indicator_history appelée !")
             if update_indicator_history(new_candle):
                 print("✅ Historique des indicateurs mis à jour")
             else:
