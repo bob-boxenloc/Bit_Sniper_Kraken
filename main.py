@@ -13,7 +13,7 @@ from core.initialization import initialize_bot, is_initialization_ready
 import time
 
 # Buffer global pour les bougies
-candle_buffer = CandleBuffer(max_candles=960)  # 10 jours d'historique complet (960 bougies 15min)
+candle_buffer = CandleBuffer(max_candles=1152)  # 12 jours d'historique complet (1152 bougies 15min)
 
 # Variables globales pour l'historique des indicateurs
 indicator_history = {
@@ -215,16 +215,16 @@ def trading_loop():
         if not candle_buffer.get_candles():
             print("🔄 Buffer vide - RÉCUPÉRATION FORCÉE D'HISTORIQUE")
             
-            # Récupérer 10 jours d'historique (960 bougies 15min) pour des calculs précis
-            print("📥 Récupération de 10 jours d'historique (960 bougies)...")
-            historical_candles = md.get_ohlcv_15m(limit=960)
+            # Récupérer 12 jours d'historique (1152 bougies 15min) pour des calculs précis
+            print("📥 Récupération de 12 jours d'historique (1152 bougies)...")
+            historical_candles = md.get_ohlcv_15m(limit=1152)
             
-            if historical_candles and len(historical_candles) >= 960:
-                # Ajouter toutes les bougies historiques au buffer (960 bougies)
+            if historical_candles and len(historical_candles) >= 1152:
+                # Ajouter toutes les bougies historiques au buffer (1152 bougies)
                 for candle in historical_candles:
                     candle_buffer.add_candle(candle)
                 
-                print(f"✅ {len(historical_candles)} bougies historiques ajoutées au buffer (10 jours)")
+                print(f"✅ {len(historical_candles)} bougies historiques ajoutées au buffer (12 jours)")
                 print(f"📊 Buffer: {len(candle_buffer.get_candles())}/{candle_buffer.max_candles} bougies")
                 
                 # Afficher le résumé détaillé du buffer
@@ -236,7 +236,7 @@ def trading_loop():
                     print("❌ ÉCHEC INITIALISATION - Le bot ne peut pas démarrer")
                     return
             else:
-                print("❌ Impossible de récupérer 10 jours d'historique - attente des données Kraken")
+                print("❌ Impossible de récupérer 12 jours d'historique - attente des données Kraken")
                 return
         else:
             print("✅ Buffer déjà initialisé avec données")
