@@ -131,20 +131,24 @@ def calculate_volatility_indexes(highs, lows, closes):
     # Logique de sélection des bandes basée sur les croisements
     # Si close > VI_upper → utiliser VI_lower (le prix traverse la bande supérieure vers le haut)
     # Si close < VI_lower → utiliser VI_upper (le prix traverse la bande inférieure vers le bas)
+    # Valeurs par défaut si aucun croisement détecté
     
-    # Sélection pour VI1
+    # Sélection pour VI1 (défaut: lower)
+    vi1 = vi1_lower  # Par défaut, utiliser le support
     if close > vi1_upper:
         vi1 = vi1_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
     elif close < vi1_lower:
         vi1 = vi1_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
     
-    # Sélection pour VI2
+    # Sélection pour VI2 (défaut: upper)
+    vi2 = vi2_upper  # Par défaut, utiliser la résistance
     if close > vi2_upper:
         vi2 = vi2_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
     elif close < vi2_lower:
         vi2 = vi2_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
     
-    # Sélection pour VI3
+    # Sélection pour VI3 (défaut: upper)
+    vi3 = vi3_upper  # Par défaut, utiliser la résistance
     if close > vi3_upper:
         vi3 = vi3_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
     elif close < vi3_lower:
@@ -293,24 +297,31 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         # Logique de sélection des bandes basée sur les croisements
         # Si close > VI_upper → utiliser VI_lower (le prix traverse la bande supérieure vers le haut)
         # Si close < VI_lower → utiliser VI_upper (le prix traverse la bande inférieure vers le bas)
+        # Valeurs par défaut si aucun croisement détecté
         
-        # Sélection pour VI1
+        # Sélection pour VI1 (défaut: lower)
+        vi1_selected = vi1_lower  # Par défaut, utiliser le support
         if close > vi1_upper:
-            vi1_selected_history.append(vi1_lower)  # Le prix traverse la bande supérieure vers le haut → utiliser le support
+            vi1_selected = vi1_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
         elif close < vi1_lower:
-            vi1_selected_history.append(vi1_upper)  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
+            vi1_selected = vi1_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
+        vi1_selected_history.append(vi1_selected)
         
-        # Sélection pour VI2
+        # Sélection pour VI2 (défaut: upper)
+        vi2_selected = vi2_upper  # Par défaut, utiliser la résistance
         if close > vi2_upper:
-            vi2_selected_history.append(vi2_lower)  # Le prix traverse la bande supérieure vers le haut → utiliser le support
+            vi2_selected = vi2_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
         elif close < vi2_lower:
-            vi2_selected_history.append(vi2_upper)  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
+            vi2_selected = vi2_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
+        vi2_selected_history.append(vi2_selected)
         
-        # Sélection pour VI3
+        # Sélection pour VI3 (défaut: upper)
+        vi3_selected = vi3_upper  # Par défaut, utiliser la résistance
         if close > vi3_upper:
-            vi3_selected_history.append(vi3_lower)  # Le prix traverse la bande supérieure vers le haut → utiliser le support
+            vi3_selected = vi3_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
         elif close < vi3_lower:
-            vi3_selected_history.append(vi3_upper)  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
+            vi3_selected = vi3_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
+        vi3_selected_history.append(vi3_selected)
     
     result = {
         'VI1_upper_history': vi1_upper_history,
