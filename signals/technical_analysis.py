@@ -23,10 +23,10 @@ def analyze_candles(candles, indicators):
     # RSI actuel
     rsi = float(indicators['RSI'])
     
-    # Volatility Indexes actuels
-    vi1 = float(indicators['VI1'])
-    vi2 = float(indicators['VI2'])
-    vi3 = float(indicators['VI3'])
+    # Volatility Indexes actuels (nouvelle logique - utiliser les anciennes valeurs pour compatibilité)
+    vi1 = float(indicators['VI1_old'])
+    vi2 = float(indicators['VI2_old'])
+    vi3 = float(indicators['VI3_old'])
     
     # Prix de clôture de la bougie actuelle
     current_close = float(current_candle['close'])
@@ -36,6 +36,11 @@ def analyze_candles(candles, indicators):
     vi2_above_close = vi2 > current_close
     vi3_above_close = vi3 > current_close
     
+    # NOUVELLE LOGIQUE - Phases VI
+    vi1_phase = indicators.get('VI1_phase', 'BULLISH')  # Par défaut BULLISH
+    vi2_phase = indicators.get('VI2_phase', 'BULLISH')  # Par défaut BULLISH
+    vi3_phase = indicators.get('VI3_phase', 'BULLISH')  # Par défaut BULLISH
+    
     # Analyse complète
     analysis = {
         # Données de la bougie actuelle
@@ -43,10 +48,15 @@ def analyze_candles(candles, indicators):
         'rsi': rsi,
         'current_close': current_close,
         
-        # Volatility Indexes
+        # Volatility Indexes (anciennes valeurs pour compatibilité)
         'vi1': vi1,
         'vi2': vi2,
         'vi3': vi3,
+        
+        # NOUVELLE LOGIQUE - Phases VI
+        'vi1_phase': vi1_phase,
+        'vi2_phase': vi2_phase,
+        'vi3_phase': vi3_phase,
         
         # Positions des VI par rapport au close
         'vi1_above_close': vi1_above_close,
@@ -58,7 +68,11 @@ def analyze_candles(candles, indicators):
             'vi1_crossing_over': vi1_above_close,  # VI1 au-dessus du close
             'vi2_above_close': vi2_above_close,     # VI2 au-dessus du close
             'vi3_above_close': vi3_above_close,     # VI3 au-dessus du close
-            'rsi_condition': rsi <= 50              # RSI ≤ 50
+            'rsi_condition': rsi <= 50,             # RSI ≤ 50
+            # NOUVELLE LOGIQUE - Phases VI
+            'vi1_phase_bearish': vi1_phase == 'BEARISH',  # VI1 en phase BEARISH
+            'vi2_phase_bearish': vi2_phase == 'BEARISH',  # VI2 en phase BEARISH
+            'vi3_phase_bearish': vi3_phase == 'BEARISH'   # VI3 en phase BEARISH
         },
         
         # Conditions pour LONG_VI1
@@ -66,14 +80,21 @@ def analyze_candles(candles, indicators):
             'vi1_crossing_under': not vi1_above_close,  # VI1 en-dessous du close
             'vi2_above_close': not vi2_above_close,     # VI2 en-dessous du close
             'vi3_above_close': not vi3_above_close,     # VI3 en-dessous du close
-            'rsi_condition': rsi >= 45                   # RSI ≥ 45
+            'rsi_condition': rsi >= 45,                  # RSI ≥ 45
+            # NOUVELLE LOGIQUE - Phases VI
+            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # VI1 en phase BULLISH
+            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # VI2 en phase BULLISH
+            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # VI3 en phase BULLISH
         },
         
         # Conditions pour LONG_VI2
         'long_vi2_conditions': {
             'vi1_already_under': not vi1_above_close,   # VI1 déjà en-dessous du close
             'vi2_crossing_under': not vi2_above_close,  # VI2 crossing-under
-            'rsi_condition': rsi >= 45                   # RSI ≥ 45
+            'rsi_condition': rsi >= 45,                  # RSI ≥ 45
+            # NOUVELLE LOGIQUE - Phases VI
+            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # VI1 en phase BULLISH
+            'vi2_phase_bullish': vi2_phase == 'BULLISH'   # VI2 en phase BULLISH
         },
         
         # Conditions pour LONG_REENTRY
@@ -82,7 +103,11 @@ def analyze_candles(candles, indicators):
             'vi3_under_close': not vi3_above_close,       # VI3 sous le close
             'vi2_above_close': vi2_above_close,           # VI2 au-dessus du close
             'vi2_crossing_under': not vi2_above_close,    # VI2 crossing-under
-            'rsi_condition': rsi >= 45                     # RSI ≥ 45
+            'rsi_condition': rsi >= 45,                    # RSI ≥ 45
+            # NOUVELLE LOGIQUE - Phases VI
+            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # VI1 en phase BULLISH
+            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # VI2 en phase BULLISH
+            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # VI3 en phase BULLISH
         }
     }
     
