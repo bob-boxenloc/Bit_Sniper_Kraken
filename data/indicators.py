@@ -216,9 +216,8 @@ def calculate_volatility_indexes_real_logic(closes, highs, lows, vi1_crossing_ti
     :param vi3_crossing_time: Timestamp du croisement VI3 (1754076600000)
     :return: Dictionnaire avec les VI calculés
     """
-    logger = BitSniperLogger()
     if len(closes) < 28:
-        logger.error("Pas assez de données pour calculer les VI avec la logique réelle.")
+        print("❌ Pas assez de données pour calculer les VI avec la logique réelle.")
         return None
     
     # Convertir les timestamps en indices dans le buffer
@@ -238,7 +237,7 @@ def calculate_volatility_indexes_real_logic(closes, highs, lows, vi1_crossing_ti
                 vi3_crossing_index = i
     
     if vi1_crossing_index is None or vi2_crossing_index is None or vi3_crossing_index is None:
-        logger.error("Impossible de trouver les indices de croisement dans l'historique")
+        print("❌ Impossible de trouver les indices de croisement dans l'historique")
         return None
     
     # Calculer les ATR pour chaque période
