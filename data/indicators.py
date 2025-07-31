@@ -329,16 +329,16 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
             vi1_selected = vi1_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
         vi1_selected_history.append(vi1_selected)
         
-        # Sélection pour VI2 (défaut: upper)
-        vi2_selected = vi2_upper  # Par défaut, utiliser la résistance
+        # Sélection pour VI2 (défaut: lower)
+        vi2_selected = vi2_lower  # Par défaut, utiliser le support
         if close > vi2_upper:
             vi2_selected = vi2_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
         elif close < vi2_lower:
             vi2_selected = vi2_upper  # Le prix traverse la bande inférieure vers le bas → utiliser la résistance
         vi2_selected_history.append(vi2_selected)
         
-        # Sélection pour VI3 (défaut: upper)
-        vi3_selected = vi3_upper  # Par défaut, utiliser la résistance
+        # Sélection pour VI3 (défaut: lower)
+        vi3_selected = vi3_lower  # Par défaut, utiliser le support
         if close > vi3_upper:
             vi3_selected = vi3_lower  # Le prix traverse la bande supérieure vers le haut → utiliser le support
         elif close < vi3_lower:
