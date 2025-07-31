@@ -459,7 +459,7 @@ def trading_loop():
     
     # Debug: Afficher les valeurs utilisées pour l'analyse
     print(f"🔧 DEBUG ANALYSE - Close actuel: {float(current_candle['close']):.2f}")
-    print(f"   VI1 vs Close: {indicators['VI1']:.2f} vs {float(current_candle['close']):.2f}")
+    print(f"   VI1 vs Close: {indicators['VI1_old']:.2f} vs {float(current_candle['close']):.2f}")
     
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie - Phases VI)")
