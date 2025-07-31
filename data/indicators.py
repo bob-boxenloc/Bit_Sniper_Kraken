@@ -502,6 +502,135 @@ def get_indicators_with_validation(candles, rsi_period=40):
     
     return True, indicators, f"Indicateurs calculés avec succès"
 
+def calculate_vi_phases(atr_history, period=28):
+    """
+    Calcule les phases VI (bullish/bearish) basées sur la comparaison ATR actuel vs ATR moyen.
+    
+    :param atr_history: liste des valeurs ATR (du plus ancien au plus récent)
+    :param period: période pour calculer l'ATR moyen (défaut: 28)
+    :return: dictionnaire avec les phases VI et données associées
+    """
+    logger = BitSniperLogger()
+    logger.logger.info("🔧 DEBUG: Fonction calculate_vi_phases appelée")
+    
+    if len(atr_history) < period:
+        logger.logger.warning(f"Pas assez de données ATR pour calculer les phases VI. Nécessaire: {period}, Disponible: {len(atr_history)}")
+        return None
+    
+    # Calculer l'ATR moyen sur 28 périodes
+    atr_moyen = sum(atr_history[-period:]) / period
+    
+    # ATR actuel (dernière valeur)
+    atr_actuel = atr_history[-1]
+    
+    # Calculer les valeurs VI basées sur l'ATR actuel
+    vi1_value = atr_actuel * 19
+    vi2_value = atr_actuel * 10
+    vi3_value = atr_actuel * 6
+    
+    # Déterminer les phases basées sur ATR actuel vs ATR moyen
+    # Si ATR actuel < ATR moyen → changement de phase
+    vi1_phase = 'BEARISH' if atr_actuel < atr_moyen else 'BULLISH'
+    vi2_phase = 'BEARISH' if atr_actuel < atr_moyen else 'BULLISH'
+    vi3_phase = 'BEARISH' if atr_actuel < atr_moyen else 'BULLISH'
+    
+    result = {
+        'VI1_phase': vi1_phase,
+        'VI2_phase': vi2_phase,
+        'VI3_phase': vi3_phase,
+        'VI1_value': vi1_value,
+        'VI2_value': vi2_value,
+        'VI3_value': vi3_value,
+        'ATR_actuel': atr_actuel,
+        'ATR_moyen': atr_moyen,
+        'ATR_ratio': atr_actuel / atr_moyen if atr_moyen > 0 else 1.0
+    }
+    
+    logger.logger.info(f"🔧 VI PHASES CALCULÉES:")
+    logger.logger.info(f"   ATR actuel: {atr_actuel:.2f}")
+    logger.logger.info(f"   ATR moyen (28p): {atr_moyen:.2f}")
+    logger.logger.info(f"   Ratio ATR: {result['ATR_ratio']:.3f}")
+    logger.logger.info(f"   VI1: {vi1_phase} (valeur: {vi1_value:.2f})")
+    logger.logger.info(f"   VI2: {vi2_phase} (valeur: {vi2_value:.2f})")
+    logger.logger.info(f"   VI3: {vi3_phase} (valeur: {vi3_value:.2f})")
+    
+    return result
+
+def calculate_complete_vi_phases_history(atr_history, period=28):
+    """
+    Calcule l'historique complet des phases VI.
+    Cette fonction est utilisée au démarrage pour initialiser correctement les indicateurs.
+    
+    :param atr_history: liste des valeurs ATR (du plus ancien au plus récent)
+    :param period: période pour calculer l'ATR moyen (défaut: 28)
+    :return: dictionnaire avec l'historique des phases VI
+    """
+    logger = BitSniperLogger()
+    logger.logger.info("🔧 DEBUG: Fonction calculate_complete_vi_phases_history appelée")
+    
+    if len(atr_history) < period:
+        logger.logger.warning(f"Pas assez de données ATR pour calculer l'historique des phases VI. Nécessaire: {period}, Disponible: {len(atr_history)}")
+        return None
+    
+    # Historique des phases
+    vi1_phases = []
+    vi2_phases = []
+    vi3_phases = []
+    
+    # Historique des valeurs
+    vi1_values = []
+    vi2_values = []
+    vi3_values = []
+    
+    # Historique des ATR moyens
+    atr_moyens = []
+    
+    # Commencer à partir de l'index period-1 (pour avoir assez de données pour calculer l'ATR moyen)
+    for i in range(period-1, len(atr_history)):
+        # ATR actuel
+        atr_actuel = atr_history[i]
+        
+        # Calculer l'ATR moyen sur les 28 périodes précédentes
+        atr_moyen = sum(atr_history[i-period+1:i+1]) / period
+        
+        # Calculer les valeurs VI
+        vi1_value = atr_actuel * 19
+        vi2_value = atr_actuel * 10
+        vi3_value = atr_actuel * 6
+        
+        # Déterminer les phases
+        vi1_phase = 'BEARISH' if atr_actuel < atr_moyen else 'BULLISH'
+        vi2_phase = 'BEARISH' if atr_actuel < atr_moyen else 'BULLISH'
+        vi3_phase = 'BEARISH' if atr_actuel < atr_moyen else 'BULLISH'
+        
+        # Stocker les résultats
+        vi1_phases.append(vi1_phase)
+        vi2_phases.append(vi2_phase)
+        vi3_phases.append(vi3_phase)
+        vi1_values.append(vi1_value)
+        vi2_values.append(vi2_value)
+        vi3_values.append(vi3_value)
+        atr_moyens.append(atr_moyen)
+    
+    result = {
+        'VI1_phases': vi1_phases,
+        'VI2_phases': vi2_phases,
+        'VI3_phases': vi3_phases,
+        'VI1_values': vi1_values,
+        'VI2_values': vi2_values,
+        'VI3_values': vi3_values,
+        'ATR_moyens': atr_moyens,
+        'ATR_history': atr_history
+    }
+    
+    logger.logger.info(f"Historique complet des phases VI calculé: {len(vi1_phases)} valeurs")
+    if vi1_phases:
+        logger.logger.info(f"Dernière phase VI1: {vi1_phases[-1]}")
+        logger.logger.info(f"Dernière phase VI2: {vi2_phases[-1]}")
+        logger.logger.info(f"Dernière phase VI3: {vi3_phases[-1]}")
+    
+    return result
+
 # Test du module
 if __name__ == "__main__":
     # Données fictives pour test
