@@ -284,15 +284,16 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     # L'ATR a 959 valeurs (True Range commence à la 2ème bougie)
     # La ligne centrale a 933 valeurs (RMA commence à la 28ème bougie)
     # Les closes ont 960 valeurs
-    # Donc on aligne : close[i] correspond à atr[i-1] et center_line[i-27]
+    # CORRECTION: Aligner correctement les indices pour correspondre aux mêmes périodes
+    # Maintenant: close[i] correspond à atr[i-28] et center_line[i-28] (même période)
     for i in range(27, len(closes)):
         # Vérifier qu'on ne dépasse pas les indices
-        if i >= len(closes) or (i - 1) >= len(atr_rma_history) or (i - 27) >= len(center_line_history):
+        if i >= len(closes) or (i - 28) >= len(atr_rma_history) or (i - 28) >= len(center_line_history):
             break
             
         close = closes[i]
-        atr = atr_rma_history[i - 1]  # ATR correspondant à la même période
-        center_line = center_line_history[i - 27]  # Ligne centrale correspondante
+        atr = atr_rma_history[i - 28]  # ATR correspondant à la même période (corrigé)
+        center_line = center_line_history[i - 28]  # Ligne centrale correspondante (corrigé)
         
         # Calculer les VI basés sur la ligne centrale
         vi1_value = atr * 19
