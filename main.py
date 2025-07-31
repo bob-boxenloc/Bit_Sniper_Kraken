@@ -4,7 +4,7 @@ from core.logger import logger
 from core.monitor import system_monitor
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer
-from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history
+from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_real_logic
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
@@ -258,9 +258,6 @@ def update_indicator_history(new_candle):
     else:
         print("❌ Impossible de calculer les VI avec la vraie logique")
         return False
-    else:
-        print("❌ Impossible de recalculer l'historique VI")
-        return False
     
     print("✅ Historique complet recalculé avec succès")
     return True
@@ -464,7 +461,7 @@ def trading_loop():
         
     else:
         # Fallback: calculer les indicateurs en temps réel (ancienne méthode)
-    indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
+        indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
     
     if not indicators_success:
         logger.log_warning(f"Indicateurs non calculables: {indicators_message}")
