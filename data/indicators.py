@@ -200,6 +200,218 @@ def calculate_volatility_indexes(highs, lows, closes):
     
     return result
 
+def calculate_volatility_indexes_real_logic(closes, highs, lows, vi1_crossing_time, vi2_crossing_time, vi3_crossing_time):
+    """
+    Calcule les Volatility Indexes selon la vraie logique découverte.
+    
+    Logique :
+    - Quand il y a croisement (VI vs Close) : VI = VI_précédente ± (ATR × multiplicateur)
+    - Quand pas de croisement : VI = VI_précédente ± (différence_ATR × multiplicateur)
+    
+    :param closes: Liste des prix de clôture
+    :param highs: Liste des prix hauts
+    :param lows: Liste des prix bas
+    :param vi1_crossing_time: Timestamp du croisement VI1 (1753612200000)
+    :param vi2_crossing_time: Timestamp du croisement VI2 (1754028900000)
+    :param vi3_crossing_time: Timestamp du croisement VI3 (1754076600000)
+    :return: Dictionnaire avec les VI calculés
+    """
+    logger = BitSniperLogger()
+    if len(closes) < 28:
+        logger.error("Pas assez de données pour calculer les VI avec la logique réelle.")
+        return None
+    
+    # Convertir les timestamps en indices dans le buffer
+    vi1_crossing_index = None
+    vi2_crossing_index = None
+    vi3_crossing_index = None
+    
+    # Trouver les indices correspondants aux timestamps de croisement
+    for i, candle in enumerate(closes):
+        if isinstance(candle, dict) and 'time' in candle:
+            candle_time = candle['time']
+            if candle_time == vi1_crossing_time:
+                vi1_crossing_index = i
+            elif candle_time == vi2_crossing_time:
+                vi2_crossing_index = i
+            elif candle_time == vi3_crossing_time:
+                vi3_crossing_index = i
+    
+    if vi1_crossing_index is None or vi2_crossing_index is None or vi3_crossing_index is None:
+        logger.error("Impossible de trouver les indices de croisement dans l'historique")
+        return None
+    
+    # Calculer les ATR pour chaque période
+    atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
+    atr_10_history = calculate_atr_history(highs, lows, closes, period=10)
+    atr_6_history = calculate_atr_history(highs, lows, closes, period=6)
+    
+    # Initialiser les VI avec des valeurs de départ (à ajuster selon les croisements)
+    vi1_history = []
+    vi2_history = []
+    vi3_history = []
+    
+    # États initiaux selon les croisements
+    vi1_state = "BULLISH"  # VI1 < close au croisement
+    vi2_state = "BULLISH"  # VI2 < close au croisement
+    vi3_state = "BEARISH"  # VI3 > close au croisement
+    
+    # Valeurs initiales des VI (à ajuster selon les données réelles)
+    vi1_current = closes[vi1_crossing_index]['close'] * 0.97  # VI1 légèrement sous le close
+    vi2_current = closes[vi2_crossing_index]['close'] * 0.98  # VI2 légèrement sous le close
+    vi3_current = closes[vi3_crossing_index]['close'] * 1.02  # VI3 légèrement au-dessus du close
+    
+    # Calculer l'historique complet des VI
+    for i in range(len(closes)):
+        if i < 28:  # Pas assez de données pour ATR
+            vi1_history.append(vi1_current)
+            vi2_history.append(vi2_current)
+            vi3_history.append(vi3_current)
+            continue
+        
+        current_close = closes[i]['close']
+        
+        # VI1 (ATR 28 périodes)
+        if i < len(atr_28_history):
+            atr_28_current = atr_28_history[i - 28]
+            atr_28_previous = atr_28_history[i - 29] if i > 28 else atr_28_current
+            
+            # Détecter si VI1 croise le close
+            vi1_crossing = (vi1_current > current_close and vi1_state == "BULLISH") or \
+                          (vi1_current < current_close and vi1_state == "BEARISH")
+            
+            if vi1_crossing:
+                # Croisement détecté - utiliser ATR entier
+                if vi1_current > current_close:
+                    vi1_current = vi1_current - (atr_28_current * 19)
+                    vi1_state = "BEARISH"
+                else:
+                    vi1_current = vi1_current + (atr_28_current * 19)
+                    vi1_state = "BULLISH"
+            else:
+                # Pas de croisement - utiliser différence d'ATR
+                atr_diff = atr_28_current - atr_28_previous
+                if vi1_state == "BEARISH":  # VI1 > close
+                    if atr_28_current > atr_28_previous:
+                        vi1_current += (atr_diff * 19)
+                    else:
+                        vi1_current -= (atr_diff * 19)
+                else:  # vi1_state == "BULLISH" - VI1 < close
+                    if atr_28_current > atr_28_previous:
+                        vi1_current -= (atr_diff * 19)
+                    else:
+                        vi1_current += (atr_diff * 19)
+        
+        # VI2 (ATR 10 périodes)
+        if i < len(atr_10_history):
+            atr_10_current = atr_10_history[i - 10]
+            atr_10_previous = atr_10_history[i - 11] if i > 10 else atr_10_current
+            
+            # Détecter si VI2 croise le close
+            vi2_crossing = (vi2_current > current_close and vi2_state == "BULLISH") or \
+                          (vi2_current < current_close and vi2_state == "BEARISH")
+            
+            if vi2_crossing:
+                # Croisement détecté - utiliser ATR entier
+                if vi2_current > current_close:
+                    vi2_current = vi2_current - (atr_10_current * 10)
+                    vi2_state = "BEARISH"
+                else:
+                    vi2_current = vi2_current + (atr_10_current * 10)
+                    vi2_state = "BULLISH"
+            else:
+                # Pas de croisement - utiliser différence d'ATR
+                atr_diff = atr_10_current - atr_10_previous
+                if vi2_state == "BEARISH":  # VI2 > close
+                    if atr_10_current > atr_10_previous:
+                        vi2_current += (atr_diff * 10)
+                    else:
+                        vi2_current -= (atr_diff * 10)
+                else:  # vi2_state == "BULLISH" - VI2 < close
+                    if atr_10_current > atr_10_previous:
+                        vi2_current -= (atr_diff * 10)
+                    else:
+                        vi2_current += (atr_diff * 10)
+        
+        # VI3 (ATR 6 périodes)
+        if i < len(atr_6_history):
+            atr_6_current = atr_6_history[i - 6]
+            atr_6_previous = atr_6_history[i - 7] if i > 6 else atr_6_current
+            
+            # Détecter si VI3 croise le close
+            vi3_crossing = (vi3_current > current_close and vi3_state == "BULLISH") or \
+                          (vi3_current < current_close and vi3_state == "BEARISH")
+            
+            if vi3_crossing:
+                # Croisement détecté - utiliser ATR entier
+                if vi3_current > current_close:
+                    vi3_current = vi3_current - (atr_6_current * 6)
+                    vi3_state = "BEARISH"
+                else:
+                    vi3_current = vi3_current + (atr_6_current * 6)
+                    vi3_state = "BULLISH"
+            else:
+                # Pas de croisement - utiliser différence d'ATR
+                atr_diff = atr_6_current - atr_6_previous
+                if vi3_state == "BEARISH":  # VI3 > close
+                    if atr_6_current > atr_6_previous:
+                        vi3_current += (atr_diff * 6)
+                    else:
+                        vi3_current -= (atr_diff * 6)
+                else:  # vi3_state == "BULLISH" - VI3 < close
+                    if atr_6_current > atr_6_previous:
+                        vi3_current -= (atr_diff * 6)
+                    else:
+                        vi3_current += (atr_diff * 6)
+        
+        vi1_history.append(vi1_current)
+        vi2_history.append(vi2_current)
+        vi3_history.append(vi3_current)
+    
+    return {
+        'vi1_history': vi1_history,
+        'vi2_history': vi2_history,
+        'vi3_history': vi3_history,
+        'vi1_crossing_index': vi1_crossing_index,
+        'vi2_crossing_index': vi2_crossing_index,
+        'vi3_crossing_index': vi3_crossing_index
+    }
+
+def calculate_atr_history(highs, lows, closes, period=28):
+    """
+    Calcule l'historique complet de l'ATR pour une période donnée.
+    
+    :param highs: Liste des prix hauts
+    :param lows: Liste des prix bas
+    :param closes: Liste des prix de clôture
+    :param period: Période pour l'ATR
+    :return: Liste des valeurs ATR
+    """
+    if len(closes) < period:
+        return []
+    
+    # Calculer les True Ranges
+    true_ranges = []
+    for i in range(len(closes)):
+        if i == 0:
+            true_ranges.append(highs[i] - lows[i])
+        else:
+            high_low = highs[i] - lows[i]
+            high_close_prev = abs(highs[i] - closes[i-1])
+            low_close_prev = abs(lows[i] - closes[i-1])
+            true_ranges.append(max(high_low, high_close_prev, low_close_prev))
+    
+    # Calculer l'ATR avec la méthode de Wilder (RMA)
+    atr_history = []
+    atr_current = sum(true_ranges[:period]) / period
+    atr_history.append(atr_current)
+    
+    for i in range(period, len(true_ranges)):
+        atr_current = ((atr_current * (period - 1)) + true_ranges[i]) / period
+        atr_history.append(atr_current)
+    
+    return atr_history
+
 def calculate_complete_rma_history(values, period):
     """
     Calcule l'historique complet du RMA pour toutes les valeurs.
