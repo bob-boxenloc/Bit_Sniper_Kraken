@@ -201,10 +201,10 @@ def update_indicator_history(new_candle):
     # NOUVELLE LOGIQUE RÉELLE : Calculer les VI selon la vraie logique découverte
     print("📊 Calcul VI avec la vraie logique (croisements + ATR)...")
     
-    # Extraire les données OHLC
-    closes = [candle['close'] for candle in candles]
-    highs = [candle['high'] for candle in candles]
-    lows = [candle['low'] for candle in candles]
+    # Extraire les données OHLC (convertir en float)
+    closes = [float(candle['close']) for candle in candles]
+    highs = [float(candle['high']) for candle in candles]
+    lows = [float(candle['low']) for candle in candles]
     
     # Calculer les VI avec la vraie logique (corrigée)
     vi_real_logic = calculate_volatility_indexes_corrected(candles, highs, lows)
@@ -221,7 +221,7 @@ def update_indicator_history(new_candle):
         vi3_phases = []
         
         for i in range(len(candles)):
-            close_price = candles[i]['close']
+            close_price = float(candles[i]['close'])
             
             # VI1 phases
             vi1_phase = "BEARISH" if vi_real_logic['vi1_history'][i] > close_price else "BULLISH"
