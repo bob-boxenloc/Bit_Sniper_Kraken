@@ -38,7 +38,27 @@ def check_file_limits():
             logger.log_warning(f"Trop de fichiers ouverts: {open_files}/{limit}")
             notification_manager.send_system_alert(
                 'ALERTE FICHIERS', 
-                f'Trop de fichiers ouverts sur le serveur: {open_files}/{limit}'
+                f'''Trop de fichiers ouverts sur le serveur: {open_files}/{limit}
+
+⚠️  ACTIONS À EFFECTUER :
+
+1. Se connecter au serveur :
+   ssh ubuntu@149.202.40.139
+   su - bitsniper
+   cd Bit_Sniper_Kraken
+   source venv/bin/activate
+
+2. Nettoyer les logs :
+   sudo journalctl --vacuum-time=1d
+
+3. Redémarrer le bot :
+   sudo systemctl restart bitsniper
+
+4. Vérifier :
+   sudo systemctl status bitsniper
+   sudo journalctl -u bitsniper -f
+
+🔧 CAUSE PROBABLE : Accumulation de logs ou connexions non fermées'''
             )
             return True
         return False
