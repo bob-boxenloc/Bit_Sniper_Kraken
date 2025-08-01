@@ -445,10 +445,10 @@ def trading_loop():
             'VI1_phase': vi1_phase,
             'VI2_phase': vi2_phase,
             'VI3_phase': vi3_phase,
-            # Anciennes valeurs (pour debug)
-            'VI1_old': vi1_current_old,
-            'VI2_old': vi2_current_old,
-            'VI3_old': vi3_current_old
+            # Valeurs VI actuelles
+            'vi1': vi1_current_old,
+            'vi2': vi2_current_old,
+            'vi3': vi3_current_old
         }
         
         indicators_success = True
@@ -461,9 +461,9 @@ def trading_loop():
         print(f"     VI2: {indicators['VI2_phase']}")
         print(f"     VI3: {indicators['VI3_phase']}")
         print(f"   ANCIENNE LOGIQUE - Valeurs VI (debug):")
-        print(f"     VI1: {indicators['VI1_old']:.2f}")
-        print(f"     VI2: {indicators['VI2_old']:.2f}")
-        print(f"     VI3: {indicators['VI3_old']:.2f}")
+        print(f"     VI1: {indicators['vi1']:.2f}")
+        print(f"     VI2: {indicators['vi2']:.2f}")
+        print(f"     VI3: {indicators['vi3']:.2f}")
         
         # Debug: Afficher les valeurs pour les 2 dernières bougies
         if len(indicator_history['rsi_history']) >= 2:
@@ -488,9 +488,9 @@ def trading_loop():
     
     print(f"✅ {indicators_message}")
     print(f"   RSI: {indicators['RSI']:.2f}")
-    print(f"   VI1: {indicators['VI1_old']:.2f}")
-    print(f"   VI2: {indicators['VI2_old']:.2f}")
-    print(f"   VI3: {indicators['VI3_old']:.2f}")
+    print(f"   VI1: {indicators['vi1']:.2f}")
+    print(f"   VI2: {indicators['vi2']:.2f}")
+    print(f"   VI3: {indicators['vi3']:.2f}")
     
     # Logger l'analyse des bougies
     logger.log_candle_analysis(candles, indicators_success, indicators_message)
@@ -513,7 +513,7 @@ def trading_loop():
     
     # Debug: Afficher les valeurs utilisées pour l'analyse
     print(f"🔧 DEBUG ANALYSE - Close actuel: {float(current_candle['close']):.2f}")
-    print(f"   VI1 vs Close: {indicators['VI1_old']:.2f} vs {float(current_candle['close']):.2f}")
+    print(f"   VI1 vs Close: {indicators['vi1']:.2f} vs {float(current_candle['close']):.2f}")
     
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie - Phases VI)")
@@ -529,7 +529,7 @@ def trading_loop():
     print(f"   VI3: {vi3_current_phase}")
     
     # ANCIENNE LOGIQUE (gardée pour debug)
-    vi1_current_old = indicators['VI1_old']
+    vi1_current_old = indicators['vi1']
     current_close = float(current_candle['close'])
     vi1_above_close_old = vi1_current_old > current_close
     current_phase_old = 'SHORT' if vi1_above_close_old else 'LONG'

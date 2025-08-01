@@ -23,10 +23,10 @@ def analyze_candles(candles, indicators):
     # RSI actuel
     rsi = float(indicators['RSI'])
     
-    # Volatility Indexes actuels (nouvelle logique - utiliser les anciennes valeurs pour compatibilité)
-    vi1 = float(indicators['VI1_old'])
-    vi2 = float(indicators['VI2_old'])
-    vi3 = float(indicators['VI3_old'])
+    # Volatility Indexes actuels (nouvelle logique - utiliser les vraies valeurs)
+    vi1 = float(indicators['vi1'])
+    vi2 = float(indicators['vi2'])
+    vi3 = float(indicators['vi3'])
     
     # Prix de clôture de la bougie actuelle
     current_close = float(current_candle['close'])

@@ -291,9 +291,9 @@ class BitSniperLogger:
                 'timestamp': datetime.utcnow().isoformat(),
                 'indicators': {
                     'RSI': indicators.get('RSI'),
-                    'VI1': indicators.get('VI1'),
-                    'VI2': indicators.get('VI2'),
-                    'VI3': indicators.get('VI3')
+                    'vi1': indicators.get('vi1'),
+                    'vi2': indicators.get('vi2'),
+                    'vi3': indicators.get('vi3')
                 }
             }
             
