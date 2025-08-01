@@ -15,13 +15,13 @@ from core.initialization import initialize_bot, is_initialization_ready
 from core.scheduler import run_every_15min
 from core.logger import BitSniperLogger
 from core.monitor import SystemMonitor
-from core.notifications import NotificationManager
+from core.notifications import BrevoNotifier
 from core.state_manager import StateManager
 
 # Variables globales
 logger = BitSniperLogger()
 system_monitor = SystemMonitor()
-notification_manager = NotificationManager()
+notification_manager = BrevoNotifier()
 candle_buffer = CandleBuffer(max_candles=1920)  # 20 jours de bougies 15min
 indicator_history = {}
 
