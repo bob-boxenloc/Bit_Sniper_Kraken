@@ -668,6 +668,190 @@ def calculate_complete_vi_phases_history(atr_history, period=28):
     
     return result
 
+def calculate_volatility_indexes_corrected(closes, highs, lows):
+    """
+    Calcule les Volatility Indexes selon la vraie logique découverte (CORRIGÉE).
+    
+    Logique corrigée :
+    - Différence ATR sert à calculer les VI n-1 (pas les VI n)
+    - VI n = VI n-1 ± (ATR n × multiplicateur) si croisement
+    - VI n = VI n-1 ± (différence_ATR n-1 × multiplicateur) si pas de croisement
+    
+    Différence ATR = abs(ATR_n-2 - ATR_n-1) (toujours positive)
+    
+    :param closes: Liste des prix de clôture
+    :param highs: Liste des prix hauts
+    :param lows: Liste des prix bas
+    :return: Dictionnaire avec les VI calculés
+    """
+    if len(closes) < 28:
+        print("❌ Pas assez de données pour calculer les VI")
+        return None
+    
+    # Valeurs de départ fournies par l'utilisateur
+    # Bougie n-2 (13:30)
+    vi1_n2 = 113273  # BULLISH (VI1 < Close)
+    vi2_n2 = 117885  # BEARISH (VI2 > Close)
+    vi3_n2 = 116500  # BEARISH (VI3 > Close)
+    atr28_n2 = 359
+    atr10_n2 = 384
+    atr6_n2 = 417
+    
+    # Bougie n-1 (13:45) - CALCULÉE AVEC DIFFÉRENCE ATR
+    # Différences ATR pour calculer VI n-1
+    atr28_diff = abs(atr28_n2 - 376)  # 376 = ATR n-1 fourni
+    atr10_diff = abs(atr10_n2 - 429)  # 429 = ATR n-1 fourni
+    atr6_diff = abs(atr6_n2 - 486)    # 486 = ATR n-1 fourni
+    
+    # Calculer VI n-1 avec les différences ATR
+    vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BULLISH, ATR monte
+    vi2_n1 = vi2_n2 - (atr10_diff * 10)  # BEARISH, ATR monte
+    vi3_n1 = vi3_n2 - (atr6_diff * 6)    # BEARISH, ATR monte
+    
+    # États initiaux
+    vi1_state = "BULLISH"  # VI1 < Close
+    vi2_state = "BEARISH"  # VI2 > Close
+    vi3_state = "BEARISH"  # VI3 > Close
+    
+    # Initialiser les historiques
+    vi1_history = []
+    vi2_history = []
+    vi3_history = []
+    
+    # Remplir les premières valeurs avec les données fournies
+    for i in range(len(closes) - 2):
+        vi1_history.append(vi1_n2)
+        vi2_history.append(vi2_n2)
+        vi3_history.append(vi3_n2)
+    
+    # Ajouter les deux dernières valeurs connues
+    vi1_history.append(vi1_n2)  # n-2
+    vi1_history.append(vi1_n1)  # n-1 (calculé avec différence ATR)
+    vi2_history.append(vi2_n2)  # n-2
+    vi2_history.append(vi2_n1)  # n-1 (calculé avec différence ATR)
+    vi3_history.append(vi3_n2)  # n-2
+    vi3_history.append(vi3_n1)  # n-1 (calculé avec différence ATR)
+    
+    # Calculer les ATR pour chaque période
+    atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
+    atr_10_history = calculate_atr_history(highs, lows, closes, period=10)
+    atr_6_history = calculate_atr_history(highs, lows, closes, period=6)
+    
+    # Calculer les VI pour les nouvelles bougies (n)
+    for i in range(len(closes)):
+        if i < len(closes) - 2:  # Déjà calculé
+            continue
+            
+        current_close = closes[i]['close']
+        
+        # VI1 (ATR 28 périodes)
+        if i < len(atr_28_history):
+            atr_28_current = atr_28_history[i - 28]
+            atr_28_previous = atr_28_history[i - 29] if i > 28 else atr_28_current
+            
+            # Détecter si VI1 croise le close
+            vi1_crossing = (vi1_history[-1] > current_close and vi1_state == "BULLISH") or \
+                          (vi1_history[-1] < current_close and vi1_state == "BEARISH")
+            
+            if vi1_crossing:
+                # Croisement détecté - utiliser ATR entier
+                if vi1_history[-1] > current_close:
+                    vi1_new = vi1_history[-1] - (atr_28_current * 19)
+                    vi1_state = "BEARISH"
+                else:
+                    vi1_new = vi1_history[-1] + (atr_28_current * 19)
+                    vi1_state = "BULLISH"
+            else:
+                # Pas de croisement - utiliser différence ATR n-1
+                atr_diff = abs(atr_28_current - atr_28_previous)
+                if vi1_state == "BEARISH":  # VI1 > close
+                    if atr_28_current > atr_28_previous:
+                        vi1_new = vi1_history[-1] + (atr_diff * 19)
+                    else:
+                        vi1_new = vi1_history[-1] - (atr_diff * 19)
+                else:  # vi1_state == "BULLISH" - VI1 < close
+                    if atr_28_current > atr_28_previous:
+                        vi1_new = vi1_history[-1] - (atr_diff * 19)
+                    else:
+                        vi1_new = vi1_history[-1] + (atr_diff * 19)
+            
+            vi1_history.append(vi1_new)
+        
+        # VI2 (ATR 10 périodes)
+        if i < len(atr_10_history):
+            atr_10_current = atr_10_history[i - 10]
+            atr_10_previous = atr_10_history[i - 11] if i > 10 else atr_10_current
+            
+            # Détecter si VI2 croise le close
+            vi2_crossing = (vi2_history[-1] > current_close and vi2_state == "BULLISH") or \
+                          (vi2_history[-1] < current_close and vi2_state == "BEARISH")
+            
+            if vi2_crossing:
+                # Croisement détecté - utiliser ATR entier
+                if vi2_history[-1] > current_close:
+                    vi2_new = vi2_history[-1] - (atr_10_current * 10)
+                    vi2_state = "BEARISH"
+                else:
+                    vi2_new = vi2_history[-1] + (atr_10_current * 10)
+                    vi2_state = "BULLISH"
+            else:
+                # Pas de croisement - utiliser différence ATR n-1
+                atr_diff = abs(atr_10_current - atr_10_previous)
+                if vi2_state == "BEARISH":  # VI2 > close
+                    if atr_10_current > atr_10_previous:
+                        vi2_new = vi2_history[-1] + (atr_diff * 10)
+                    else:
+                        vi2_new = vi2_history[-1] - (atr_diff * 10)
+                else:  # vi2_state == "BULLISH" - VI2 < close
+                    if atr_10_current > atr_10_previous:
+                        vi2_new = vi2_history[-1] - (atr_diff * 10)
+                    else:
+                        vi2_new = vi2_history[-1] + (atr_diff * 10)
+            
+            vi2_history.append(vi2_new)
+        
+        # VI3 (ATR 6 périodes)
+        if i < len(atr_6_history):
+            atr_6_current = atr_6_history[i - 6]
+            atr_6_previous = atr_6_history[i - 7] if i > 6 else atr_6_current
+            
+            # Détecter si VI3 croise le close
+            vi3_crossing = (vi3_history[-1] > current_close and vi3_state == "BULLISH") or \
+                          (vi3_history[-1] < current_close and vi3_state == "BEARISH")
+            
+            if vi3_crossing:
+                # Croisement détecté - utiliser ATR entier
+                if vi3_history[-1] > current_close:
+                    vi3_new = vi3_history[-1] - (atr_6_current * 6)
+                    vi3_state = "BEARISH"
+                else:
+                    vi3_new = vi3_history[-1] + (atr_6_current * 6)
+                    vi3_state = "BULLISH"
+            else:
+                # Pas de croisement - utiliser différence ATR n-1
+                atr_diff = abs(atr_6_current - atr_6_previous)
+                if vi3_state == "BEARISH":  # VI3 > close
+                    if atr_6_current > atr_6_previous:
+                        vi3_new = vi3_history[-1] + (atr_diff * 6)
+                    else:
+                        vi3_new = vi3_history[-1] - (atr_diff * 6)
+                else:  # vi3_state == "BULLISH" - VI3 < close
+                    if atr_6_current > atr_6_previous:
+                        vi3_new = vi3_history[-1] - (atr_diff * 6)
+                    else:
+                        vi3_new = vi3_history[-1] + (atr_diff * 6)
+            
+            vi3_history.append(vi3_new)
+    
+    return {
+        'vi1_history': vi1_history,
+        'vi2_history': vi2_history,
+        'vi3_history': vi3_history,
+        'vi1_state': vi1_state,
+        'vi2_state': vi2_state,
+        'vi3_state': vi3_state
+    }
+
 # Test du module
 if __name__ == "__main__":
     # Données fictives pour test

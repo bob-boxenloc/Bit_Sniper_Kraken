@@ -4,7 +4,7 @@ from core.logger import logger
 from core.monitor import system_monitor
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer
-from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history
+from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
@@ -198,28 +198,57 @@ def update_indicator_history(new_candle):
         print(f"   VI2: {vi_history['VI2_selected_history'][-1]:.2f}")
         print(f"   VI3: {vi_history['VI3_selected_history'][-1]:.2f}")
         
-    # NOUVELLE LOGIQUE : Calculer les phases VI (ancienne méthode simplifiée)
-    print("📊 Calcul phases VI (méthode simplifiée)...")
+    # NOUVELLE LOGIQUE RÉELLE : Calculer les VI selon la vraie logique découverte
+    print("📊 Calcul VI avec la vraie logique (croisements + ATR)...")
     
-    # Recalculer les phases VI avec l'ancienne méthode
-    vi_phases_history = calculate_complete_vi_phases_history(vi_history['atr_history'])
-    if vi_phases_history:
-        indicator_history['vi1_phases'] = vi_phases_history['VI1_phases']
-        indicator_history['vi2_phases'] = vi_phases_history['VI2_phases']
-        indicator_history['vi3_phases'] = vi_phases_history['VI3_phases']
-        indicator_history['vi1_values'] = vi_phases_history['VI1_values']
-        indicator_history['vi2_values'] = vi_phases_history['VI2_values']
-        indicator_history['vi3_values'] = vi_phases_history['VI3_values']
-        indicator_history['atr_moyens'] = vi_phases_history['ATR_moyens']
+    # Extraire les données OHLC
+    closes = [candle['close'] for candle in candles]
+    highs = [candle['high'] for candle in candles]
+    lows = [candle['low'] for candle in candles]
+    
+    # Calculer les VI avec la vraie logique (corrigée)
+    vi_real_logic = calculate_volatility_indexes_corrected(candles, highs, lows)
+    
+    if vi_real_logic:
+        # Stocker les nouvelles valeurs VI
+        indicator_history['vi1_history'] = vi_real_logic['vi1_history']
+        indicator_history['vi2_history'] = vi_real_logic['vi2_history']
+        indicator_history['vi3_history'] = vi_real_logic['vi3_history']
         
-        print(f"✅ Phases VI recalculées: {len(vi_phases_history['VI1_phases'])} valeurs")
-        print(f"   VI1: {vi_phases_history['VI1_phases'][-1]}")
-        print(f"   VI2: {vi_phases_history['VI2_phases'][-1]}")
-        print(f"   VI3: {vi_phases_history['VI3_phases'][-1]}")
-        print(f"   ATR actuel: {vi_phases_history['ATR_history'][-1]:.2f}")
-        print(f"   ATR moyen: {vi_phases_history['ATR_moyens'][-1]:.2f}")
+        # Calculer les phases VI basées sur la position par rapport au close
+        vi1_phases = []
+        vi2_phases = []
+        vi3_phases = []
+        
+        for i in range(len(candles)):
+            close_price = candles[i]['close']
+            
+            # VI1 phases
+            vi1_phase = "BEARISH" if vi_real_logic['vi1_history'][i] > close_price else "BULLISH"
+            vi1_phases.append(vi1_phase)
+            
+            # VI2 phases
+            vi2_phase = "BEARISH" if vi_real_logic['vi2_history'][i] > close_price else "BULLISH"
+            vi2_phases.append(vi2_phase)
+            
+            # VI3 phases
+            vi3_phase = "BEARISH" if vi_real_logic['vi3_history'][i] > close_price else "BULLISH"
+            vi3_phases.append(vi3_phase)
+        
+        indicator_history['vi1_phases'] = vi1_phases
+        indicator_history['vi2_phases'] = vi2_phases
+        indicator_history['vi3_phases'] = vi3_phases
+        
+        print(f"✅ VI calculés avec la vraie logique: {len(vi_real_logic['vi1_history'])} valeurs")
+        print(f"   VI1: {vi_real_logic['vi1_history'][-1]:.2f} (Phase: {vi1_phases[-1]})")
+        print(f"   VI2: {vi_real_logic['vi2_history'][-1]:.2f} (Phase: {vi2_phases[-1]})")
+        print(f"   VI3: {vi_real_logic['vi3_history'][-1]:.2f} (Phase: {vi3_phases[-1]})")
+        print(f"   États finaux:")
+        print(f"     VI1: {vi_real_logic['vi1_state']}")
+        print(f"     VI2: {vi_real_logic['vi2_state']}")
+        print(f"     VI3: {vi_real_logic['vi3_state']}")
     else:
-        print("❌ Impossible de recalculer l'historique des phases VI")
+        print("❌ Impossible de calculer les VI avec la vraie logique")
         return False
     
     print("✅ Historique complet recalculé avec succès")
