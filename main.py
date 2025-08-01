@@ -1,7 +1,9 @@
-from core.scheduler import run_every_15min
-from core.state_manager import StateManager
-from core.logger import logger
-from core.monitor import system_monitor
+import os
+import sys
+import time
+import json
+import traceback
+from datetime import datetime, timedelta
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer
 from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected
@@ -10,38 +12,39 @@ from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
 from signals.decision import decide_action, get_decision_summary
 from core.initialization import initialize_bot, is_initialization_ready
-import time
+from core.scheduler import run_every_15min
+from core.logger import BitSniperLogger
+from core.monitor import SystemMonitor
+from core.notifications import NotificationManager
+from core.state_manager import StateManager
 
-# Buffer global pour les bougies
-candle_buffer = CandleBuffer(max_candles=1920)  # 20 jours d'historique complet (1920 bougies 15min)
+# Variables globales
+logger = BitSniperLogger()
+system_monitor = SystemMonitor()
+notification_manager = NotificationManager()
+candle_buffer = CandleBuffer(max_candles=1920)  # 20 jours de bougies 15min
+indicator_history = {}
 
-# Variables globales pour l'historique des indicateurs
-indicator_history = {
-    'rsi_history': [],
-    'vi1_history': [],
-    'vi2_history': [],
-    'vi3_history': [],
-    'atr_history': [],
-    'true_ranges': [],
-    'rsi_avg_gain': None,  # Dernière moyenne des gains pour RSI
-    'rsi_avg_loss': None,  # Dernière moyenne des pertes pour RSI
-    # Nouvelles clés pour les bandes VI
-    'vi1_upper_history': [],
-    'vi1_lower_history': [],
-    'vi2_upper_history': [],
-    'vi2_lower_history': [],
-    'vi3_upper_history': [],
-    'vi3_lower_history': [],
-    'center_line_history': [],
-    # NOUVELLES CLÉS : Phases VI (nouvelle logique)
-    'vi1_phases': [],
-    'vi2_phases': [],
-    'vi3_phases': [],
-    'vi1_values': [],
-    'vi2_values': [],
-    'vi3_values': [],
-    'atr_moyens': []
-}
+def check_file_limits():
+    """
+    Vérifie le nombre de fichiers ouverts et envoie une alerte si nécessaire.
+    """
+    try:
+        open_files = len(os.listdir('/proc/self/fd'))
+        limit = 2048
+        threshold = int(limit * 0.95)  # 95% = 1945
+        
+        if open_files > threshold:
+            logger.log_warning(f"Trop de fichiers ouverts: {open_files}/{limit}")
+            notification_manager.send_system_alert(
+                'ALERTE FICHIERS', 
+                f'Trop de fichiers ouverts sur le serveur: {open_files}/{limit}'
+            )
+            return True
+        return False
+    except Exception as e:
+        logger.log_error(f"Erreur lors de la vérification des fichiers: {e}")
+        return False
 
 def initialize_indicator_history(candles):
     """
@@ -274,6 +277,9 @@ def trading_loop():
             print("   Le bot continue mais avec prudence...")
     except Exception as e:
         logger.log_error(f"Erreur lors de la vérification de la santé système: {e}")
+    
+    # Vérifier les limites de fichiers
+    check_file_limits()
     
     print("\n" + "="*60)
     print("NOUVELLE BOUGIE 15M - ANALYSE COMPLÈTE (Nouvelle Stratégie)")
