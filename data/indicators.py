@@ -699,9 +699,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
     
     # Bougie n-1 (13:45) - CALCULÉE AVEC DIFFÉRENCE ATR
     # Différences ATR pour calculer VI n-1
-    atr28_diff = abs(atr28_n2 - 376)  # 376 = ATR n-1 fourni
-    atr10_diff = abs(atr10_n2 - 429)  # 429 = ATR n-1 fourni
-    atr6_diff = abs(atr6_n2 - 486)    # 486 = ATR n-1 fourni
+    atr28_diff = abs(float(atr28_n2) - 376.0)  # 376 = ATR n-1 fourni
+    atr10_diff = abs(float(atr10_n2) - 429.0)  # 429 = ATR n-1 fourni
+    atr6_diff = abs(float(atr6_n2) - 486.0)    # 486 = ATR n-1 fourni
     
     # Calculer VI n-1 avec les différences ATR
     vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BULLISH, ATR monte
