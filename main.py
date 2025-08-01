@@ -207,7 +207,7 @@ def update_indicator_history(new_candle):
     lows = [float(candle['low']) for candle in candles]
     
     # Calculer les VI avec la vraie logique (corrigée)
-    vi_real_logic = calculate_volatility_indexes_corrected(candles, highs, lows)
+    vi_real_logic = calculate_volatility_indexes_corrected(closes, highs, lows)
     
     if vi_real_logic:
         # Stocker les nouvelles valeurs VI

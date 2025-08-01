@@ -742,7 +742,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         if i < len(closes) - 2:  # Déjà calculé
             continue
             
-        current_close = closes[i]['close']
+        current_close = closes[i]
         
         # VI1 (ATR 28 périodes)
         if i < len(atr_28_history):
