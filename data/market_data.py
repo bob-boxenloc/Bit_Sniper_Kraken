@@ -95,7 +95,8 @@ class MarketData:
                 
                 if target_candle:
                     ohlcv = [target_candle]
-                    self.logger.info(f"✅ Récupéré la bougie qui vient de se fermer: {target_candle['datetime']} (période {recently_closed_candle_start}-{recently_closed_candle_end})")
+                    target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
+                    self.logger.info(f"✅ Récupéré la bougie qui vient de se fermer: {target_datetime} (période {recently_closed_candle_start}-{recently_closed_candle_end})")
                 else:
                     self.logger.warning(f"Aucune bougie qui vient de se fermer trouvée pour la période {recently_closed_candle_start}-{recently_closed_candle_end}")
                     return []
