@@ -479,7 +479,7 @@ def trading_loop():
         
     else:
         # Fallback: calculer les indicateurs en temps réel (ancienne méthode)
-    indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
+        indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
     
     if not indicators_success:
         logger.log_warning(f"Indicateurs non calculables: {indicators_message}")
