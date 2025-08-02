@@ -352,7 +352,7 @@ def trading_loop():
         
         if new_candles:
             # Vérifier si la bougie n'est pas déjà dans le buffer
-            new_candle = new_candles[0]  # La dernière bougie
+            new_candle = new_candles[-1]  # La dernière bougie (la plus récente)
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
             
             print(f"🔄 DEBUG: new_candle time: {new_candle['time']}")
@@ -479,7 +479,7 @@ def trading_loop():
         
     else:
         # Fallback: calculer les indicateurs en temps réel (ancienne méthode)
-        indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
+    indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
     
     if not indicators_success:
         logger.log_warning(f"Indicateurs non calculables: {indicators_message}")

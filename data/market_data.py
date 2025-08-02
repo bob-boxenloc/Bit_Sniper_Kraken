@@ -1,6 +1,7 @@
 import os
 import logging
 import requests
+import time
 from kraken.futures import Market
 from datetime import datetime
 from core.error_handler import handle_network_errors
@@ -18,7 +19,6 @@ class MarketData:
         """Récupère le trade-count via l'endpoint Analytics"""
         try:
             # Calculer les timestamps from/to
-            import time
             end_time = int(time.time())
             start_time = end_time - (limit * 15 * 60)  # limit * 15 minutes
             
@@ -72,8 +72,36 @@ class MarketData:
                 self.logger.warning("Aucune bougie fermée trouvée")
                 return []
             
-            # On ne garde que les 'limit' dernières bougies fermées
-            ohlcv = closed_candles[-limit:]
+            # CORRECTION CRITIQUE : Récupérer la bougie qui vient de se fermer
+            # Au lieu de la dernière bougie fermée
+            if limit == 1:
+                # Pour une seule bougie : récupérer la bougie qui vient de se fermer
+                # Calculer le timestamp de la bougie actuelle (15 minutes alignées)
+                current_time = int(time.time())
+                current_candle_start = (current_time // 900) * 900  # Aligner sur 15 minutes
+                
+                # La bougie qui vient de se fermer est celle qui s'est terminée juste avant la bougie actuelle
+                # (soit 15 minutes avant le début de la bougie actuelle)
+                recently_closed_candle_start = current_candle_start - 900  # 15 minutes = 900 secondes
+                recently_closed_candle_end = current_candle_start
+                
+                # Trouver la bougie qui correspond à cette période
+                target_candle = None
+                for candle in closed_candles:
+                    candle_start = (candle['time'] // 1000) // 900 * 900  # Convertir en secondes et aligner
+                    if candle_start == recently_closed_candle_start:
+                        target_candle = candle
+                        break
+                
+                if target_candle:
+                    ohlcv = [target_candle]
+                    self.logger.info(f"✅ Récupéré la bougie qui vient de se fermer: {target_candle['datetime']} (période {recently_closed_candle_start}-{recently_closed_candle_end})")
+                else:
+                    self.logger.warning(f"Aucune bougie qui vient de se fermer trouvée pour la période {recently_closed_candle_start}-{recently_closed_candle_end}")
+                    return []
+            else:
+                # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
+                ohlcv = closed_candles[-limit:]
             
             # Récupérer le trade-count via l'endpoint Analytics
             try:
