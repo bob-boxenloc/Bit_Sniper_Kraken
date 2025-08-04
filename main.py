@@ -233,39 +233,36 @@ def update_indicator_history(new_candle):
     vi_real_logic = calculate_volatility_indexes_corrected(closes, highs, lows)
     
     if vi_real_logic:
-        # Stocker les nouvelles valeurs VI
+        # Stocker les nouvelles valeurs VI (seulement les valeurs finales)
         indicator_history['vi1_history'] = vi_real_logic['vi1_history']
         indicator_history['vi2_history'] = vi_real_logic['vi2_history']
         indicator_history['vi3_history'] = vi_real_logic['vi3_history']
         
-        # Calculer les phases VI basées sur la position par rapport au close
-        vi1_phases = []
-        vi2_phases = []
-        vi3_phases = []
+        # Calculer les phases VI basées sur la position par rapport au close ACTUEL
+        # On utilise seulement les valeurs finales des VI
+        current_close = float(candles[-1]['close'])  # Close de la dernière bougie
         
-        for i in range(len(candles)):
-            close_price = float(candles[i]['close'])
-            
-            # VI1 phases
-            vi1_phase = "BEARISH" if vi_real_logic['vi1_history'][i] > close_price else "BULLISH"
-            vi1_phases.append(vi1_phase)
-            
-            # VI2 phases
-            vi2_phase = "BEARISH" if vi_real_logic['vi2_history'][i] > close_price else "BULLISH"
-            vi2_phases.append(vi2_phase)
-            
-            # VI3 phases
-            vi3_phase = "BEARISH" if vi_real_logic['vi3_history'][i] > close_price else "BULLISH"
-            vi3_phases.append(vi3_phase)
+        # VI1 phases (utiliser seulement la dernière valeur)
+        vi1_final = vi_real_logic['vi1_history'][-1]
+        vi1_phase = "BEARISH" if vi1_final > current_close else "BULLISH"
         
-        indicator_history['vi1_phases'] = vi1_phases
-        indicator_history['vi2_phases'] = vi2_phases
-        indicator_history['vi3_phases'] = vi3_phases
+        # VI2 phases (utiliser seulement la dernière valeur)
+        vi2_final = vi_real_logic['vi2_history'][-1]
+        vi2_phase = "BEARISH" if vi2_final > current_close else "BULLISH"
+        
+        # VI3 phases (utiliser seulement la dernière valeur)
+        vi3_final = vi_real_logic['vi3_history'][-1]
+        vi3_phase = "BEARISH" if vi3_final > current_close else "BULLISH"
+        
+        # Stocker seulement les phases finales (pas d'historique)
+        indicator_history['vi1_phases'] = [vi1_phase]
+        indicator_history['vi2_phases'] = [vi2_phase]
+        indicator_history['vi3_phases'] = [vi3_phase]
         
         print(f"✅ VI calculés avec la vraie logique: {len(vi_real_logic['vi1_history'])} valeurs")
-        print(f"   VI1: {vi_real_logic['vi1_history'][-1]:.2f} (Phase: {vi1_phases[-1]})")
-        print(f"   VI2: {vi_real_logic['vi2_history'][-1]:.2f} (Phase: {vi2_phases[-1]})")
-        print(f"   VI3: {vi_real_logic['vi3_history'][-1]:.2f} (Phase: {vi3_phases[-1]})")
+        print(f"   VI1: {vi_real_logic['vi1_history'][-1]:.2f} (Phase: {vi1_phase})")
+        print(f"   VI2: {vi_real_logic['vi2_history'][-1]:.2f} (Phase: {vi2_phase})")
+        print(f"   VI3: {vi_real_logic['vi3_history'][-1]:.2f} (Phase: {vi3_phase})")
         print(f"   États finaux:")
         print(f"     VI1: {vi_real_logic['vi1_state']}")
         print(f"     VI2: {vi_real_logic['vi2_state']}")
@@ -470,12 +467,9 @@ def trading_loop():
             print(f"🔧 DEBUG - Valeurs pour les 2 dernières bougies:")
             print(f"   RSI N-2: {indicator_history['rsi_history'][-2]:.2f}")
             print(f"   RSI N-1: {indicator_history['rsi_history'][-1]:.2f}")
-            print(f"   VI1 N-2: {indicator_history['vi1_phases'][-2] if len(indicator_history['vi1_phases']) >= 2 else 'N/A'}")
-            print(f"   VI1 N-1: {indicator_history['vi1_phases'][-1]}")
-            print(f"   VI2 N-2: {indicator_history['vi2_phases'][-2] if len(indicator_history['vi2_phases']) >= 2 else 'N/A'}")
-            print(f"   VI2 N-1: {indicator_history['vi2_phases'][-1]}")
-            print(f"   VI3 N-2: {indicator_history['vi3_phases'][-2] if len(indicator_history['vi3_phases']) >= 2 else 'N/A'}")
-            print(f"   VI3 N-1: {indicator_history['vi3_phases'][-1]}")
+            print(f"   VI1 Phase actuelle: {indicator_history['vi1_phases'][-1]}")
+            print(f"   VI2 Phase actuelle: {indicator_history['vi2_phases'][-1]}")
+            print(f"   VI3 Phase actuelle: {indicator_history['vi3_phases'][-1]}")
         
     else:
         # Fallback: calculer les indicateurs en temps réel (ancienne méthode)

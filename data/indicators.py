@@ -706,24 +706,24 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-2 (08:15)
-    vi1_n2 = 115520  # BEARISH (VI1 > Close)
-    vi2_n2 = 113109  # BULLISH (VI2 < Close)
-    vi3_n2 = 113838  # BULLISH (VI3 < Close)
-    atr28_n2 = 185
-    atr10_n2 = 183
-    atr6_n2 = 187
+    # Bougie n-2 (08:30)
+    vi1_n2 = 115608  # BEARISH (VI1 > Close)
+    vi2_n2 = 113062  # BULLISH (VI2 < Close)
+    vi3_n2 = 113810  # BULLISH (VI3 < Close)
+    atr28_n2 = 190
+    atr10_n2 = 192
+    atr6_n2 = 202
     
-    # Bougie n-1 (08:30) - CALCULÉE AVEC DIFFÉRENCE ATR
+    # Bougie n-1 (08:45) - CALCULÉE AVEC DIFFÉRENCE ATR
     # Différences ATR pour calculer VI n-1
-    atr28_diff = abs(float(atr28_n2) - 190.0)  # 190 = ATR n-1 fourni
-    atr10_diff = abs(float(atr10_n2) - 192.0)  # 192 = ATR n-1 fourni
-    atr6_diff = abs(float(atr6_n2) - 202.0)    # 202 = ATR n-1 fourni
+    atr28_diff = abs(float(atr28_n2) - 187.0)  # 187 = ATR n-1 fourni
+    atr10_diff = abs(float(atr10_n2) - 187.0)  # 187 = ATR n-1 fourni
+    atr6_diff = abs(float(atr6_n2) - 192.0)    # 192 = ATR n-1 fourni
     
     # Calculer VI n-1 avec les différences ATR
-    vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BEARISH, ATR monte
-    vi2_n1 = vi2_n2 - (atr10_diff * 10)  # BULLISH, ATR monte
-    vi3_n1 = vi3_n2 - (atr6_diff * 6)    # BULLISH, ATR monte
+    vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BEARISH, ATR baisse
+    vi2_n1 = vi2_n2 - (atr10_diff * 10)  # BULLISH, ATR baisse
+    vi3_n1 = vi3_n2 - (atr6_diff * 6)    # BULLISH, ATR baisse
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
