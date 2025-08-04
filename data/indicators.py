@@ -713,41 +713,25 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
     vi2_state = "BULLISH"  # VI2 < Close
     vi3_state = "BULLISH"  # VI3 < Close
     
-    # Initialiser les historiques
-    vi1_history = []
-    vi2_history = []
-    vi3_history = []
-    
-    # Remplir les premières valeurs avec les données fournies
-    for i in range(len(closes) - 2):
-        vi1_history.append(vi1_n2)
-        vi2_history.append(vi2_n2)
-        vi3_history.append(vi3_n2)
-    
-    # Ajouter les deux dernières valeurs connues
-    vi1_history.append(vi1_n2)  # n-2
-    vi1_history.append(vi1_n1)  # n-1 (calculé avec différence ATR)
-    vi2_history.append(vi2_n2)  # n-2
-    vi2_history.append(vi2_n1)  # n-1 (calculé avec différence ATR)
-    vi3_history.append(vi3_n2)  # n-2
-    vi3_history.append(vi3_n1)  # n-1 (calculé avec différence ATR)
+    # Initialiser les historiques avec seulement les 2 dernières valeurs connues
+    vi1_history = [vi1_n2, vi1_n1]  # n-2, n-1
+    vi2_history = [vi2_n2, vi2_n1]  # n-2, n-1
+    vi3_history = [vi3_n2, vi3_n1]  # n-2, n-1
     
     # Calculer les ATR pour chaque période
     atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
     atr_10_history = calculate_atr_history(highs, lows, closes, period=10)
     atr_6_history = calculate_atr_history(highs, lows, closes, period=6)
     
-    # Calculer les VI pour les nouvelles bougies (n)
-    for i in range(len(closes)):
-        if i < len(closes) - 2:  # Déjà calculé
-            continue
-            
-        current_close = closes[i]
+    # Calculer les VI pour la nouvelle bougie (n) seulement
+    # Utiliser les 2 dernières bougies comme point de départ
+    if len(closes) >= 2:
+        current_close = closes[-1]  # Dernière bougie (nouvelle)
         
         # VI1 (ATR 28 périodes)
-        if i < len(atr_28_history):
-            atr_28_current = atr_28_history[i - 28]
-            atr_28_previous = atr_28_history[i - 29] if i > 28 else atr_28_current
+        if len(atr_28_history) >= 2:
+            atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
+            atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
             
             # Détecter si VI1 croise le close
             vi1_crossing = (vi1_history[-1] > current_close and vi1_state == "BULLISH") or \
@@ -778,9 +762,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
             vi1_history.append(vi1_new)
         
         # VI2 (ATR 10 périodes)
-        if i < len(atr_10_history):
-            atr_10_current = atr_10_history[i - 10]
-            atr_10_previous = atr_10_history[i - 11] if i > 10 else atr_10_current
+        if len(atr_10_history) >= 2:
+            atr_10_current = atr_10_history[-1]  # ATR de la nouvelle bougie
+            atr_10_previous = atr_10_history[-2]  # ATR de la bougie précédente
             
             # Détecter si VI2 croise le close
             vi2_crossing = (vi2_history[-1] > current_close and vi2_state == "BULLISH") or \
@@ -811,9 +795,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
             vi2_history.append(vi2_new)
         
         # VI3 (ATR 6 périodes)
-        if i < len(atr_6_history):
-            atr_6_current = atr_6_history[i - 6]
-            atr_6_previous = atr_6_history[i - 7] if i > 6 else atr_6_current
+        if len(atr_6_history) >= 2:
+            atr_6_current = atr_6_history[-1]  # ATR de la nouvelle bougie
+            atr_6_previous = atr_6_history[-2]  # ATR de la bougie précédente
             
             # Détecter si VI3 croise le close
             vi3_crossing = (vi3_history[-1] > current_close and vi3_state == "BULLISH") or \
