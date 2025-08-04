@@ -220,18 +220,14 @@ def calculate_atr_history(highs, lows, closes, period=28):
         print(f"❌ ERREUR: Longueurs différentes - highs: {len(highs)}, lows: {len(lows)}, closes: {len(closes)}")
         return []
     
-    # Calculer les True Ranges
+    # Calculer les True Ranges (CORRIGÉ: commencer à i=1)
     true_ranges = []
-    for i in range(len(closes)):
-        if i == 0:
-            # Pour la première bougie, utiliser seulement high - low
-            true_ranges.append(highs[i] - lows[i])
-        else:
-            # Pour les autres bougies, utiliser la formule complète
-            high_low = highs[i] - lows[i]
-            high_close_prev = abs(highs[i] - closes[i-1])
-            low_close_prev = abs(lows[i] - closes[i-1])
-            true_ranges.append(max(high_low, high_close_prev, low_close_prev))
+    for i in range(1, len(closes)):  # CORRECTION: commencer à i=1
+        # Pour toutes les bougies, utiliser la formule complète
+        high_low = highs[i] - lows[i]
+        high_close_prev = abs(highs[i] - closes[i-1])
+        low_close_prev = abs(lows[i] - closes[i-1])
+        true_ranges.append(max(high_low, high_close_prev, low_close_prev))
     
     # Vérifier qu'on a assez de True Ranges
     if len(true_ranges) < period:
@@ -706,24 +702,24 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-2 (08:30)
-    vi1_n2 = 115608  # BEARISH (VI1 > Close)
-    vi2_n2 = 113062  # BULLISH (VI2 < Close)
-    vi3_n2 = 113810  # BULLISH (VI3 < Close)
-    atr28_n2 = 190
-    atr10_n2 = 192
-    atr6_n2 = 202
+    # Bougie n-2 (13:15)
+    vi1_n2 = 115383  # BEARISH (VI1 > Close)
+    vi2_n2 = 113181  # BULLISH (VI2 < Close)
+    vi3_n2 = 113881  # BULLISH (VI3 < Close)
+    atr28_n2 = 176
+    atr10_n2 = 173
+    atr6_n2 = 175
     
-    # Bougie n-1 (08:45) - CALCULÉE AVEC DIFFÉRENCE ATR
+    # Bougie n-1 (13:30) - CALCULÉE AVEC DIFFÉRENCE ATR
     # Différences ATR pour calculer VI n-1
-    atr28_diff = abs(float(atr28_n2) - 187.0)  # 187 = ATR n-1 fourni
-    atr10_diff = abs(float(atr10_n2) - 187.0)  # 187 = ATR n-1 fourni
-    atr6_diff = abs(float(atr6_n2) - 192.0)    # 192 = ATR n-1 fourni
+    atr28_diff = abs(float(atr28_n2) - 205.0)  # 205 = ATR n-1 fourni
+    atr10_diff = abs(float(atr10_n2) - 227.0)  # 227 = ATR n-1 fourni
+    atr6_diff = abs(float(atr6_n2) - 265.0)    # 265 = ATR n-1 fourni
     
     # Calculer VI n-1 avec les différences ATR
-    vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BEARISH, ATR baisse
-    vi2_n1 = vi2_n2 - (atr10_diff * 10)  # BULLISH, ATR baisse
-    vi3_n1 = vi3_n2 - (atr6_diff * 6)    # BULLISH, ATR baisse
+    vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BEARISH, ATR monte
+    vi2_n1 = vi2_n2 - (atr10_diff * 10)  # BULLISH, ATR monte
+    vi3_n1 = vi3_n2 - (atr6_diff * 6)    # BULLISH, ATR monte
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
