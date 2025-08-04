@@ -6,7 +6,7 @@ import traceback
 from datetime import datetime, timedelta
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer
-from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected
+from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
@@ -164,38 +164,65 @@ def update_indicator_history(new_candle):
     highs = [float(c['high']) for c in candles]
     lows = [float(c['low']) for c in candles]
     
-    # Recalculer l'historique complet du RSI
-    print("📊 Recalcul RSI(40)...")
-    rsi_history = calculate_complete_rsi_history(closes, 40)
-    if rsi_history:
-        indicator_history['rsi_history'] = rsi_history
-        
-        # Calculer et stocker les moyennes RMA finales pour continuer le calcul récursif
-        deltas = []
-        for i in range(1, len(closes)):
-            deltas.append(closes[i] - closes[i-1])
-        
-        gains = [max(delta, 0) for delta in deltas]
-        losses = [max(-delta, 0) for delta in deltas]
-        
-        # Calculer les moyennes RMA finales (après 40 périodes)
-        avg_gain = sum(gains[:40]) / 40
-        avg_loss = sum(losses[:40]) / 40
-        
-        # Continuer le calcul RMA pour toutes les périodes suivantes
-        for i in range(40, len(deltas)):
-            avg_gain = (avg_gain * 39 + gains[i]) / 40
-            avg_loss = (avg_loss * 39 + losses[i]) / 40
-        
-        # Stocker les moyennes finales pour continuer le calcul récursif
-        indicator_history['rsi_avg_gain'] = avg_gain
-        indicator_history['rsi_avg_loss'] = avg_loss
-        
-        print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
-        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+    # Calculer le RSI pour la nouvelle bougie seulement
+    print("📊 Calcul RSI(40) pour la nouvelle bougie...")
+    
+    # Récupérer les moyennes RMA précédentes
+    avg_gain_prev = indicator_history.get('rsi_avg_gain')
+    avg_loss_prev = indicator_history.get('rsi_avg_loss')
+    
+    if avg_gain_prev is not None and avg_loss_prev is not None:
+        # Calculer le RSI de la nouvelle bougie
+        rsi_result = calculate_rsi_for_new_candle(closes, avg_gain_prev, avg_loss_prev, 40)
+        if rsi_result:
+            new_rsi, new_avg_gain, new_avg_loss = rsi_result
+            
+            # Mettre à jour l'historique RSI
+            rsi_history = indicator_history.get('rsi_history', [])
+            rsi_history.append(new_rsi)
+            indicator_history['rsi_history'] = rsi_history
+            
+            # Stocker les nouvelles moyennes pour la prochaine bougie
+            indicator_history['rsi_avg_gain'] = new_avg_gain
+            indicator_history['rsi_avg_loss'] = new_avg_loss
+            
+            print(f"✅ RSI calculé pour la nouvelle bougie: {new_rsi:.2f}")
+        else:
+            print("❌ Impossible de calculer le RSI pour la nouvelle bougie")
+            return False
     else:
-        print("❌ Impossible de recalculer l'historique RSI")
-        return False
+        # Première fois : recalculer tout l'historique
+        print("📊 Recalcul complet de l'historique RSI (première fois)...")
+        rsi_history = calculate_complete_rsi_history(closes, 40)
+        if rsi_history:
+            indicator_history['rsi_history'] = rsi_history
+            
+            # Calculer et stocker les moyennes RMA finales
+            deltas = []
+            for i in range(1, len(closes)):
+                deltas.append(closes[i] - closes[i-1])
+            
+            gains = [max(delta, 0) for delta in deltas]
+            losses = [max(-delta, 0) for delta in deltas]
+            
+            # Calculer les moyennes RMA finales
+            avg_gain = sum(gains[:40]) / 40
+            avg_loss = sum(losses[:40]) / 40
+            
+            # Continuer le calcul RMA pour toutes les périodes suivantes
+            for i in range(40, len(deltas)):
+                avg_gain = (avg_gain * 39 + gains[i]) / 40
+                avg_loss = (avg_loss * 39 + losses[i]) / 40
+            
+            # Stocker les moyennes finales
+            indicator_history['rsi_avg_gain'] = avg_gain
+            indicator_history['rsi_avg_loss'] = avg_loss
+            
+            print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
+            print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+        else:
+            print("❌ Impossible de recalculer l'historique RSI")
+            return False
     
     # Recalculer l'historique complet des Volatility Indexes
     print("📊 Recalcul Volatility Indexes...")
