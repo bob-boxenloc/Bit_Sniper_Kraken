@@ -234,13 +234,13 @@ def calculate_atr_history(highs, lows, closes, period=28):
         print(f"❌ ERREUR: Pas assez de True Ranges - Nécessaire: {period}, Disponible: {len(true_ranges)}")
         return []
     
-    # Calculer l'ATR avec la méthode de Wilder (RMA)
+    # Calculer l'ATR de la période actuelle uniquement (pas de moyenne)
     atr_history = []
-    atr_current = sum(true_ranges[:period]) / period
-    atr_history.append(atr_current)
     
+    # Pour chaque bougie, calculer l'ATR sur les 'period' bougies précédentes
     for i in range(period, len(true_ranges)):
-        atr_current = ((atr_current * (period - 1)) + true_ranges[i]) / period
+        # ATR = moyenne des 'period' True Ranges précédents
+        atr_current = sum(true_ranges[i-period:i]) / period
         atr_history.append(atr_current)
     
     return atr_history
@@ -702,34 +702,23 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-2 (14:15)
-    vi1_n2 = 116200  # BEARISH (VI1 > Close)
-    vi2_n2 = 113109  # BULLISH (VI2 < Close)
-    vi3_n2 = 113981  # BULLISH (VI3 < Close)
-    atr28_n2 = 234
-    atr10_n2 = 274
-    atr6_n2 = 320
-    
-    # Bougie n-1 (14:30) - CALCULÉE AVEC DIFFÉRENCE ATR
-    # Différences ATR pour calculer VI n-1
-    atr28_diff = atr28_n2 - 248.0  # 248 = ATR n-1 fourni (avec signe)
-    atr10_diff = atr10_n2 - 297.0  # 297 = ATR n-1 fourni (avec signe)
-    atr6_diff = atr6_n2 - 352.0    # 352 = ATR n-1 fourni (avec signe)
-    
-    # Calculer VI n-1 avec les différences ATR (avec signe)
-    vi1_n1 = vi1_n2 + (atr28_diff * 19)  # BEARISH, ATR baisse
-    vi2_n1 = vi2_n2 + (atr10_diff * 10)  # BULLISH, ATR baisse
-    vi3_n1 = vi3_n2 + (atr6_diff * 6)    # BULLISH, ATR baisse
+    # Bougie n-1 (15:15) - Point de départ
+    vi1_n1 = 116718  # BEARISH (VI1 > Close)
+    vi2_n1 = 113023  # BULLISH (VI2 < Close)
+    vi3_n1 = 114005  # BULLISH (VI3 < Close)
+    atr28_n1 = 269
+    atr10_n1 = 320
+    atr6_n1 = 362
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
     vi2_state = "BULLISH"  # VI2 < Close
     vi3_state = "BULLISH"  # VI3 < Close
     
-    # Initialiser les historiques avec seulement les 2 dernières valeurs connues
-    vi1_history = [vi1_n2, vi1_n1]  # n-2, n-1
-    vi2_history = [vi2_n2, vi2_n1]  # n-2, n-1
-    vi3_history = [vi3_n2, vi3_n1]  # n-2, n-1
+    # Initialiser les historiques avec seulement la valeur de départ
+    vi1_history = [vi1_n1]  # n-1
+    vi2_history = [vi2_n1]  # n-1
+    vi3_history = [vi3_n1]  # n-1
     
     # Calculer les ATR pour chaque période
     atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
@@ -740,6 +729,19 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
     if not atr_28_history or not atr_10_history or not atr_6_history:
         print("❌ ERREUR: Impossible de calculer les ATR")
         return None
+    
+    # LOGGER LES 3 ATR DIFFÉRENTS
+    print(f"🔧 DEBUG VI CALCUL - 3 ATR DIFFÉRENTS:")
+    print(f"   Close actuel: {closes[-1]:.2f}")
+    print(f"   ATR 28 (VI1): {atr_28_history[-1]:.2f}")
+    print(f"   ATR 10 (VI2): {atr_10_history[-1]:.2f}")
+    print(f"   ATR 6 (VI3): {atr_6_history[-1]:.2f}")
+    print(f"   ATR 28 précédent: {atr_28_history[-2]:.2f}")
+    print(f"   ATR 10 précédent: {atr_10_history[-2]:.2f}")
+    print(f"   ATR 6 précédent: {atr_6_history[-2]:.2f}")
+    print(f"   Différence ATR 28: {atr_28_history[-1] - atr_28_history[-2]:.2f}")
+    print(f"   Différence ATR 10: {atr_10_history[-1] - atr_10_history[-2]:.2f}")
+    print(f"   Différence ATR 6: {atr_6_history[-1] - atr_6_history[-2]:.2f}")
     
     # Calculer les VI pour la nouvelle bougie (n) seulement
     # Utiliser les 2 dernières bougies comme point de départ
@@ -764,8 +766,8 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
                     vi1_new = vi1_history[-1] + (atr_28_current * 19)
                     vi1_state = "BULLISH"
             else:
-                # Pas de croisement - utiliser différence ATR n-1 (avec signe)
-                atr_diff = atr_28_current - atr_28_previous  # Garder le signe
+                # Pas de croisement - utiliser différence ATR (avec signe)
+                atr_diff = atr_28_current - atr28_n1  # Différence avec ATR de départ
                 if vi1_state == "BEARISH":  # VI1 > close
                     # VI monte si ATR monte, baisse si ATR baisse
                     vi1_new = vi1_history[-1] + (atr_diff * 19)
@@ -774,6 +776,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
                     vi1_new = vi1_history[-1] + (atr_diff * 19)
             
             vi1_history.append(vi1_new)
+            print(f"   VI1 calculé: {vi1_new:.2f} (État: {vi1_state})")
         
         # VI2 (ATR 10 périodes)
         if len(atr_10_history) >= 2:
@@ -793,8 +796,8 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
                     vi2_new = vi2_history[-1] + (atr_10_current * 10)
                     vi2_state = "BULLISH"
             else:
-                # Pas de croisement - utiliser différence ATR n-1 (avec signe)
-                atr_diff = atr_10_current - atr_10_previous  # Garder le signe
+                # Pas de croisement - utiliser différence ATR (avec signe)
+                atr_diff = atr_10_current - atr10_n1  # Différence avec ATR de départ
                 if vi2_state == "BEARISH":  # VI2 > close
                     # VI monte si ATR monte, baisse si ATR baisse
                     vi2_new = vi2_history[-1] + (atr_diff * 10)
@@ -803,6 +806,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
                     vi2_new = vi2_history[-1] + (atr_diff * 10)
             
             vi2_history.append(vi2_new)
+            print(f"   VI2 calculé: {vi2_new:.2f} (État: {vi2_state})")
         
         # VI3 (ATR 6 périodes)
         if len(atr_6_history) >= 2:
@@ -822,8 +826,8 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
                     vi3_new = vi3_history[-1] + (atr_6_current * 6)
                     vi3_state = "BULLISH"
             else:
-                # Pas de croisement - utiliser différence ATR n-1 (avec signe)
-                atr_diff = atr_6_current - atr_6_previous  # Garder le signe
+                # Pas de croisement - utiliser différence ATR (avec signe)
+                atr_diff = atr_6_current - atr6_n1  # Différence avec ATR de départ
                 if vi3_state == "BEARISH":  # VI3 > close
                     # VI monte si ATR monte, baisse si ATR baisse
                     vi3_new = vi3_history[-1] + (atr_diff * 6)
@@ -832,6 +836,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
                     vi3_new = vi3_history[-1] + (atr_diff * 6)
             
             vi3_history.append(vi3_new)
+            print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
     
     return {
         'vi1_history': vi1_history,
