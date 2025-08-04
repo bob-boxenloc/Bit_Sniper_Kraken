@@ -702,13 +702,13 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-1 (15:15) - Point de départ
-    vi1_n1 = 116718  # BEARISH (VI1 > Close)
-    vi2_n1 = 113023  # BULLISH (VI2 < Close)
-    vi3_n1 = 114005  # BULLISH (VI3 < Close)
-    atr28_n1 = 269
-    atr10_n1 = 320
-    atr6_n1 = 362
+    # Bougie n-1 (16:00) - Point de départ
+    vi1_n1 = 116853  # BEARISH (VI1 > Close)
+    vi2_n1 = 112952  # BULLISH (VI2 < Close)
+    vi3_n1 = 113962  # BULLISH (VI3 < Close)
+    atr28_n1 = 282
+    atr10_n1 = 330
+    atr6_n1 = 359
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
