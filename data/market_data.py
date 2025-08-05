@@ -102,7 +102,7 @@ class MarketData:
                     return []
             else:
                 # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
-                ohlcv = closed_candles[-limit:]
+            ohlcv = closed_candles[-limit:]
             
             # Récupérer le trade-count via l'endpoint Analytics
             try:
@@ -188,15 +188,7 @@ class CandleBuffer:
     
     def get_latest_candles(self, count=2):
         """Retourne les N dernières bougies pour les décisions"""
-        if not self.candles:
-            self.logger.warning("Buffer vide - aucune bougie disponible")
-            return []
-            
-        if len(self.candles) < count:
-            self.logger.warning(f"Pas assez de bougies - Nécessaire: {count}, Disponible: {len(self.candles)}")
-            return self.candles  # Retourner toutes les bougies disponibles
-            
-        latest = self.candles[-count:]
+        latest = self.candles[-count:] if len(self.candles) >= count else []
         self.logger.debug(f"Récupération des {len(latest)} dernières bougies pour décisions")
         
         if latest:

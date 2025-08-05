@@ -91,50 +91,50 @@ def initialize_indicator_history(candles):
             return False
         
         # Calculer l'historique complet des Volatility Indexes
-        # vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
-        # if vi_history is None:
-        #     print("❌ Impossible de calculer l'historique des VI")
-        #     return False
+        vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
+        if vi_history is None:
+            print("❌ Impossible de calculer l'historique des VI")
+            return False
         
         # Calculer l'historique complet des phases VI (nouvelle logique)
-        # vi_phases_history = calculate_complete_vi_phases_history(vi_history['atr_history'])
-        # if vi_phases_history is None:
-        #     print("❌ Impossible de calculer l'historique des phases VI")
-        #     return False
+        vi_phases_history = calculate_complete_vi_phases_history(vi_history['atr_history'])
+        if vi_phases_history is None:
+            print("❌ Impossible de calculer l'historique des phases VI")
+            return False
         
         # Initialiser l'historique global
         indicator_history['rsi_history'] = rsi_history
-        # indicator_history['vi1_history'] = vi_history['VI1_selected_history']
-        # indicator_history['vi2_history'] = vi_history['VI2_selected_history']
-        # indicator_history['vi3_history'] = vi_history['VI3_selected_history']
-        # indicator_history['atr_history'] = vi_history['atr_history']
-        # indicator_history['true_ranges'] = vi_history['true_ranges']
+        indicator_history['vi1_history'] = vi_history['VI1_selected_history']
+        indicator_history['vi2_history'] = vi_history['VI2_selected_history']
+        indicator_history['vi3_history'] = vi_history['VI3_selected_history']
+        indicator_history['atr_history'] = vi_history['atr_history']
+        indicator_history['true_ranges'] = vi_history['true_ranges']
         
         # Stocker aussi les bandes pour la logique dynamique future
-        # indicator_history['vi1_upper_history'] = vi_history['VI1_upper_history']
-        # indicator_history['vi1_lower_history'] = vi_history['VI1_lower_history']
-        # indicator_history['vi2_upper_history'] = vi_history['VI2_upper_history']
-        # indicator_history['vi2_lower_history'] = vi_history['VI2_lower_history']
-        # indicator_history['vi3_upper_history'] = vi_history['VI3_upper_history']
-        # indicator_history['vi3_lower_history'] = vi_history['VI3_lower_history']
-        # indicator_history['center_line_history'] = vi_history['center_line_history']
+        indicator_history['vi1_upper_history'] = vi_history['VI1_upper_history']
+        indicator_history['vi1_lower_history'] = vi_history['VI1_lower_history']
+        indicator_history['vi2_upper_history'] = vi_history['VI2_upper_history']
+        indicator_history['vi2_lower_history'] = vi_history['VI2_lower_history']
+        indicator_history['vi3_upper_history'] = vi_history['VI3_upper_history']
+        indicator_history['vi3_lower_history'] = vi_history['VI3_lower_history']
+        indicator_history['center_line_history'] = vi_history['center_line_history']
         
         # NOUVELLE LOGIQUE : Stocker les phases VI
-        # indicator_history['vi1_phases'] = vi_phases_history['VI1_phases']
-        # indicator_history['vi2_phases'] = vi_phases_history['VI2_phases']
-        # indicator_history['vi3_phases'] = vi_phases_history['VI3_phases']
-        # indicator_history['vi1_values'] = vi_phases_history['VI1_values']
-        # indicator_history['vi2_values'] = vi_phases_history['VI2_values']
-        # indicator_history['vi3_values'] = vi_phases_history['VI3_values']
-        # indicator_history['atr_moyens'] = vi_phases_history['ATR_moyens']
+        indicator_history['vi1_phases'] = vi_phases_history['VI1_phases']
+        indicator_history['vi2_phases'] = vi_phases_history['VI2_phases']
+        indicator_history['vi3_phases'] = vi_phases_history['VI3_phases']
+        indicator_history['vi1_values'] = vi_phases_history['VI1_values']
+        indicator_history['vi2_values'] = vi_phases_history['VI2_values']
+        indicator_history['vi3_values'] = vi_phases_history['VI3_values']
+        indicator_history['atr_moyens'] = vi_phases_history['ATR_moyens']
         
-        print(f"✅ Historique initialisé: {len(rsi_history)} valeurs RSI")
+        print(f"✅ Historique initialisé: {len(rsi_history)} valeurs RSI, {len(vi_history['VI1_selected_history'])} valeurs VI")
         print(f"   Dernier RSI: {rsi_history[-1]:.2f}")
-        # print(f"   Dernier VI1: {vi_history['VI1_selected_history'][-1]:.2f}")
-        # print(f"   NOUVELLE LOGIQUE - Phases VI:")
-        # print(f"     VI1: {vi_phases_history['VI1_phases'][-1] if vi_phases_history['VI1_phases'] else 'N/A'}")
-        # print(f"     VI2: {vi_phases_history['VI2_phases'][-1] if vi_phases_history['VI2_phases'] else 'N/A'}")
-        # print(f"     VI3: {vi_phases_history['VI3_phases'][-1] if vi_phases_history['VI3_phases'] else 'N/A'}")
+        print(f"   Dernier VI1: {vi_history['VI1_selected_history'][-1]:.2f}")
+        print(f"   NOUVELLE LOGIQUE - Phases VI:")
+        print(f"     VI1: {vi_phases_history['VI1_phases'][-1] if vi_phases_history['VI1_phases'] else 'N/A'}")
+        print(f"     VI2: {vi_phases_history['VI2_phases'][-1] if vi_phases_history['VI2_phases'] else 'N/A'}")
+        print(f"     VI3: {vi_phases_history['VI3_phases'][-1] if vi_phases_history['VI3_phases'] else 'N/A'}")
         
         return True
         
@@ -193,36 +193,36 @@ def update_indicator_history(new_candle):
     else:
         # Première fois : recalculer tout l'historique
         print("📊 Recalcul complet de l'historique RSI (première fois)...")
-    rsi_history = calculate_complete_rsi_history(closes, 40)
-    if rsi_history:
-        indicator_history['rsi_history'] = rsi_history
-        
+        rsi_history = calculate_complete_rsi_history(closes, 40)
+        if rsi_history:
+            indicator_history['rsi_history'] = rsi_history
+            
             # Calculer et stocker les moyennes RMA finales
-        deltas = []
-        for i in range(1, len(closes)):
-            deltas.append(closes[i] - closes[i-1])
-        
-        gains = [max(delta, 0) for delta in deltas]
-        losses = [max(-delta, 0) for delta in deltas]
-        
+            deltas = []
+            for i in range(1, len(closes)):
+                deltas.append(closes[i] - closes[i-1])
+            
+            gains = [max(delta, 0) for delta in deltas]
+            losses = [max(-delta, 0) for delta in deltas]
+            
             # Calculer les moyennes RMA finales
-        avg_gain = sum(gains[:40]) / 40
-        avg_loss = sum(losses[:40]) / 40
-        
-        # Continuer le calcul RMA pour toutes les périodes suivantes
-        for i in range(40, len(deltas)):
-            avg_gain = (avg_gain * 39 + gains[i]) / 40
-            avg_loss = (avg_loss * 39 + losses[i]) / 40
-        
+            avg_gain = sum(gains[:40]) / 40
+            avg_loss = sum(losses[:40]) / 40
+            
+            # Continuer le calcul RMA pour toutes les périodes suivantes
+            for i in range(40, len(deltas)):
+                avg_gain = (avg_gain * 39 + gains[i]) / 40
+                avg_loss = (avg_loss * 39 + losses[i]) / 40
+            
             # Stocker les moyennes finales
-        indicator_history['rsi_avg_gain'] = avg_gain
-        indicator_history['rsi_avg_loss'] = avg_loss
-        
-        print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
-        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
-    else:
-        print("❌ Impossible de recalculer l'historique RSI")
-        return False
+            indicator_history['rsi_avg_gain'] = avg_gain
+            indicator_history['rsi_avg_loss'] = avg_loss
+            
+            print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
+            print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+        else:
+            print("❌ Impossible de recalculer l'historique RSI")
+            return False
     
     # Recalculer l'historique complet des Volatility Indexes
     print("📊 Recalcul Volatility Indexes...")
@@ -251,17 +251,10 @@ def update_indicator_history(new_candle):
     # NOUVELLE LOGIQUE RÉELLE : Calculer les VI selon la vraie logique découverte
     print("📊 Calcul VI avec la vraie logique (croisements + ATR)...")
     
-    # Extraire les données OHLC (convertir en float) - SEULEMENT les 29 dernières bougies pour ATR 28
-    # Vérifier qu'on a assez de bougies
-    if len(candles) < 29:
-        print(f"❌ ERREUR: Pas assez de bougies pour ATR 28 - Nécessaire: 29, Disponible: {len(candles)}")
-        return False
-    
-    # Utiliser seulement les 29 dernières bougies pour ATR 28
-    last_29_candles = candles[-29:]
-    closes = [float(candle['close']) for candle in last_29_candles]
-    highs = [float(candle['high']) for candle in last_29_candles]
-    lows = [float(candle['low']) for candle in last_29_candles]
+    # Extraire les données OHLC (convertir en float)
+    closes = [float(candle['close']) for candle in candles]
+    highs = [float(candle['high']) for candle in candles]
+    lows = [float(candle['low']) for candle in candles]
     
     # Calculer les VI avec la vraie logique (corrigée)
     vi_real_logic = calculate_volatility_indexes_corrected(closes, highs, lows)
@@ -274,10 +267,6 @@ def update_indicator_history(new_candle):
         
         # Calculer les phases VI basées sur la position par rapport au close ACTUEL
         # On utilise seulement les valeurs finales des VI
-        if not candles:
-            print("❌ ERREUR: Liste de bougies vide")
-            return False
-            
         current_close = float(candles[-1]['close'])  # Close de la dernière bougie
         
         # VI1 phases (utiliser seulement la dernière valeur)
@@ -292,10 +281,10 @@ def update_indicator_history(new_candle):
         vi3_final = vi_real_logic['vi3_history'][-1]
         vi3_phase = "BEARISH" if vi3_final > current_close else "BULLISH"
         
-        # Stocker seulement les états finaux (pas d'historique)
-        indicator_history['vi1_state'] = vi_real_logic['vi1_state']
-        indicator_history['vi2_state'] = vi_real_logic['vi2_state']
-        indicator_history['vi3_state'] = vi_real_logic['vi3_state']
+        # Stocker seulement les phases finales (pas d'historique)
+        indicator_history['vi1_phases'] = [vi1_phase]
+        indicator_history['vi2_phases'] = [vi2_phase]
+        indicator_history['vi3_phases'] = [vi3_phase]
         
         print(f"✅ VI calculés avec la vraie logique: {len(vi_real_logic['vi1_history'])} valeurs")
         print(f"   VI1: {vi_real_logic['vi1_history'][-1]:.2f} (Phase: {vi1_phase})")
@@ -387,10 +376,6 @@ def trading_loop():
         
         if new_candles:
             # Vérifier si la bougie n'est pas déjà dans le buffer
-            if len(new_candles) == 0:
-                print("❌ ERREUR: new_candles est vide")
-                return
-                
             new_candle = new_candles[-1]  # La dernière bougie (la plus récente)
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
             
@@ -465,30 +450,29 @@ def trading_loop():
     print("\n🔍 CALCUL DES INDICATEURS")
     
     # Utiliser l'historique complet des indicateurs au lieu de recalculer
-    if (indicator_history.get('rsi_history') and len(indicator_history['rsi_history']) > 0 and 
-        indicator_history.get('vi1_history') and len(indicator_history['vi1_history']) > 0):
+    if len(indicator_history['rsi_history']) > 0 and len(indicator_history['vi1_phases']) > 0:
         # Utiliser les valeurs de l'historique pour les indicateurs actuels
         rsi_current = indicator_history['rsi_history'][-1]
         
-        # NOUVELLE LOGIQUE : Utiliser les états VI
-        vi1_state = indicator_history.get('vi1_state', 'UNKNOWN')
-        vi2_state = indicator_history.get('vi2_state', 'UNKNOWN')
-        vi3_state = indicator_history.get('vi3_state', 'UNKNOWN')
+        # NOUVELLE LOGIQUE : Utiliser les phases VI
+        vi1_phase = indicator_history['vi1_phases'][-1]
+        vi2_phase = indicator_history['vi2_phases'][-1]
+        vi3_phase = indicator_history['vi3_phases'][-1]
         
-        # Valeurs VI actuelles
-        vi1_current = indicator_history['vi1_history'][-1] if indicator_history.get('vi1_history') else 0
-        vi2_current = indicator_history['vi2_history'][-1] if indicator_history.get('vi2_history') else 0
-        vi3_current = indicator_history['vi3_history'][-1] if indicator_history.get('vi3_history') else 0
+        # Ancienne logique (gardée pour debug)
+        vi1_current_old = indicator_history['vi1_history'][-1]
+        vi2_current_old = indicator_history['vi2_history'][-1]
+        vi3_current_old = indicator_history['vi3_history'][-1]
         
         indicators = {
             'RSI': rsi_current,
-            'VI1_state': vi1_state,
-            'VI2_state': vi2_state,
-            'VI3_state': vi3_state,
+            'VI1_phase': vi1_phase,
+            'VI2_phase': vi2_phase,
+            'VI3_phase': vi3_phase,
             # Valeurs VI actuelles
-            'vi1': vi1_current,
-            'vi2': vi2_current,
-            'vi3': vi3_current
+            'vi1': vi1_current_old,
+            'vi2': vi2_current_old,
+            'vi3': vi3_current_old
         }
         
         indicators_success = True
@@ -496,11 +480,11 @@ def trading_loop():
         
         print(f"✅ {indicators_message}")
         print(f"   RSI: {indicators['RSI']:.2f}")
-        print(f"   NOUVELLE LOGIQUE - États VI:")
-        print(f"     VI1: {indicators['VI1_state']}")
-        print(f"     VI2: {indicators['VI2_state']}")
-        print(f"     VI3: {indicators['VI3_state']}")
-        print(f"   Valeurs VI actuelles:")
+        print(f"   NOUVELLE LOGIQUE - Phases VI:")
+        print(f"     VI1: {indicators['VI1_phase']}")
+        print(f"     VI2: {indicators['VI2_phase']}")
+        print(f"     VI3: {indicators['VI3_phase']}")
+        print(f"   ANCIENNE LOGIQUE - Valeurs VI (debug):")
         print(f"     VI1: {indicators['vi1']:.2f}")
         print(f"     VI2: {indicators['vi2']:.2f}")
         print(f"     VI3: {indicators['vi3']:.2f}")
@@ -510,16 +494,13 @@ def trading_loop():
             print(f"🔧 DEBUG - Valeurs pour les 2 dernières bougies:")
             print(f"   RSI N-2: {indicator_history['rsi_history'][-2]:.2f}")
             print(f"   RSI N-1: {indicator_history['rsi_history'][-1]:.2f}")
-            print(f"   VI1 État actuel: {indicator_history['vi1_state']}")
-            print(f"   VI2 État actuel: {indicator_history['vi2_state']}")
-            print(f"   VI3 État actuel: {indicator_history['vi3_state']}")
+            print(f"   VI1 Phase actuelle: {indicator_history['vi1_phases'][-1]}")
+            print(f"   VI2 Phase actuelle: {indicator_history['vi2_phases'][-1]}")
+            print(f"   VI3 Phase actuelle: {indicator_history['vi3_phases'][-1]}")
         
     else:
-        print("⚠️  Historique VI non disponible - Calcul en temps réel...")
-        print(f"🔧 DEBUG - RSI history: {len(indicator_history.get('rsi_history', []))}")
-        print(f"🔧 DEBUG - VI1 history: {len(indicator_history.get('vi1_history', []))}")
         # Fallback: calculer les indicateurs en temps réel (ancienne méthode)
-    indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
+        indicators_success, indicators, indicators_message = get_indicators_with_validation(candles, rsi_period=40)
     
     if not indicators_success:
         logger.log_warning(f"Indicateurs non calculables: {indicators_message}")
@@ -558,15 +539,15 @@ def trading_loop():
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie - Phases VI)")
     
-    # NOUVELLE LOGIQUE : Utiliser les états VI au lieu de la comparaison avec le prix
-    vi1_current_state = indicators['VI1_state']
-    vi2_current_state = indicators['VI2_state']
-    vi3_current_state = indicators['VI3_state']
+    # NOUVELLE LOGIQUE : Utiliser les phases VI au lieu de la comparaison avec le prix
+    vi1_current_phase = indicators['VI1_phase']
+    vi2_current_phase = indicators['VI2_phase']
+    vi3_current_phase = indicators['VI3_phase']
     
-    print(f"🎯 ÉTATS VI ACTUELS:")
-    print(f"   VI1: {vi1_current_state}")
-    print(f"   VI2: {vi2_current_state}")
-    print(f"   VI3: {vi3_current_state}")
+    print(f"🎯 PHASES VI ACTUELLES:")
+    print(f"   VI1: {vi1_current_phase}")
+    print(f"   VI2: {vi2_current_phase}")
+    print(f"   VI3: {vi3_current_phase}")
     
     # ANCIENNE LOGIQUE (gardée pour debug)
     vi1_current_old = indicators['vi1']
@@ -579,7 +560,7 @@ def trading_loop():
     print(f"   Phase ancienne: {current_phase_old}")
     
     # NOUVELLE LOGIQUE : Déterminer la phase principale basée sur VI1
-    current_phase = 'SHORT' if vi1_current_state == 'BEARISH' else 'LONG'
+    current_phase = 'SHORT' if vi1_current_phase == 'BEARISH' else 'LONG'
     
     # Vérifier si la phase VI1 a changé
     old_phase = sm.get_vi1_current_phase()
@@ -589,12 +570,9 @@ def trading_loop():
     if old_phase != current_phase:
         logger.log_vi1_phase_change(old_phase, current_phase, time.time())
         print(f"🔄 CHANGEMENT DE PHASE VI1: {old_phase} → {current_phase}")
-        if indicator_history.get('atr_history') and len(indicator_history['atr_history']) > 0:
-            print(f"   ATR actuel: {indicator_history['atr_history'][-1]:.2f}")
-        if indicator_history.get('atr_moyens') and len(indicator_history['atr_moyens']) > 0:
-            print(f"   ATR moyen: {indicator_history['atr_moyens'][-1]:.2f}")
-            if indicator_history.get('atr_history') and len(indicator_history['atr_history']) > 0:
-                print(f"   Ratio ATR: {indicator_history['atr_history'][-1] / indicator_history['atr_moyens'][-1]:.3f}")
+        print(f"   ATR actuel: {indicator_history['atr_history'][-1]:.2f}")
+        print(f"   ATR moyen: {indicator_history['atr_moyens'][-1]:.2f}")
+        print(f"   Ratio ATR: {indicator_history['atr_history'][-1] / indicator_history['atr_moyens'][-1]:.3f}")
     
     analysis = analyze_candles(candles, indicators)
     conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp())
