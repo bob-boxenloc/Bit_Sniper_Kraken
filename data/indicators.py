@@ -678,22 +678,11 @@ def calculate_complete_vi_phases_history(atr_history, period=28):
 
 def calculate_volatility_indexes_corrected(closes, highs, lows):
     """
-    Calcule les Volatility Indexes selon la vraie logique découverte (CORRIGÉE).
-    
-    Logique corrigée :
-    - Différence ATR sert à calculer les VI n-1 (pas les VI n)
-    - VI n = VI n-1 ± (ATR n × multiplicateur) si croisement
-    - VI n = VI n-1 ± (différence_ATR n-1 × multiplicateur) si pas de croisement
-    
-    Différence ATR = abs(ATR_n-2 - ATR_n-1) (toujours positive)
-    
-    :param closes: Liste des prix de clôture
-    :param highs: Liste des prix hauts
-    :param lows: Liste des prix bas
-    :return: Dictionnaire avec les VI calculés
+    Calcule les Volatility Indexes avec la logique corrigée.
+    Utilise ATR 28 périodes et logique BEARISH/BULLISH.
     """
     if len(closes) < 28:
-        print("❌ Pas assez de données pour calculer les VI")
+        print("❌ ERREUR: Pas assez de données pour calculer les VI")
         return None
     
     # Vérifier que toutes les listes ont la même longueur
@@ -702,149 +691,102 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-1 (16:00) - Point de départ
-    vi1_n1 = 116853  # BEARISH (VI1 > Close)
-    vi2_n1 = 112952  # BULLISH (VI2 < Close)
-    vi3_n1 = 113962  # BULLISH (VI3 < Close)
-    atr28_n1 = 282
-    atr10_n1 = 330
-    atr6_n1 = 359
+    # Bougie n-1 (13:15) - Point de départ
+    vi1_n1 = 116870  # BEARISH (VI1 > Close)
+    vi2_n1 = 113237  # BULLISH (VI2 < Close)
+    vi3_n1 = 115444  # BEARISH (VI3 > Close)
+    atr28_n1 = 253  # ATR 28 de la bougie précédente
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
     vi2_state = "BULLISH"  # VI2 < Close
-    vi3_state = "BULLISH"  # VI3 < Close
+    vi3_state = "BEARISH"  # VI3 > Close
     
     # Initialiser les historiques avec seulement la valeur de départ
     vi1_history = [vi1_n1]  # n-1
     vi2_history = [vi2_n1]  # n-1
     vi3_history = [vi3_n1]  # n-1
+    atr_28_history = [atr28_n1]  # n-1
     
-    # Calculer les ATR pour chaque période
-    atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
-    atr_10_history = calculate_atr_history(highs, lows, closes, period=10)
-    atr_6_history = calculate_atr_history(highs, lows, closes, period=6)
+    # Calculer les ATR 28 pour chaque bougie
+    true_ranges = []
+    for i in range(1, len(closes)):
+        high_low = highs[i] - lows[i]
+        high_close_prev = abs(highs[i] - closes[i-1])
+        low_close_prev = abs(lows[i] - closes[i-1])
+        true_ranges.append(max(high_low, high_close_prev, low_close_prev))
     
-    # Vérifier que les ATR ont été calculés correctement
-    if not atr_28_history or not atr_10_history or not atr_6_history:
-        print("❌ ERREUR: Impossible de calculer les ATR")
+    # Calculer ATR 28 pour chaque bougie (moyenne simple sur 28 périodes)
+    for i in range(28, len(true_ranges)):
+        atr_28_current = sum(true_ranges[i-28:i]) / 28
+        atr_28_history.append(atr_28_current)
+    
+    # Vérifier qu'on a assez d'ATR
+    if len(atr_28_history) < 2:
+        print("❌ ERREUR: Pas assez d'ATR calculés")
         return None
     
-    # LOGGER LES 3 ATR DIFFÉRENTS
-    print(f"🔧 DEBUG VI CALCUL - 3 ATR DIFFÉRENTS:")
+    # LOGGER LES CALCULS
+    print(f"🔧 DEBUG VI CALCUL - ATR 28:")
     print(f"   Close actuel: {closes[-1]:.2f}")
-    print(f"   ATR 28 (VI1): {atr_28_history[-1]:.2f}")
-    print(f"   ATR 10 (VI2): {atr_10_history[-1]:.2f}")
-    print(f"   ATR 6 (VI3): {atr_6_history[-1]:.2f}")
+    print(f"   ATR 28 actuel: {atr_28_history[-1]:.2f}")
     print(f"   ATR 28 précédent: {atr_28_history[-2]:.2f}")
-    print(f"   ATR 10 précédent: {atr_10_history[-2]:.2f}")
-    print(f"   ATR 6 précédent: {atr_6_history[-2]:.2f}")
     print(f"   Différence ATR 28: {atr_28_history[-1] - atr_28_history[-2]:.2f}")
-    print(f"   Différence ATR 10: {atr_10_history[-1] - atr_10_history[-2]:.2f}")
-    print(f"   Différence ATR 6: {atr_6_history[-1] - atr_6_history[-2]:.2f}")
     
     # Calculer les VI pour la nouvelle bougie (n) seulement
-    # Utiliser les 2 dernières bougies comme point de départ
     if len(closes) >= 2:
         current_close = closes[-1]  # Dernière bougie (nouvelle)
         
-        # VI1 (ATR 28 périodes)
+        # VI1
         if len(atr_28_history) >= 2:
-            atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
-            atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
+            atr_28_current = atr_28_history[-1]
+            atr_28_previous = atr_28_history[-2]
+            atr_diff = atr_28_current - atr_28_previous
             
-            # Détecter si VI1 croise le close
-            vi1_crossing = (vi1_history[-1] > current_close and vi1_state == "BULLISH") or \
-                          (vi1_history[-1] < current_close and vi1_state == "BEARISH")
-            
-            if vi1_crossing:
-                # Croisement détecté - utiliser ATR entier
-                if vi1_history[-1] > current_close:
-                    vi1_new = vi1_history[-1] - (atr_28_current * 19)
-                    vi1_state = "BEARISH"
-                else:
-                    vi1_new = vi1_history[-1] + (atr_28_current * 19)
-                    vi1_state = "BULLISH"
-            else:
-                # Pas de croisement - utiliser différence ATR (avec signe)
-                atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
-                if vi1_state == "BEARISH":  # VI1 > close
-                    # VI monte si ATR monte, baisse si ATR baisse
-                    vi1_new = vi1_history[-1] + (atr_diff * 19)
-                else:  # vi1_state == "BULLISH" - VI1 < close
-                    # VI monte si ATR monte, baisse si ATR baisse
-                    vi1_new = vi1_history[-1] + (atr_diff * 19)
+            # Logique BEARISH/BULLISH
+            if vi1_state == "BEARISH":  # VI1 > close
+                vi1_new = vi1_history[-1] + atr_diff
+            else:  # vi1_state == "BULLISH" - VI1 < close
+                vi1_new = vi1_history[-1] - atr_diff
             
             vi1_history.append(vi1_new)
             print(f"   VI1 calculé: {vi1_new:.2f} (État: {vi1_state})")
         
-        # VI2 (ATR 10 périodes)
-        if len(atr_10_history) >= 2:
-            atr_10_current = atr_10_history[-1]  # ATR de la nouvelle bougie
-            atr_10_previous = atr_10_history[-2]  # ATR de la bougie précédente
+        # VI2
+        if len(atr_28_history) >= 2:
+            atr_28_current = atr_28_history[-1]
+            atr_28_previous = atr_28_history[-2]
+            atr_diff = atr_28_current - atr_28_previous
             
-            # Détecter si VI2 croise le close
-            vi2_crossing = (vi2_history[-1] > current_close and vi2_state == "BULLISH") or \
-                          (vi2_history[-1] < current_close and vi2_state == "BEARISH")
-            
-            if vi2_crossing:
-                # Croisement détecté - utiliser ATR entier
-                if vi2_history[-1] > current_close:
-                    vi2_new = vi2_history[-1] - (atr_10_current * 10)
-                    vi2_state = "BEARISH"
-                else:
-                    vi2_new = vi2_history[-1] + (atr_10_current * 10)
-                    vi2_state = "BULLISH"
-            else:
-                # Pas de croisement - utiliser différence ATR (avec signe)
-                atr_diff = atr_10_current - atr_10_previous  # Différence avec ATR précédent
-                if vi2_state == "BEARISH":  # VI2 > close
-                    # VI monte si ATR monte, baisse si ATR baisse
-                    vi2_new = vi2_history[-1] + (atr_diff * 10)
-                else:  # vi2_state == "BULLISH" - VI2 < close
-                    # VI monte si ATR monte, baisse si ATR baisse
-                    vi2_new = vi2_history[-1] + (atr_diff * 10)
+            # Logique BEARISH/BULLISH
+            if vi2_state == "BEARISH":  # VI2 > close
+                vi2_new = vi2_history[-1] + atr_diff
+            else:  # vi2_state == "BULLISH" - VI2 < close
+                vi2_new = vi2_history[-1] - atr_diff
             
             vi2_history.append(vi2_new)
             print(f"   VI2 calculé: {vi2_new:.2f} (État: {vi2_state})")
         
-        # VI3 (ATR 6 périodes)
-        if len(atr_6_history) >= 2:
-            atr_6_current = atr_6_history[-1]  # ATR de la nouvelle bougie
-            atr_6_previous = atr_6_history[-2]  # ATR de la bougie précédente
+        # VI3
+        if len(atr_28_history) >= 2:
+            atr_28_current = atr_28_history[-1]
+            atr_28_previous = atr_28_history[-2]
+            atr_diff = atr_28_current - atr_28_previous
             
-            # Détecter si VI3 croise le close
-            vi3_crossing = (vi3_history[-1] > current_close and vi3_state == "BULLISH") or \
-                          (vi3_history[-1] < current_close and vi3_state == "BEARISH")
-            
-            if vi3_crossing:
-                # Croisement détecté - utiliser ATR entier
-                if vi3_history[-1] > current_close:
-                    vi3_new = vi3_history[-1] - (atr_6_current * 6)
-                    vi3_state = "BEARISH"
-                else:
-                    vi3_new = vi3_history[-1] + (atr_6_current * 6)
-                    vi3_state = "BULLISH"
-            else:
-                # Pas de croisement - utiliser différence ATR (avec signe)
-                atr_diff = atr_6_current - atr_6_previous  # Différence avec ATR précédent
-                if vi3_state == "BEARISH":  # VI3 > close
-                    # VI monte si ATR monte, baisse si ATR baisse
-                    vi3_new = vi3_history[-1] + (atr_diff * 6)
-                else:  # vi3_state == "BULLISH" - VI3 < close
-                    # VI monte si ATR monte, baisse si ATR baisse
-                    vi3_new = vi3_history[-1] + (atr_diff * 6)
+            # Logique BEARISH/BULLISH
+            if vi3_state == "BEARISH":  # VI3 > close
+                vi3_new = vi3_history[-1] + atr_diff
+            else:  # vi3_state == "BULLISH" - VI3 < close
+                vi3_new = vi3_history[-1] - atr_diff
             
             vi3_history.append(vi3_new)
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
     
     return {
-        'vi1_history': vi1_history,
-        'vi2_history': vi2_history,
-        'vi3_history': vi3_history,
-        'vi1_state': vi1_state,
-        'vi2_state': vi2_state,
-        'vi3_state': vi3_state
+        'VI1': vi1_history[-1] if vi1_history else None,
+        'VI2': vi2_history[-1] if vi2_history else None,
+        'VI3': vi3_history[-1] if vi3_history else None,
+        'ATR_28': atr_28_history[-1] if atr_28_history else None
     }
 
 def calculate_rsi_for_new_candle(closes, avg_gain_prev, avg_loss_prev, period=40):

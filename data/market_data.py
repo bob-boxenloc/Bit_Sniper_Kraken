@@ -102,7 +102,7 @@ class MarketData:
                     return []
             else:
                 # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
-                ohlcv = closed_candles[-limit:]
+            ohlcv = closed_candles[-limit:]
             
             # Récupérer le trade-count via l'endpoint Analytics
             try:
