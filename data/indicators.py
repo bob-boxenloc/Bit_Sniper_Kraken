@@ -691,15 +691,15 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-1 (14:15) - Point de départ
-    vi1_n1 = 117280  # BEARISH (VI1 > Close)
-    vi2_n1 = 113022  # BULLISH (VI2 < Close)
-    vi3_n1 = 115555  # BEARISH (VI3 > Close)
-    atr28_n1 = 291  # ATR 28 de la bougie précédente
+    # Bougie n-1 (14:30) - Point de départ
+    vi1_n1 = 117594  # BEARISH (VI1 > Close)
+    vi2_n1 = 112857  # BEARISH (VI2 > Close)
+    vi3_n1 = 115028  # BEARISH (VI3 > Close)
+    atr28_n1 = 301  # ATR 28 de la bougie précédente
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
-    vi2_state = "BULLISH"  # VI2 < Close
+    vi2_state = "BEARISH"  # VI2 > Close
     vi3_state = "BEARISH"  # VI3 > Close
     
     # Initialiser les historiques avec seulement la valeur de départ
@@ -721,17 +721,23 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         atr_28_current = sum(true_ranges[i-28:i]) / 28
         atr_28_history.append(atr_28_current)
     
-    # Vérifier qu'on a assez d'ATR
+    # Vérifier qu'on a au moins un ATR calculé (en plus de la valeur de départ)
     if len(atr_28_history) < 2:
-        print("❌ ERREUR: Pas assez d'ATR calculés")
-        return None
+        print(f"⚠️  ATTENTION: Seulement {len(atr_28_history)} ATR calculés")
+        print(f"   True Ranges: {len(true_ranges)}")
+        print(f"   Closes: {len(closes)}")
+        print(f"   On continue avec les données disponibles...")
     
     # LOGGER LES CALCULS
     print(f"🔧 DEBUG VI CALCUL - ATR 28:")
     print(f"   Close actuel: {closes[-1]:.2f}")
     print(f"   ATR 28 actuel: {atr_28_history[-1]:.2f}")
-    print(f"   ATR 28 précédent: {atr_28_history[-2]:.2f}")
-    print(f"   Différence ATR 28: {atr_28_history[-1] - atr_28_history[-2]:.2f}")
+    if len(atr_28_history) >= 2:
+        print(f"   ATR 28 précédent: {atr_28_history[-2]:.2f}")
+        print(f"   Différence ATR 28: {atr_28_history[-1] - atr_28_history[-2]:.2f}")
+    else:
+        print(f"   ATR 28 précédent: {atr_28_history[0]:.2f} (valeur de départ)")
+        print(f"   Différence ATR 28: {atr_28_history[-1] - atr_28_history[0]:.2f}")
     
     # Calculer les VI pour la nouvelle bougie (n) seulement
     if len(closes) >= 2:
@@ -741,6 +747,11 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         if len(atr_28_history) >= 2:
             atr_28_current = atr_28_history[-1]
             atr_28_previous = atr_28_history[-2]
+            atr_diff = atr_28_current - atr_28_previous
+        else:
+            # Utiliser la valeur de départ comme référence
+            atr_28_current = atr_28_history[-1]
+            atr_28_previous = atr_28_history[0]  # Valeur de départ
             atr_diff = atr_28_current - atr_28_previous
             
             # Logique BEARISH/BULLISH
@@ -753,9 +764,14 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
             print(f"   VI1 calculé: {vi1_new:.2f} (État: {vi1_state})")
         
         # VI2
-        if len(atr_28_history) >= 2:
+        if len(atr_28_history) >= 1:
             atr_28_current = atr_28_history[-1]
             atr_28_previous = atr_28_history[-2]
+            atr_diff = atr_28_current - atr_28_previous
+        else:
+            # Utiliser la valeur de départ comme référence
+            atr_28_current = atr_28_history[-1]
+            atr_28_previous = atr_28_history[0]  # Valeur de départ
             atr_diff = atr_28_current - atr_28_previous
             
             # Logique BEARISH/BULLISH
@@ -768,9 +784,14 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
             print(f"   VI2 calculé: {vi2_new:.2f} (État: {vi2_state})")
         
         # VI3
-        if len(atr_28_history) >= 2:
+        if len(atr_28_history) >= 1:
             atr_28_current = atr_28_history[-1]
             atr_28_previous = atr_28_history[-2]
+            atr_diff = atr_28_current - atr_28_previous
+        else:
+            # Utiliser la valeur de départ comme référence
+            atr_28_current = atr_28_history[-1]
+            atr_28_previous = atr_28_history[0]  # Valeur de départ
             atr_diff = atr_28_current - atr_28_previous
             
             # Logique BEARISH/BULLISH

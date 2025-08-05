@@ -281,10 +281,10 @@ def update_indicator_history(new_candle):
         vi3_final = vi_real_logic['vi3_history'][-1]
         vi3_phase = "BEARISH" if vi3_final > current_close else "BULLISH"
         
-        # Stocker seulement les phases finales (pas d'historique)
-        indicator_history['vi1_phases'] = [vi1_phase]
-        indicator_history['vi2_phases'] = [vi2_phase]
-        indicator_history['vi3_phases'] = [vi3_phase]
+        # Stocker seulement les états finaux (pas d'historique)
+        indicator_history['vi1_state'] = vi_real_logic['vi1_state']
+        indicator_history['vi2_state'] = vi_real_logic['vi2_state']
+        indicator_history['vi3_state'] = vi_real_logic['vi3_state']
         
         print(f"✅ VI calculés avec la vraie logique: {len(vi_real_logic['vi1_history'])} valeurs")
         print(f"   VI1: {vi_real_logic['vi1_history'][-1]:.2f} (Phase: {vi1_phase})")
@@ -450,29 +450,29 @@ def trading_loop():
     print("\n🔍 CALCUL DES INDICATEURS")
     
     # Utiliser l'historique complet des indicateurs au lieu de recalculer
-    if len(indicator_history['rsi_history']) > 0 and len(indicator_history['vi1_phases']) > 0:
+    if len(indicator_history['rsi_history']) > 0 and len(indicator_history['vi1_history']) > 0:
         # Utiliser les valeurs de l'historique pour les indicateurs actuels
         rsi_current = indicator_history['rsi_history'][-1]
         
-        # NOUVELLE LOGIQUE : Utiliser les phases VI
-        vi1_phase = indicator_history['vi1_phases'][-1]
-        vi2_phase = indicator_history['vi2_phases'][-1]
-        vi3_phase = indicator_history['vi3_phases'][-1]
+        # NOUVELLE LOGIQUE : Utiliser les états VI
+        vi1_state = indicator_history['vi1_state']
+        vi2_state = indicator_history['vi2_state']
+        vi3_state = indicator_history['vi3_state']
         
-        # Ancienne logique (gardée pour debug)
-        vi1_current_old = indicator_history['vi1_history'][-1]
-        vi2_current_old = indicator_history['vi2_history'][-1]
-        vi3_current_old = indicator_history['vi3_history'][-1]
+        # Valeurs VI actuelles
+        vi1_current = indicator_history['vi1_history'][-1]
+        vi2_current = indicator_history['vi2_history'][-1]
+        vi3_current = indicator_history['vi3_history'][-1]
         
         indicators = {
             'RSI': rsi_current,
-            'VI1_phase': vi1_phase,
-            'VI2_phase': vi2_phase,
-            'VI3_phase': vi3_phase,
+            'VI1_state': vi1_state,
+            'VI2_state': vi2_state,
+            'VI3_state': vi3_state,
             # Valeurs VI actuelles
-            'vi1': vi1_current_old,
-            'vi2': vi2_current_old,
-            'vi3': vi3_current_old
+            'vi1': vi1_current,
+            'vi2': vi2_current,
+            'vi3': vi3_current
         }
         
         indicators_success = True
@@ -480,11 +480,11 @@ def trading_loop():
         
         print(f"✅ {indicators_message}")
         print(f"   RSI: {indicators['RSI']:.2f}")
-        print(f"   NOUVELLE LOGIQUE - Phases VI:")
-        print(f"     VI1: {indicators['VI1_phase']}")
-        print(f"     VI2: {indicators['VI2_phase']}")
-        print(f"     VI3: {indicators['VI3_phase']}")
-        print(f"   ANCIENNE LOGIQUE - Valeurs VI (debug):")
+        print(f"   NOUVELLE LOGIQUE - États VI:")
+        print(f"     VI1: {indicators['VI1_state']}")
+        print(f"     VI2: {indicators['VI2_state']}")
+        print(f"     VI3: {indicators['VI3_state']}")
+        print(f"   Valeurs VI actuelles:")
         print(f"     VI1: {indicators['vi1']:.2f}")
         print(f"     VI2: {indicators['vi2']:.2f}")
         print(f"     VI3: {indicators['vi3']:.2f}")
@@ -494,9 +494,9 @@ def trading_loop():
             print(f"🔧 DEBUG - Valeurs pour les 2 dernières bougies:")
             print(f"   RSI N-2: {indicator_history['rsi_history'][-2]:.2f}")
             print(f"   RSI N-1: {indicator_history['rsi_history'][-1]:.2f}")
-            print(f"   VI1 Phase actuelle: {indicator_history['vi1_phases'][-1]}")
-            print(f"   VI2 Phase actuelle: {indicator_history['vi2_phases'][-1]}")
-            print(f"   VI3 Phase actuelle: {indicator_history['vi3_phases'][-1]}")
+            print(f"   VI1 État actuel: {indicator_history['vi1_state']}")
+            print(f"   VI2 État actuel: {indicator_history['vi2_state']}")
+            print(f"   VI3 État actuel: {indicator_history['vi3_state']}")
         
     else:
         # Fallback: calculer les indicateurs en temps réel (ancienne méthode)
@@ -539,15 +539,15 @@ def trading_loop():
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie - Phases VI)")
     
-    # NOUVELLE LOGIQUE : Utiliser les phases VI au lieu de la comparaison avec le prix
-    vi1_current_phase = indicators['VI1_phase']
-    vi2_current_phase = indicators['VI2_phase']
-    vi3_current_phase = indicators['VI3_phase']
+    # NOUVELLE LOGIQUE : Utiliser les états VI au lieu de la comparaison avec le prix
+    vi1_current_state = indicators['VI1_state']
+    vi2_current_state = indicators['VI2_state']
+    vi3_current_state = indicators['VI3_state']
     
-    print(f"🎯 PHASES VI ACTUELLES:")
-    print(f"   VI1: {vi1_current_phase}")
-    print(f"   VI2: {vi2_current_phase}")
-    print(f"   VI3: {vi3_current_phase}")
+    print(f"🎯 ÉTATS VI ACTUELS:")
+    print(f"   VI1: {vi1_current_state}")
+    print(f"   VI2: {vi2_current_state}")
+    print(f"   VI3: {vi3_current_state}")
     
     # ANCIENNE LOGIQUE (gardée pour debug)
     vi1_current_old = indicators['vi1']
@@ -560,7 +560,7 @@ def trading_loop():
     print(f"   Phase ancienne: {current_phase_old}")
     
     # NOUVELLE LOGIQUE : Déterminer la phase principale basée sur VI1
-    current_phase = 'SHORT' if vi1_current_phase == 'BEARISH' else 'LONG'
+    current_phase = 'SHORT' if vi1_current_state == 'BEARISH' else 'LONG'
     
     # Vérifier si la phase VI1 a changé
     old_phase = sm.get_vi1_current_phase()
