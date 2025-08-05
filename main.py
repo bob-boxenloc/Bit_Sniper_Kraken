@@ -589,9 +589,12 @@ def trading_loop():
     if old_phase != current_phase:
         logger.log_vi1_phase_change(old_phase, current_phase, time.time())
         print(f"🔄 CHANGEMENT DE PHASE VI1: {old_phase} → {current_phase}")
-        print(f"   ATR actuel: {indicator_history['atr_history'][-1]:.2f}")
-        print(f"   ATR moyen: {indicator_history['atr_moyens'][-1]:.2f}")
-        print(f"   Ratio ATR: {indicator_history['atr_history'][-1] / indicator_history['atr_moyens'][-1]:.3f}")
+        if indicator_history.get('atr_history') and len(indicator_history['atr_history']) > 0:
+            print(f"   ATR actuel: {indicator_history['atr_history'][-1]:.2f}")
+        if indicator_history.get('atr_moyens') and len(indicator_history['atr_moyens']) > 0:
+            print(f"   ATR moyen: {indicator_history['atr_moyens'][-1]:.2f}")
+            if indicator_history.get('atr_history') and len(indicator_history['atr_history']) > 0:
+                print(f"   Ratio ATR: {indicator_history['atr_history'][-1] / indicator_history['atr_moyens'][-1]:.3f}")
     
     analysis = analyze_candles(candles, indicators)
     conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp())
