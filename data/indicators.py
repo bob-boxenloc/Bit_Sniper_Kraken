@@ -691,11 +691,11 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         return None
     
     # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-1 (13:15) - Point de départ
-    vi1_n1 = 116870  # BEARISH (VI1 > Close)
-    vi2_n1 = 113237  # BULLISH (VI2 < Close)
-    vi3_n1 = 115444  # BEARISH (VI3 > Close)
-    atr28_n1 = 253  # ATR 28 de la bougie précédente
+    # Bougie n-1 (13:30) - Point de départ
+    vi1_n1 = 116817  # BEARISH (VI1 > Close)
+    vi2_n1 = 113265  # BULLISH (VI2 < Close)
+    vi3_n1 = 115427  # BEARISH (VI3 > Close)
+    atr28_n1 = 256  # ATR 28 de la bougie précédente
     
     # États initiaux
     vi1_state = "BEARISH"  # VI1 > Close
@@ -786,7 +786,13 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         'VI1': vi1_history[-1] if vi1_history else None,
         'VI2': vi2_history[-1] if vi2_history else None,
         'VI3': vi3_history[-1] if vi3_history else None,
-        'ATR_28': atr_28_history[-1] if atr_28_history else None
+        'ATR_28': atr_28_history[-1] if atr_28_history else None,
+        'vi1_history': vi1_history,
+        'vi2_history': vi2_history,
+        'vi3_history': vi3_history,
+        'vi1_state': vi1_state,
+        'vi2_state': vi2_state,
+        'vi3_state': vi3_state
     }
 
 def calculate_rsi_for_new_candle(closes, avg_gain_prev, avg_loss_prev, period=40):
