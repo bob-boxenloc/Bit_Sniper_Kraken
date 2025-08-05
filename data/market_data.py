@@ -188,7 +188,15 @@ class CandleBuffer:
     
     def get_latest_candles(self, count=2):
         """Retourne les N dernières bougies pour les décisions"""
-        latest = self.candles[-count:] if len(self.candles) >= count else []
+        if not self.candles:
+            self.logger.warning("Buffer vide - aucune bougie disponible")
+            return []
+            
+        if len(self.candles) < count:
+            self.logger.warning(f"Pas assez de bougies - Nécessaire: {count}, Disponible: {len(self.candles)}")
+            return self.candles  # Retourner toutes les bougies disponibles
+            
+        latest = self.candles[-count:]
         self.logger.debug(f"Récupération des {len(latest)} dernières bougies pour décisions")
         
         if latest:

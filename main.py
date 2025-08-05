@@ -252,9 +252,16 @@ def update_indicator_history(new_candle):
     print("📊 Calcul VI avec la vraie logique (croisements + ATR)...")
     
     # Extraire les données OHLC (convertir en float) - SEULEMENT les 29 dernières bougies pour ATR 28
-    closes = [float(candle['close']) for candle in candles[-29:]]
-    highs = [float(candle['high']) for candle in candles[-29:]]
-    lows = [float(candle['low']) for candle in candles[-29:]]
+    # Vérifier qu'on a assez de bougies
+    if len(candles) < 29:
+        print(f"❌ ERREUR: Pas assez de bougies pour ATR 28 - Nécessaire: 29, Disponible: {len(candles)}")
+        return False
+    
+    # Utiliser seulement les 29 dernières bougies pour ATR 28
+    last_29_candles = candles[-29:]
+    closes = [float(candle['close']) for candle in last_29_candles]
+    highs = [float(candle['high']) for candle in last_29_candles]
+    lows = [float(candle['low']) for candle in last_29_candles]
     
     # Calculer les VI avec la vraie logique (corrigée)
     vi_real_logic = calculate_volatility_indexes_corrected(closes, highs, lows)
@@ -267,6 +274,10 @@ def update_indicator_history(new_candle):
         
         # Calculer les phases VI basées sur la position par rapport au close ACTUEL
         # On utilise seulement les valeurs finales des VI
+        if not candles:
+            print("❌ ERREUR: Liste de bougies vide")
+            return False
+            
         current_close = float(candles[-1]['close'])  # Close de la dernière bougie
         
         # VI1 phases (utiliser seulement la dernière valeur)
