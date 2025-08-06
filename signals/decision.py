@@ -260,8 +260,8 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'action': 'enter_short',
             'reason': 'Conditions SHORT remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
-            'entry_price': analysis['close_n1'],
-            'entry_rsi': analysis['rsi_n1'],
+            'entry_price': float(analysis['current_candle']['close']),
+            'entry_rsi': analysis['indicators']['rsi'],
             'position_type': 'SHORT',
             'entry_time': time.time()
         }
@@ -271,8 +271,8 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'action': 'enter_long_vi1',
             'reason': 'Conditions LONG_VI1 remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
-            'entry_price': analysis['close_n1'],
-            'entry_rsi': analysis['rsi_n1'],
+            'entry_price': float(analysis['current_candle']['close']),
+            'entry_rsi': analysis['indicators']['rsi'],
             'position_type': 'LONG_VI1',
             'entry_time': time.time()
         }
@@ -282,8 +282,8 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'action': 'enter_long_vi2',
             'reason': 'Conditions LONG_VI2 remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
-            'entry_price': analysis['close_n1'],
-            'entry_rsi': analysis['rsi_n1'],
+            'entry_price': float(analysis['current_candle']['close']),
+            'entry_rsi': analysis['indicators']['rsi'],
             'position_type': 'LONG_VI2',
             'entry_time': time.time()
         }
@@ -293,8 +293,8 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'action': 'enter_long_reentry',
             'reason': 'Conditions LONG_REENTRY remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
-            'entry_price': analysis['close_n1'],
-            'entry_rsi': analysis['rsi_n1'],
+            'entry_price': float(analysis['current_candle']['close']),
+            'entry_rsi': analysis['indicators']['rsi'],
             'position_type': 'LONG_REENTRY',
             'entry_time': time.time()
         }

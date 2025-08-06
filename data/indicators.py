@@ -725,14 +725,14 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
     
     # Valeurs de départ fournies par l'utilisateur
     # Bougie n-1 - Point de départ
-    vi1_n1 = 118118  # BEARISH
-    vi2_n1 = 115991  # BEARISH
-    vi3_n1 = 114714  # BEARISH
+    vi1_n1 = 116121  # BEARISH
+    vi2_n1 = 114939  # BEARISH
+    vi3_n1 = 113079  # BULLISH
     
     # États initiaux
     vi1_state = "BEARISH"
     vi2_state = "BEARISH"
-    vi3_state = "BEARISH"
+    vi3_state = "BULLISH"
     
     # Initialiser les historiques avec seulement la valeur de départ
     vi1_history = [vi1_n1]  # n-1
