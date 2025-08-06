@@ -204,7 +204,7 @@ def calculate_volatility_indexes(highs, lows, closes):
 
 def calculate_atr_history(highs, lows, closes, period=28):
     """
-    Calcule l'historique complet de l'ATR pour une période donnée.
+    Calcule l'historique complet de l'ATR avec Wilder Smoothing (RMA).
     
     :param highs: Liste des prix hauts
     :param lows: Liste des prix bas
@@ -234,14 +234,8 @@ def calculate_atr_history(highs, lows, closes, period=28):
         print(f"❌ ERREUR: Pas assez de True Ranges - Nécessaire: {period}, Disponible: {len(true_ranges)}")
         return []
     
-    # Calculer l'ATR de la période actuelle uniquement (pas de moyenne)
-    atr_history = []
-    
-    # Pour chaque bougie, calculer l'ATR sur les 'period' bougies précédentes
-    for i in range(period, len(true_ranges)):
-        # ATR = moyenne des 'period' True Ranges précédents
-        atr_current = sum(true_ranges[i-period:i]) / period
-        atr_history.append(atr_current)
+    # Calculer l'ATR avec Wilder Smoothing (RMA)
+    atr_history = calculate_complete_rma_history(true_ranges, period)
     
     return atr_history
 
