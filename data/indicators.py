@@ -234,8 +234,24 @@ def calculate_atr_history(highs, lows, closes, period=28):
         print(f"❌ ERREUR: Pas assez de True Ranges - Nécessaire: {period}, Disponible: {len(true_ranges)}")
         return []
     
+    # LOG DÉTAILLÉ ATR
+    print(f"🔧 DEBUG ATR - CALCUL DÉTAILLÉ:")
+    print(f"   Nombre de True Ranges calculés: {len(true_ranges)}")
+    print(f"   Période ATR: {period}")
+    
+    # Log des 28 derniers True Ranges utilisés
+    if len(true_ranges) >= period:
+        print(f"   Les {period} derniers True Ranges utilisés:")
+        for i, tr in enumerate(true_ranges[-period:]):
+            print(f"     TR[{i+1}]: {tr:.2f}")
+    
     # Calculer l'ATR avec Wilder Smoothing (RMA)
     atr_history = calculate_complete_rma_history(true_ranges, period)
+    
+    if atr_history:
+        print(f"   Premier ATR (moyenne des {period} premiers): {atr_history[0]:.2f}")
+        print(f"   Dernier ATR (Wilder): {atr_history[-1]:.2f}")
+        print(f"   Nombre d'ATR calculés: {len(atr_history)}")
     
     return atr_history
 
