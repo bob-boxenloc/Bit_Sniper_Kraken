@@ -220,14 +220,12 @@ def calculate_atr_history(highs, lows, closes, period=28):
         print(f"❌ ERREUR: Longueurs différentes - highs: {len(highs)}, lows: {len(lows)}, closes: {len(closes)}")
         return []
     
-    # Calculer les True Ranges (CORRIGÉ: commencer à i=1)
+    # Calculer les True Ranges (comme Kraken: High - Low seulement)
     true_ranges = []
     for i in range(1, len(closes)):  # CORRECTION: commencer à i=1
-        # Pour toutes les bougies, utiliser la formule complète
-        high_low = highs[i] - lows[i]
-        high_close_prev = abs(highs[i] - closes[i-1])
-        low_close_prev = abs(lows[i] - closes[i-1])
-        true_ranges.append(max(high_low, high_close_prev, low_close_prev))
+        # Kraken utilise simplement: High - Low
+        true_range = highs[i] - lows[i]
+        true_ranges.append(true_range)
     
     # Vérifier qu'on a assez de True Ranges
     if len(true_ranges) < period:
@@ -293,13 +291,11 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         logger.logger.warning(f"Pas assez de données pour calculer l'historique des VI. Nécessaire: 28, Disponible: {len(closes)}")
         return None
     
-    # Calculer les True Ranges (méthode classique)
+    # Calculer les True Ranges (comme Kraken: High - Low seulement)
     true_ranges = []
     for i in range(1, len(closes)):
-        high_low = highs[i] - lows[i]
-        high_close_prev = abs(highs[i] - closes[i-1])
-        low_close_prev = abs(lows[i] - closes[i-1])
-        true_range = max(high_low, high_close_prev, low_close_prev)
+        # Kraken utilise simplement: High - Low
+        true_range = highs[i] - lows[i]
         true_ranges.append(true_range)
     
     # Vérifier qu'on a assez de True Ranges

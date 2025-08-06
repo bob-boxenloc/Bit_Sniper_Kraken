@@ -226,28 +226,7 @@ def update_indicator_history(new_candle):
     
     # Recalculer l'historique complet des Volatility Indexes
     print("📊 Recalcul Volatility Indexes...")
-    vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
-    if vi_history:
-        indicator_history['vi1_history'] = vi_history['VI1_selected_history']
-        indicator_history['vi2_history'] = vi_history['VI2_selected_history']
-        indicator_history['vi3_history'] = vi_history['VI3_selected_history']
-        indicator_history['atr_history'] = vi_history['atr_history']
-        indicator_history['true_ranges'] = vi_history['true_ranges']
-        
-        # Stocker aussi les bandes pour la logique dynamique future
-        indicator_history['vi1_upper_history'] = vi_history['VI1_upper_history']
-        indicator_history['vi1_lower_history'] = vi_history['VI1_lower_history']
-        indicator_history['vi2_upper_history'] = vi_history['VI2_upper_history']
-        indicator_history['vi2_lower_history'] = vi_history['VI2_lower_history']
-        indicator_history['vi3_upper_history'] = vi_history['VI3_upper_history']
-        indicator_history['vi3_lower_history'] = vi_history['VI3_lower_history']
-        indicator_history['center_line_history'] = vi_history['center_line_history']
-        
-        print(f"✅ VI recalculés: {len(vi_history['VI1_selected_history'])} valeurs")
-        print(f"   VI1: {vi_history['VI1_selected_history'][-1]:.2f}")
-        print(f"   VI2: {vi_history['VI2_selected_history'][-1]:.2f}")
-        print(f"   VI3: {vi_history['VI3_selected_history'][-1]:.2f}")
-        
+    
     # NOUVELLE LOGIQUE RÉELLE : Calculer les VI selon la vraie logique découverte
     print("📊 Calcul VI avec la vraie logique (croisements + ATR)...")
     
