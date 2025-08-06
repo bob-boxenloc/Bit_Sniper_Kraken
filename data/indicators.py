@@ -307,11 +307,27 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         logger.logger.warning(f"Pas assez de True Ranges pour calculer l'historique ATR. Nécessaire: 28, Disponible: {len(true_ranges)}")
         return None
     
+    # LOG DÉTAILLÉ ATR
+    logger.logger.info("🔧 DEBUG ATR - CALCUL DÉTAILLÉ:")
+    logger.logger.info(f"   Nombre de True Ranges calculés: {len(true_ranges)}")
+    logger.logger.info(f"   Période ATR: 28")
+    
+    # Log des 28 derniers True Ranges utilisés
+    if len(true_ranges) >= 28:
+        logger.logger.info(f"   Les 28 derniers True Ranges utilisés:")
+        for i, tr in enumerate(true_ranges[-28:]):
+            logger.logger.info(f"     TR[{i+1}]: {tr:.2f}")
+    
     # Calculer l'historique complet de l'ATR (RMA des True Ranges sur 28 périodes)
     atr_rma_history = calculate_complete_rma_history(true_ranges, 28)
     if atr_rma_history is None:
         logger.logger.warning("Impossible de calculer l'historique de l'ATR RMA")
         return None
+    
+    if atr_rma_history:
+        logger.logger.info(f"   Premier ATR (moyenne des 28 premiers): {atr_rma_history[0]:.2f}")
+        logger.logger.info(f"   Dernier ATR (Wilder): {atr_rma_history[-1]:.2f}")
+        logger.logger.info(f"   Nombre d'ATR calculés: {len(atr_rma_history)}")
     
     # Calculer l'historique complet de la ligne centrale (RMA des closes sur 28 périodes)
     center_line_history = calculate_complete_rma_history(closes, 28)
