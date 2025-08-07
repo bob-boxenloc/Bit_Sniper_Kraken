@@ -698,7 +698,7 @@ def calculate_complete_vi_phases_history(atr_history, period=28):
     
     return result
 
-def calculate_volatility_indexes_corrected(closes, highs, lows):
+def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=None, previous_vi2=None, previous_vi3=None, previous_vi1_state=None, previous_vi2_state=None, previous_vi3_state=None):
     """
     Calcule les Volatility Indexes selon la vraie logique découverte (CORRIGÉE).
     
@@ -712,6 +712,12 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
     :param closes: Liste des prix de clôture
     :param highs: Liste des prix hauts
     :param lows: Liste des prix bas
+    :param previous_vi1: VI1 précédent (si None, utilise la valeur de départ)
+    :param previous_vi2: VI2 précédent (si None, utilise la valeur de départ)
+    :param previous_vi3: VI3 précédent (si None, utilise la valeur de départ)
+    :param previous_vi1_state: État précédent de VI1 (si None, utilise l'état initial)
+    :param previous_vi2_state: État précédent de VI2 (si None, utilise l'état initial)
+    :param previous_vi3_state: État précédent de VI3 (si None, utilise l'état initial)
     :return: Dictionnaire avec les VI calculés
     """
     if len(closes) < 28:
@@ -723,21 +729,29 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
         print(f"❌ ERREUR: Longueurs différentes - highs: {len(highs)}, lows: {len(lows)}, closes: {len(closes)}")
         return None
     
-    # Valeurs de départ fournies par l'utilisateur
-    # Bougie n-1 - Point de départ
+    # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
     vi1_n1 = 116582  # BEARISH
     vi2_n1 = 113368  # BULLISH
     vi3_n1 = 114321  # BULLISH
     
-    # États initiaux
-    vi1_state = "BEARISH"
-    vi2_state = "BULLISH"
-    vi3_state = "BULLISH"
+    # États initiaux (utilisés seulement si pas d'états précédents)
+    vi1_state_initial = "BEARISH"
+    vi2_state_initial = "BULLISH"
+    vi3_state_initial = "BULLISH"
     
-    # Initialiser les historiques avec seulement la valeur de départ
-    vi1_history = [vi1_n1]  # n-1
-    vi2_history = [vi2_n1]  # n-1
-    vi3_history = [vi3_n1]  # n-1
+    # Utiliser les valeurs précédentes si fournies, sinon utiliser les valeurs de départ
+    vi1_previous = previous_vi1 if previous_vi1 is not None else vi1_n1
+    vi2_previous = previous_vi2 if previous_vi2 is not None else vi2_n1
+    vi3_previous = previous_vi3 if previous_vi3 is not None else vi3_n1
+    
+    vi1_state = previous_vi1_state if previous_vi1_state is not None else vi1_state_initial
+    vi2_state = previous_vi2_state if previous_vi2_state is not None else vi2_state_initial
+    vi3_state = previous_vi3_state if previous_vi3_state is not None else vi3_state_initial
+    
+    # Initialiser les historiques avec la valeur précédente (ou de départ)
+    vi1_history = [vi1_previous]  # n-1
+    vi2_history = [vi2_previous]  # n-1
+    vi3_history = [vi3_previous]  # n-1
     
     # Calculer UNIQUEMENT l'ATR 28 (utilisé pour tous les VI)
     atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
@@ -753,6 +767,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows):
     print(f"   ATR 28: {atr_28_history[-1]:.2f}")
     print(f"   ATR 28 précédent: {atr_28_history[-2]:.2f}")
     print(f"   Différence ATR 28: {atr_28_history[-1] - atr_28_history[-2]:.2f}")
+    print(f"   VI1 précédent: {vi1_previous:.2f} (État: {vi1_state})")
+    print(f"   VI2 précédent: {vi2_previous:.2f} (État: {vi2_state})")
+    print(f"   VI3 précédent: {vi3_previous:.2f} (État: {vi3_state})")
     
     # Calculer les VI pour la nouvelle bougie (n) seulement
     # Utiliser les 2 dernières bougies comme point de départ

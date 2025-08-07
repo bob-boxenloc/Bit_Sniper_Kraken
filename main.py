@@ -235,14 +235,33 @@ def update_indicator_history(new_candle):
     highs = [float(candle['high']) for candle in candles]
     lows = [float(candle['low']) for candle in candles]
     
-    # Calculer les VI avec la vraie logique (corrigée)
-    vi_real_logic = calculate_volatility_indexes_corrected(closes, highs, lows)
+    # Récupérer les VI précédents de l'historique global (si disponibles)
+    previous_vi1 = indicator_history.get('vi1_history', [None])[-1] if indicator_history.get('vi1_history') else None
+    previous_vi2 = indicator_history.get('vi2_history', [None])[-1] if indicator_history.get('vi2_history') else None
+    previous_vi3 = indicator_history.get('vi3_history', [None])[-1] if indicator_history.get('vi3_history') else None
+    
+    # Récupérer les états précédents des VI (si disponibles)
+    previous_vi1_state = indicator_history.get('vi1_state', None)
+    previous_vi2_state = indicator_history.get('vi2_state', None)
+    previous_vi3_state = indicator_history.get('vi3_state', None)
+    
+    # Calculer les VI avec la vraie logique (corrigée) en passant les valeurs précédentes
+    vi_real_logic = calculate_volatility_indexes_corrected(
+        closes, highs, lows,
+        previous_vi1, previous_vi2, previous_vi3,
+        previous_vi1_state, previous_vi2_state, previous_vi3_state
+    )
     
     if vi_real_logic:
         # Stocker les nouvelles valeurs VI (seulement les valeurs finales)
         indicator_history['vi1_history'] = vi_real_logic['vi1_history']
         indicator_history['vi2_history'] = vi_real_logic['vi2_history']
         indicator_history['vi3_history'] = vi_real_logic['vi3_history']
+        
+        # Stocker les états des VI pour la prochaine itération
+        indicator_history['vi1_state'] = vi_real_logic['vi1_state']
+        indicator_history['vi2_state'] = vi_real_logic['vi2_state']
+        indicator_history['vi3_state'] = vi_real_logic['vi3_state']
         
         # Calculer les phases VI basées sur la position par rapport au close ACTUEL
         # On utilise seulement les valeurs finales des VI
