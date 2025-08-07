@@ -56,8 +56,12 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Utiliser le SDK avec tick_type="trade" pour avoir le volume
-            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
+            # Utiliser le SDK avec tick_type="trade" et from_time pour avoir les bougies fermées
+            # Calculer le timestamp de la dernière bougie fermée (15 minutes en arrière)
+            current_time = int(time.time() * 1000)
+            last_closed_candle_time = current_time - (current_time % (15 * 60 * 1000)) - (15 * 60 * 1000)
+            
+            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m", from_time=last_closed_candle_time)
             
             # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
             ohlcv = ohlc_data.get('candles', [])
@@ -76,8 +80,8 @@ class MarketData:
             # Au lieu de chercher un timestamp exact
             if limit == 1:
                 # Pour une seule bougie : récupérer la bougie fermée la plus récente
-                # Filtrer les bougies avec volume > 0 ET count > 5 (bougies fermées)
-                closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0 and int(c.get('count', 0)) > 5]
+                # Filtrer les bougies avec volume > 0 (bougies fermées)
+                closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
                 
                 if closed_candles:
                     # Prendre la bougie fermée la plus récente
