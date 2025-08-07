@@ -79,13 +79,14 @@ class MarketData:
                 if len(ohlcv) >= 2:
                     # Prendre l'avant-dernière bougie (la dernière bougie fermée)
                     target_candle = ohlcv[-2]  # Avant-dernière bougie
+                    current_candle = ohlcv[-1]  # Bougie en cours (à ignorer)
                     ohlcv = [target_candle]
                     target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
                     self.logger.info(f"✅ Récupéré la dernière bougie fermée (avant-dernière): {target_datetime}")
                     self.logger.info(f"   High: {target_candle['high']}, Low: {target_candle['low']}, Close: {target_candle['close']}")
                     self.logger.info(f"   Volume: {target_candle.get('volume', 'N/A')}, Count: {target_candle.get('count', 'N/A')}")
                     self.logger.info(f"   True Range: {float(target_candle['high']) - float(target_candle['low']):.2f}")
-                    self.logger.info(f"   Bougie en cours ignorée: {datetime.utcfromtimestamp(ohlcv[-1]['time']/1000)}")
+                    self.logger.info(f"   Bougie en cours ignorée: {datetime.utcfromtimestamp(current_candle['time']/1000)}")
                 else:
                     self.logger.warning("Pas assez de bougies pour récupérer la dernière fermée")
                     return []

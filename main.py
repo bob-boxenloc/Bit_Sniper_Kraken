@@ -375,6 +375,7 @@ def trading_loop():
         if new_candles:
             # Vérifier si la bougie n'est pas déjà dans le buffer
             new_candle = new_candles[-1]  # L'avant-dernière bougie (la dernière fermée)
+            # Note: data/market_data.py retourne déjà l'avant-dernière bougie quand limit=1
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
             
             print(f"🔄 DEBUG: new_candle time: {new_candle['time']}")
