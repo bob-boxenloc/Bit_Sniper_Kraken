@@ -16,9 +16,18 @@ def wait_until_next_15min():
 
 
 def run_every_15min(task_func):
+    last_execution_time = 0
     while True:
         wait_until_next_15min()
+        
+        # Protection contre les exécutions multiples
+        current_time = time.time()
+        if current_time - last_execution_time < 60:  # Minimum 60s entre les exécutions
+            print(f"[Scheduler] Protection anti-double exécution: attente supplémentaire...")
+            time.sleep(60 - (current_time - last_execution_time))
+        
         print(f"\n[Scheduler] Nouvelle bougie 15m close à {datetime.datetime.utcnow()} UTC")
+        last_execution_time = time.time()
         task_func()
 
 # Exemple d'utilisation :
