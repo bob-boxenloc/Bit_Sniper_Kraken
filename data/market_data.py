@@ -76,8 +76,8 @@ class MarketData:
             # Au lieu de chercher un timestamp exact
             if limit == 1:
                 # Pour une seule bougie : récupérer la bougie fermée la plus récente
-                # Filtrer les bougies avec volume > 0 (bougies fermées)
-                closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
+                # Filtrer les bougies avec volume > 0 ET count > 5 (bougies fermées)
+                closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0 and int(c.get('count', 0)) > 5]
                 
                 if closed_candles:
                     # Prendre la bougie fermée la plus récente
