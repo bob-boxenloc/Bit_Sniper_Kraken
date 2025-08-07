@@ -222,6 +222,12 @@ def calculate_atr_history(highs, lows, closes, period=28):
     
     # Calculer les True Ranges (comme Kraken: High - Low seulement)
     true_ranges = []
+    print(f"🔧 DEBUG - DONNÉES OHLC UTILISÉES:")
+    print(f"   Nombre de bougies: {len(closes)}")
+    print(f"   Dernières 5 bougies (High, Low, Close):")
+    for i in range(max(0, len(closes)-5), len(closes)):
+        print(f"     Bougie {i}: H={highs[i]:.2f}, L={lows[i]:.2f}, C={closes[i]:.2f}")
+    
     for i in range(1, len(closes)):  # CORRECTION: commencer à i=1
         # Kraken utilise simplement: High - Low
         true_range = highs[i] - lows[i]

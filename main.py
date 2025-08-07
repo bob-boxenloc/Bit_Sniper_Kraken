@@ -385,6 +385,13 @@ def trading_loop():
                 
                 if candle_added:
                     print(f"✅ Nouvelle bougie ajoutée: {new_candle['datetime']} - Close: {new_candle['close']} - Volume: {new_candle.get('volume', 'N/A')} - Count: {new_candle['count']}")
+                    print(f"🔧 DEBUG BOUGIE DÉTAILLÉE:")
+                    print(f"   Time: {new_candle['time']}")
+                    print(f"   Open: {new_candle['open']}")
+                    print(f"   High: {new_candle['high']}")
+                    print(f"   Low: {new_candle['low']}")
+                    print(f"   Close: {new_candle['close']}")
+                    print(f"   True Range calculé: {float(new_candle['high']) - float(new_candle['low']):.2f}")
                 else:
                     print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
             else:
