@@ -56,8 +56,8 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Utiliser le SDK avec tick_type="trade" pour avoir le volume
-            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
+            # Utiliser le SDK sans tick_type pour avoir les données standard
+            ohlc_data = self.client.get_ohlc(symbol=symbol, resolution="15m")
             
             # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
             ohlcv = ohlc_data.get('candles', [])
@@ -86,6 +86,7 @@ class MarketData:
                     target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
                     self.logger.info(f"✅ Récupéré la bougie fermée la plus récente: {target_datetime}")
                     self.logger.info(f"   High: {target_candle['high']}, Low: {target_candle['low']}, Close: {target_candle['close']}")
+                    self.logger.info(f"   Volume: {target_candle.get('volume', 'N/A')}, Count: {target_candle.get('count', 'N/A')}")
                     self.logger.info(f"   True Range: {float(target_candle['high']) - float(target_candle['low']):.2f}")
                 else:
                     self.logger.warning("Aucune bougie fermée trouvée")
@@ -111,6 +112,20 @@ class MarketData:
                     c['count'] = 0
             
             self.logger.debug(f"Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
+            
+            # LOG DÉTAILLÉ POUR DEBUG
+            if limit == 1 and ohlcv:
+                latest_candle = ohlcv[-1]
+                self.logger.info(f"🔧 DEBUG ENDPOINT - Dernière bougie récupérée:")
+                self.logger.info(f"   Time: {latest_candle['time']}")
+                self.logger.info(f"   Open: {latest_candle['open']}")
+                self.logger.info(f"   High: {latest_candle['high']}")
+                self.logger.info(f"   Low: {latest_candle['low']}")
+                self.logger.info(f"   Close: {latest_candle['close']}")
+                self.logger.info(f"   Volume: {latest_candle.get('volume', 'N/A')}")
+                self.logger.info(f"   True Range calculé: {float(latest_candle['high']) - float(latest_candle['low']):.2f}")
+                self.logger.info(f"   Source: SDK Kraken standard")
+            
             return ohlcv
             
         except Exception as e:
