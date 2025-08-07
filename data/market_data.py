@@ -56,12 +56,8 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Utiliser le SDK avec tick_type="trade" et from_time pour avoir les bougies fermées
-            # Calculer le timestamp de la dernière bougie fermée (15 minutes en arrière)
-            current_time = int(time.time() * 1000)
-            last_closed_candle_time = current_time - (current_time % (15 * 60 * 1000)) - (15 * 60 * 1000)
-            
-            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m", from_time=last_closed_candle_time)
+            # Utiliser le SDK avec tick_type="trade" pour avoir le volume
+            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
             
             # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
             ohlcv = ohlc_data.get('candles', [])
@@ -76,24 +72,22 @@ class MarketData:
                 self.logger.warning("Aucune bougie fermée trouvée")
                 return []
             
-            # CORRECTION CRITIQUE : Récupérer la bougie fermée la plus récente
-            # Au lieu de chercher un timestamp exact
+            # CORRECTION CRITIQUE : Récupérer la dernière bougie fermée
+            # En prenant l'avant-dernière bougie (la dernière fermée)
             if limit == 1:
-                # Pour une seule bougie : récupérer la bougie fermée la plus récente
-                # Filtrer les bougies avec volume > 0 (bougies fermées)
-                closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
-                
-                if closed_candles:
-                    # Prendre la bougie fermée la plus récente
-                    target_candle = closed_candles[-1]
+                # Pour une seule bougie : prendre l'avant-dernière bougie (la dernière fermée)
+                if len(ohlcv) >= 2:
+                    # Prendre l'avant-dernière bougie (la dernière bougie fermée)
+                    target_candle = ohlcv[-2]  # Avant-dernière bougie
                     ohlcv = [target_candle]
                     target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
-                    self.logger.info(f"✅ Récupéré la bougie fermée la plus récente: {target_datetime}")
+                    self.logger.info(f"✅ Récupéré la dernière bougie fermée (avant-dernière): {target_datetime}")
                     self.logger.info(f"   High: {target_candle['high']}, Low: {target_candle['low']}, Close: {target_candle['close']}")
                     self.logger.info(f"   Volume: {target_candle.get('volume', 'N/A')}, Count: {target_candle.get('count', 'N/A')}")
                     self.logger.info(f"   True Range: {float(target_candle['high']) - float(target_candle['low']):.2f}")
+                    self.logger.info(f"   Bougie en cours ignorée: {datetime.utcfromtimestamp(ohlcv[-1]['time']/1000)}")
                 else:
-                    self.logger.warning("Aucune bougie fermée trouvée")
+                    self.logger.warning("Pas assez de bougies pour récupérer la dernière fermée")
                     return []
             else:
                 # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
