@@ -736,14 +736,14 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 112163  # BULLISH
-    vi2_n1 = 114146  # BULLISH
-    vi3_n1 = 115357  # BEARISH
+    vi1_n1 = 112837  # BULLISH
+    vi2_n1 = 114748  # BULLISH
+    vi3_n1 = 115597  # BULLISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BULLISH"
     vi2_state_initial = "BULLISH"
-    vi3_state_initial = "BEARISH"
+    vi3_state_initial = "BULLISH"
     
     # Utiliser les valeurs précédentes si fournies, sinon utiliser les valeurs de départ
     vi1_previous = previous_vi1 if previous_vi1 is not None else vi1_n1

@@ -72,33 +72,23 @@ class MarketData:
                 self.logger.warning("Aucune bougie fermée trouvée")
                 return []
             
-            # CORRECTION CRITIQUE : Récupérer la bougie qui vient de se fermer
-            # Au lieu de la dernière bougie fermée
+            # CORRECTION CRITIQUE : Récupérer la bougie fermée la plus récente
+            # Au lieu de chercher un timestamp exact
             if limit == 1:
-                # Pour une seule bougie : récupérer la bougie qui vient de se fermer
-                # Calculer le timestamp de la bougie actuelle (15 minutes alignées)
-                current_time = int(time.time())
-                current_candle_start = (current_time // 900) * 900  # Aligner sur 15 minutes
+                # Pour une seule bougie : récupérer la bougie fermée la plus récente
+                # Filtrer les bougies avec volume > 0 (bougies fermées)
+                closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
                 
-                # La bougie qui vient de se fermer est celle qui s'est terminée juste avant la bougie actuelle
-                # (soit 15 minutes avant le début de la bougie actuelle)
-                recently_closed_candle_start = current_candle_start - 900  # 15 minutes = 900 secondes
-                recently_closed_candle_end = current_candle_start
-                
-                # Trouver la bougie qui correspond à cette période
-                target_candle = None
-                for candle in closed_candles:
-                    candle_start = (candle['time'] // 1000) // 900 * 900  # Convertir en secondes et aligner
-                    if candle_start == recently_closed_candle_start:
-                        target_candle = candle
-                        break
-                
-                if target_candle:
+                if closed_candles:
+                    # Prendre la bougie fermée la plus récente
+                    target_candle = closed_candles[-1]
                     ohlcv = [target_candle]
                     target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
-                    self.logger.info(f"✅ Récupéré la bougie qui vient de se fermer: {target_datetime} (période {recently_closed_candle_start}-{recently_closed_candle_end})")
+                    self.logger.info(f"✅ Récupéré la bougie fermée la plus récente: {target_datetime}")
+                    self.logger.info(f"   High: {target_candle['high']}, Low: {target_candle['low']}, Close: {target_candle['close']}")
+                    self.logger.info(f"   True Range: {float(target_candle['high']) - float(target_candle['low']):.2f}")
                 else:
-                    self.logger.warning(f"Aucune bougie qui vient de se fermer trouvée pour la période {recently_closed_candle_start}-{recently_closed_candle_end}")
+                    self.logger.warning("Aucune bougie fermée trouvée")
                     return []
             else:
                 # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
