@@ -102,9 +102,9 @@ def initialize_indicator_history(candles):
             'VI1_phases': ['BULLISH'],
             'VI2_phases': ['BULLISH'],
             'VI3_phases': ['BULLISH'],
-            'VI1_values': [113599],
-            'VI2_values': [115510],
-            'VI3_values': [116359],
+            'VI1_values': [113484],
+            'VI2_values': [115449],
+            'VI3_values': [116323],
             'ATR_moyens': [vi_history['atr_history'][-1] if vi_history['atr_history'] else 200]
         }
         
