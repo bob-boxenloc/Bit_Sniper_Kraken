@@ -228,7 +228,7 @@ def calculate_atr_history(highs, lows, closes, period=28):
     for i in range(max(0, len(closes)-5), len(closes)):
         print(f"     Bougie {i}: H={highs[i]:.2f}, L={lows[i]:.2f}, C={closes[i]:.2f}")
     
-    for i in range(1, len(closes)):  # CORRECTION: commencer à i=1
+    for i in range(0, len(closes)):  # CORRECTION: commencer à i=0 pour inclure toutes les bougies
         # Kraken utilise simplement: High - Low
         true_range = highs[i] - lows[i]
         true_ranges.append(true_range)
@@ -301,7 +301,7 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     
     # Calculer les True Ranges (comme Kraken: High - Low seulement)
     true_ranges = []
-    for i in range(1, len(closes)):
+    for i in range(0, len(closes)):  # CORRECTION: commencer à i=0 pour inclure toutes les bougies
         # Kraken utilise simplement: High - Low
         true_range = highs[i] - lows[i]
         true_ranges.append(true_range)
@@ -741,9 +741,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 113944  # BULLISH
-    vi2_n1 = 115691  # BULLISH
-    vi3_n1 = 116468  # BULLISH
+    vi1_n1 = 113599  # BULLISH
+    vi2_n1 = 115510  # BULLISH
+    vi3_n1 = 116359  # BULLISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BULLISH"
