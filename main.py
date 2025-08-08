@@ -250,14 +250,21 @@ def update_indicator_history(new_candle):
     lows = vi_lows
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
-    previous_vi1 = indicator_history.get('vi1_history', [None])[-1] if indicator_history.get('vi1_history') else None
-    previous_vi2 = indicator_history.get('vi2_history', [None])[-1] if indicator_history.get('vi2_history') else None
-    previous_vi3 = indicator_history.get('vi3_history', [None])[-1] if indicator_history.get('vi3_history') else None
+    # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
+    vi1_n1 = 113484  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 115449  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 116323  # Valeur de départ fournie par l'utilisateur
+    
+    # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
+    previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
+    previous_vi2 = indicator_history.get('vi2_history', [vi2_n1])[-1] if indicator_history.get('vi2_history') else vi2_n1
+    previous_vi3 = indicator_history.get('vi3_history', [vi3_n1])[-1] if indicator_history.get('vi3_history') else vi3_n1
     
     # Récupérer les états précédents des VI (si disponibles)
-    previous_vi1_state = indicator_history.get('vi1_state', None)
-    previous_vi2_state = indicator_history.get('vi2_state', None)
-    previous_vi3_state = indicator_history.get('vi3_state', None)
+    # Utiliser BULLISH comme état de départ par défaut
+    previous_vi1_state = indicator_history.get('vi1_state', "BULLISH")
+    previous_vi2_state = indicator_history.get('vi2_state', "BULLISH")
+    previous_vi3_state = indicator_history.get('vi3_state', "BULLISH")
     
     # Calculer les VI avec la vraie logique (corrigée) en passant les valeurs précédentes
     vi_real_logic = calculate_volatility_indexes_corrected(
