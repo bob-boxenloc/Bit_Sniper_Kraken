@@ -102,9 +102,9 @@ def initialize_indicator_history(candles):
             'VI1_phases': ['BULLISH'],
             'VI2_phases': ['BULLISH'],
             'VI3_phases': ['BULLISH'],
-            'VI1_values': [113484],
-            'VI2_values': [115449],
-            'VI3_values': [116323],
+            'VI1_values': [113429],
+            'VI2_values': [115420],
+            'VI3_values': [116305],
             'ATR_moyens': [vi_history['atr_history'][-1] if vi_history['atr_history'] else 200]
         }
         
@@ -251,9 +251,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 113484  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 115449  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 116323  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 113429  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 115420  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 116305  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
