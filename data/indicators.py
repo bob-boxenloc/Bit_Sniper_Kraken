@@ -476,14 +476,14 @@ def initialize_vi_history_from_user_values(highs, lows, closes):
     logger.logger.info("🔧 DEBUG: Fonction initialize_vi_history_from_user_values appelée")
     
     # Valeurs de départ fournies par l'utilisateur
-    vi1_n1 = 113429  # BULLISH
-    vi2_n1 = 115420  # BULLISH
-    vi3_n1 = 116305  # BULLISH
+    vi1_n1 = 113298  # BULLISH
+    vi2_n1 = 115351  # BULLISH
+    vi3_n1 = 116264  # BEARISH
     
     # États initiaux
     vi1_state = "BULLISH"
     vi2_state = "BULLISH"
-    vi3_state = "BULLISH"
+    vi3_state = "BEARISH"
     
     # Calculer l'ATR 28 pour avoir les données nécessaires
     atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
@@ -836,9 +836,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 113429  # BULLISH
-    vi2_n1 = 115420  # BULLISH
-    vi3_n1 = 116305  # BULLISH
+    vi1_n1 = 113298  # BULLISH
+    vi2_n1 = 115351  # BULLISH
+    vi3_n1 = 116264  # BEARISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BULLISH"

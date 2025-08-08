@@ -99,15 +99,15 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 113429  # BULLISH
-        vi2_n1 = 115420  # BULLISH
-        vi3_n1 = 116305  # BULLISH
+        vi1_n1 = 113298  # BULLISH
+        vi2_n1 = 115351  # BULLISH
+        vi3_n1 = 116264  # BEARISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
             'VI1_phases': ['BULLISH'],
             'VI2_phases': ['BULLISH'],
-            'VI3_phases': ['BULLISH'],
+            'VI3_phases': ['BEARISH'],
             'VI1_values': [vi1_n1],
             'VI2_values': [vi2_n1],
             'VI3_values': [vi3_n1],
@@ -145,7 +145,7 @@ def initialize_indicator_history(candles):
         print(f"   RSI: {len(rsi_history)} valeurs (dernier: {rsi_history[-1]:.2f})")
         print(f"   VI1: {vi1_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
         print(f"   VI2: {vi2_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
-        print(f"   VI3: {vi3_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
+        print(f"   VI3: {vi3_n1:.2f} (BEARISH) - VALEUR DE DÉPART UTILISATEUR")
         print(f"   ATR 28: {vi_history['atr_history'][-1]:.2f}")
         
         return True
@@ -258,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 113429  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 115420  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 116305  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 113298  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 115351  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 116264  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
@@ -268,10 +268,10 @@ def update_indicator_history(new_candle):
     previous_vi3 = indicator_history.get('vi3_history', [vi3_n1])[-1] if indicator_history.get('vi3_history') else vi3_n1
     
     # Récupérer les états précédents des VI (si disponibles)
-    # Utiliser BULLISH comme état de départ par défaut
+    # Utiliser BULLISH comme état de départ par défaut pour VI1 et VI2, BEARISH pour VI3
     previous_vi1_state = indicator_history.get('vi1_state', "BULLISH")
     previous_vi2_state = indicator_history.get('vi2_state', "BULLISH")
-    previous_vi3_state = indicator_history.get('vi3_state', "BULLISH")
+    previous_vi3_state = indicator_history.get('vi3_state', "BEARISH")
     
     # Calculer les VI avec la vraie logique (corrigée) en passant les valeurs précédentes
     vi_real_logic = calculate_volatility_indexes_corrected(
