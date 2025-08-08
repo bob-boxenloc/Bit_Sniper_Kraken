@@ -6,7 +6,7 @@ import traceback
 from datetime import datetime, timedelta
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer, RSIBuffer
-from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, initialize_vi_history_from_user_values, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle
+from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, initialize_vi_history_from_user_values, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle, calculate_atr_history, calculate_new_vi_values_only
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
@@ -273,38 +273,48 @@ def update_indicator_history(new_candle):
     previous_vi2_state = indicator_history.get('vi2_state', "BULLISH")
     previous_vi3_state = indicator_history.get('vi3_state', "BEARISH")
     
-    # Calculer les VI avec la vraie logique (corrigée) en passant les valeurs précédentes
-    vi_real_logic = calculate_volatility_indexes_corrected(
-        closes, highs, lows,
+    # Calculer l'ATR 28 pour avoir les données nécessaires
+    atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
+    if not atr_28_history or len(atr_28_history) < 2:
+        print("❌ Impossible de calculer l'ATR 28 ou pas assez de données")
+        return False
+    
+    # CRITICAL FIX: Utiliser la nouvelle fonction qui calcule seulement la nouvelle valeur
+    current_close = float(vi_candles[-1]['close'])
+    current_atr = atr_28_history[-1]
+    previous_atr = atr_28_history[-2]
+    
+    vi_new_values = calculate_new_vi_values_only(
         previous_vi1, previous_vi2, previous_vi3,
-        previous_vi1_state, previous_vi2_state, previous_vi3_state
+        previous_vi1_state, previous_vi2_state, previous_vi3_state,
+        current_close, current_atr, previous_atr
     )
     
-    if vi_real_logic:
+    if vi_new_values:
         # Stocker les nouvelles valeurs VI (seulement les valeurs finales)
-        indicator_history['vi1_history'] = vi_real_logic['vi1_history']
-        indicator_history['vi2_history'] = vi_real_logic['vi2_history']
-        indicator_history['vi3_history'] = vi_real_logic['vi3_history']
+        indicator_history['vi1_history'] = vi_new_values['vi1_history']
+        indicator_history['vi2_history'] = vi_new_values['vi2_history']
+        indicator_history['vi3_history'] = vi_new_values['vi3_history']
         
         # Stocker les états des VI pour la prochaine itération
-        indicator_history['vi1_state'] = vi_real_logic['vi1_state']
-        indicator_history['vi2_state'] = vi_real_logic['vi2_state']
-        indicator_history['vi3_state'] = vi_real_logic['vi3_state']
+        indicator_history['vi1_state'] = vi_new_values['vi1_state']
+        indicator_history['vi2_state'] = vi_new_values['vi2_state']
+        indicator_history['vi3_state'] = vi_new_values['vi3_state']
         
         # Calculer les phases VI basées sur la position par rapport au close ACTUEL
         # On utilise seulement les valeurs finales des VI
         current_close = float(vi_candles[-1]['close'])  # Close de la dernière bougie
         
         # VI1 phases (utiliser seulement la dernière valeur)
-        vi1_final = vi_real_logic['vi1_history'][-1]
+        vi1_final = vi_new_values['vi1_history'][-1]
         vi1_phase = "BEARISH" if vi1_final > current_close else "BULLISH"
         
         # VI2 phases (utiliser seulement la dernière valeur)
-        vi2_final = vi_real_logic['vi2_history'][-1]
+        vi2_final = vi_new_values['vi2_history'][-1]
         vi2_phase = "BEARISH" if vi2_final > current_close else "BULLISH"
         
         # VI3 phases (utiliser seulement la dernière valeur)
-        vi3_final = vi_real_logic['vi3_history'][-1]
+        vi3_final = vi_new_values['vi3_history'][-1]
         vi3_phase = "BEARISH" if vi3_final > current_close else "BULLISH"
         
         # Stocker seulement les phases finales (pas d'historique)
@@ -312,16 +322,16 @@ def update_indicator_history(new_candle):
         indicator_history['vi2_phases'] = [vi2_phase]
         indicator_history['vi3_phases'] = [vi3_phase]
         
-        print(f"✅ VI calculés avec la vraie logique: {len(vi_real_logic['vi1_history'])} valeurs")
-        print(f"   VI1: {vi_real_logic['vi1_history'][-1]:.2f} (Phase: {vi1_phase})")
-        print(f"   VI2: {vi_real_logic['vi2_history'][-1]:.2f} (Phase: {vi2_phase})")
-        print(f"   VI3: {vi_real_logic['vi3_history'][-1]:.2f} (Phase: {vi3_phase})")
+        print(f"✅ VI calculés avec la nouvelle logique (seulement nouvelle valeur):")
+        print(f"   VI1: {vi_new_values['vi1_history'][-1]:.2f} (Phase: {vi1_phase})")
+        print(f"   VI2: {vi_new_values['vi2_history'][-1]:.2f} (Phase: {vi2_phase})")
+        print(f"   VI3: {vi_new_values['vi3_history'][-1]:.2f} (Phase: {vi3_phase})")
         print(f"   États finaux:")
-        print(f"     VI1: {vi_real_logic['vi1_state']}")
-        print(f"     VI2: {vi_real_logic['vi2_state']}")
-        print(f"     VI3: {vi_real_logic['vi3_state']}")
+        print(f"     VI1: {vi_new_values['vi1_state']}")
+        print(f"     VI2: {vi_new_values['vi2_state']}")
+        print(f"     VI3: {vi_new_values['vi3_state']}")
     else:
-        print("❌ Impossible de calculer les VI avec la vraie logique")
+        print("❌ Impossible de calculer les VI avec la nouvelle logique")
         return False
     
     print("✅ Historique complet recalculé avec succès")

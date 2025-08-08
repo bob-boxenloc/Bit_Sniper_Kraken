@@ -981,6 +981,122 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         'vi3_state': vi3_state
     }
 
+def calculate_new_vi_values_only(previous_vi1, previous_vi2, previous_vi3, 
+                                previous_vi1_state, previous_vi2_state, previous_vi3_state,
+                                current_close, current_atr, previous_atr):
+    """
+    Calcule UNIQUEMENT les nouvelles valeurs VI basées sur les valeurs précédentes.
+    Cette fonction évite de recalculer tout l'historique et utilise les valeurs de référence.
+    
+    :param previous_vi1: VI1 précédent
+    :param previous_vi2: VI2 précédent  
+    :param previous_vi3: VI3 précédent
+    :param previous_vi1_state: État précédent de VI1
+    :param previous_vi2_state: État précédent de VI2
+    :param previous_vi3_state: État précédent de VI3
+    :param current_close: Close de la nouvelle bougie
+    :param current_atr: ATR de la nouvelle bougie
+    :param previous_atr: ATR de la bougie précédente
+    :return: Dictionnaire avec les nouvelles valeurs VI
+    """
+    logger = BitSniperLogger()
+    
+    # Calculer la différence ATR (avec signe)
+    atr_diff = current_atr - previous_atr
+    
+    logger.logger.info(f"🔧 DEBUG NOUVELLE VI SEULEMENT:")
+    logger.logger.info(f"   Close actuel: {current_close:.2f}")
+    logger.logger.info(f"   ATR actuel: {current_atr:.2f}")
+    logger.logger.info(f"   ATR précédent: {previous_atr:.2f}")
+    logger.logger.info(f"   Différence ATR: {atr_diff:.2f}")
+    logger.logger.info(f"   VI1 précédent: {previous_vi1:.2f} (État: {previous_vi1_state})")
+    logger.logger.info(f"   VI2 précédent: {previous_vi2:.2f} (État: {previous_vi2_state})")
+    logger.logger.info(f"   VI3 précédent: {previous_vi3:.2f} (État: {previous_vi3_state})")
+    
+    # Calculer les nouvelles valeurs VI
+    vi1_new = previous_vi1
+    vi2_new = previous_vi2
+    vi3_new = previous_vi3
+    vi1_state_new = previous_vi1_state
+    vi2_state_new = previous_vi2_state
+    vi3_state_new = previous_vi3_state
+    
+    # VI1 (ATR × 19)
+    vi1_crossing = (previous_vi1 > current_close and previous_vi1_state == "BULLISH") or \
+                   (previous_vi1 < current_close and previous_vi1_state == "BEARISH")
+    
+    if vi1_crossing:
+        # Croisement détecté - utiliser ATR entier
+        if previous_vi1 > current_close:
+            vi1_new = previous_vi1 - (current_atr * 19)
+            vi1_state_new = "BEARISH"
+        else:
+            vi1_new = previous_vi1 + (current_atr * 19)
+            vi1_state_new = "BULLISH"
+    else:
+        # Pas de croisement - utiliser différence ATR (avec signe)
+        if previous_vi1_state == "BEARISH":  # VI1 > close
+            # BEARISH: VI monte si ATR monte, baisse si ATR baisse
+            vi1_new = previous_vi1 + (atr_diff * 19)
+        else:  # BULLISH: VI1 < close
+            # BULLISH: VI baisse si ATR monte, monte si ATR baisse
+            vi1_new = previous_vi1 - (atr_diff * 19)
+    
+    # VI2 (ATR × 10)
+    vi2_crossing = (previous_vi2 > current_close and previous_vi2_state == "BULLISH") or \
+                   (previous_vi2 < current_close and previous_vi2_state == "BEARISH")
+    
+    if vi2_crossing:
+        # Croisement détecté - utiliser ATR entier
+        if previous_vi2 > current_close:
+            vi2_new = previous_vi2 - (current_atr * 10)
+            vi2_state_new = "BEARISH"
+        else:
+            vi2_new = previous_vi2 + (current_atr * 10)
+            vi2_state_new = "BULLISH"
+    else:
+        # Pas de croisement - utiliser différence ATR (avec signe)
+        if previous_vi2_state == "BEARISH":  # VI2 > close
+            # BEARISH: VI monte si ATR monte, baisse si ATR baisse
+            vi2_new = previous_vi2 + (atr_diff * 10)
+        else:  # BULLISH: VI2 < close
+            # BULLISH: VI baisse si ATR monte, monte si ATR baisse
+            vi2_new = previous_vi2 - (atr_diff * 10)
+    
+    # VI3 (ATR × 6)
+    vi3_crossing = (previous_vi3 > current_close and previous_vi3_state == "BULLISH") or \
+                   (previous_vi3 < current_close and previous_vi3_state == "BEARISH")
+    
+    if vi3_crossing:
+        # Croisement détecté - utiliser ATR entier
+        if previous_vi3 > current_close:
+            vi3_new = previous_vi3 - (current_atr * 6)
+            vi3_state_new = "BEARISH"
+        else:
+            vi3_new = previous_vi3 + (current_atr * 6)
+            vi3_state_new = "BULLISH"
+    else:
+        # Pas de croisement - utiliser différence ATR (avec signe)
+        if previous_vi3_state == "BEARISH":  # VI3 > close
+            # BEARISH: VI monte si ATR monte, baisse si ATR baisse
+            vi3_new = previous_vi3 + (atr_diff * 6)
+        else:  # BULLISH: VI3 < close
+            # BULLISH: VI baisse si ATR monte, monte si ATR baisse
+            vi3_new = previous_vi3 - (atr_diff * 6)
+    
+    logger.logger.info(f"   VI1 nouveau: {vi1_new:.2f} (État: {vi1_state_new})")
+    logger.logger.info(f"   VI2 nouveau: {vi2_new:.2f} (État: {vi2_state_new})")
+    logger.logger.info(f"   VI3 nouveau: {vi3_new:.2f} (État: {vi3_state_new})")
+    
+    return {
+        'vi1_history': [vi1_new],
+        'vi2_history': [vi2_new],
+        'vi3_history': [vi3_new],
+        'vi1_state': vi1_state_new,
+        'vi2_state': vi2_state_new,
+        'vi3_state': vi3_state_new
+    }
+
 def calculate_rsi_for_new_candle(closes, avg_gain_prev, avg_loss_prev, period=40):
     """
     Calcule le RSI pour la nouvelle bougie en utilisant les moyennes RMA précédentes.
