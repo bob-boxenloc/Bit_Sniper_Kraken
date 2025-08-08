@@ -97,22 +97,29 @@ def initialize_indicator_history(candles):
             print("❌ Impossible d'initialiser l'historique des VI avec les valeurs de départ")
             return False
         
+        # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
+        # Les valeurs de départ fournies par l'utilisateur
+        vi1_n1 = 113429  # BULLISH
+        vi2_n1 = 115420  # BULLISH
+        vi3_n1 = 116305  # BULLISH
+        
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
             'VI1_phases': ['BULLISH'],
             'VI2_phases': ['BULLISH'],
             'VI3_phases': ['BULLISH'],
-            'VI1_values': [113429],
-            'VI2_values': [115420],
-            'VI3_values': [116305],
+            'VI1_values': [vi1_n1],
+            'VI2_values': [vi2_n1],
+            'VI3_values': [vi3_n1],
             'ATR_moyens': [vi_history['atr_history'][-1] if vi_history['atr_history'] else 200]
         }
         
-        # Initialiser l'historique global
+        # Initialiser l'historique global avec les valeurs de départ
         indicator_history['rsi_history'] = rsi_history
-        indicator_history['vi1_history'] = vi_history['VI1_selected_history']
-        indicator_history['vi2_history'] = vi_history['VI2_selected_history']
-        indicator_history['vi3_history'] = vi_history['VI3_selected_history']
+        # CRITICAL FIX: Utiliser les valeurs de départ au lieu de l'historique calculé
+        indicator_history['vi1_history'] = [vi1_n1]  # Valeur de départ utilisateur
+        indicator_history['vi2_history'] = [vi2_n1]  # Valeur de départ utilisateur
+        indicator_history['vi3_history'] = [vi3_n1]  # Valeur de départ utilisateur
         indicator_history['atr_history'] = vi_history['atr_history']
         indicator_history['true_ranges'] = vi_history['true_ranges']
         
@@ -136,9 +143,9 @@ def initialize_indicator_history(candles):
         
         print(f"✅ Historique initialisé avec valeurs de départ:")
         print(f"   RSI: {len(rsi_history)} valeurs (dernier: {rsi_history[-1]:.2f})")
-        print(f"   VI1: {vi_history['VI1_selected_history'][-1]:.2f} (BULLISH)")
-        print(f"   VI2: {vi_history['VI2_selected_history'][-1]:.2f} (BULLISH)")
-        print(f"   VI3: {vi_history['VI3_selected_history'][-1]:.2f} (BULLISH)")
+        print(f"   VI1: {vi1_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
+        print(f"   VI2: {vi2_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
+        print(f"   VI3: {vi3_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
         print(f"   ATR 28: {vi_history['atr_history'][-1]:.2f}")
         
         return True
