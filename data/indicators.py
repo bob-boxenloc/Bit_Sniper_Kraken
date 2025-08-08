@@ -738,9 +738,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 112550  # BULLISH
-    vi2_n1 = 114909  # BULLISH
-    vi3_n1 = 115957  # BULLISH
+    vi1_n1 = 113801  # BULLISH
+    vi2_n1 = 115616  # BULLISH
+    vi3_n1 = 116423  # BULLISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BULLISH"
@@ -816,6 +816,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         
         # VI2 (ATR 28 × 10)
         if len(atr_28_history) >= 2:
+            atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
+            atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
+            
             # Détecter si VI2 croise le close
             vi2_crossing = (vi2_history[-1] > current_close and vi2_state == "BULLISH") or \
                           (vi2_history[-1] < current_close and vi2_state == "BEARISH")
@@ -843,6 +846,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         
         # VI3 (ATR 28 × 6)
         if len(atr_28_history) >= 2:
+            atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
+            atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
+            
             # Détecter si VI3 croise le close
             vi3_crossing = (vi3_history[-1] > current_close and vi3_state == "BULLISH") or \
                           (vi3_history[-1] < current_close and vi3_state == "BEARISH")

@@ -5,7 +5,7 @@ import json
 import traceback
 from datetime import datetime, timedelta
 from core.error_handler import error_handler
-from data.market_data import MarketData, CandleBuffer
+from data.market_data import MarketData, CandleBuffer, RSIBuffer
 from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
@@ -22,7 +22,8 @@ from core.state_manager import StateManager
 logger = BitSniperLogger()
 system_monitor = SystemMonitor()
 notification_manager = BrevoNotifier()
-candle_buffer = CandleBuffer(max_candles=1920)  # 20 jours de bougies 15min
+candle_buffer = CandleBuffer(max_candles=1920)  # 20 jours de bougies 15min pour VI
+rsi_buffer = RSIBuffer(max_candles=1920)  # 20 jours de bougies 15min pour RSI
 indicator_history = {}
 
 def check_file_limits():
@@ -151,18 +152,27 @@ def update_indicator_history(new_candle):
     
     print("🔄 update_indicator_history appelée !")
     
-    # Récupérer toutes les bougies du buffer
-    candles = candle_buffer.get_candles()
-    if len(candles) < 41:  # Minimum pour RSI(40) + ATR(28)
-        print("❌ Pas assez de bougies pour recalculer")
+    # Récupérer les bougies pour RSI (buffer séparé)
+    rsi_candles = rsi_buffer.get_candles()
+    if len(rsi_candles) < 41:  # Minimum pour RSI(40)
+        print("❌ Pas assez de bougies RSI pour recalculer")
+        return False
+    
+    # Récupérer les bougies pour VI (buffer principal)
+    vi_candles = candle_buffer.get_candles()
+    if len(vi_candles) < 28:  # Minimum pour ATR(28)
+        print("❌ Pas assez de bougies VI pour recalculer")
         return False
     
     print("🔄 Recalcul de l'historique complet des indicateurs...")
     
-    # Extraire les données pour le recalcul
-    closes = [float(c['close']) for c in candles]
-    highs = [float(c['high']) for c in candles]
-    lows = [float(c['low']) for c in candles]
+    # Extraire les données pour le RSI (buffer séparé)
+    rsi_closes = [float(c['close']) for c in rsi_candles]
+    
+    # Extraire les données pour les VI (buffer principal)
+    vi_closes = [float(c['close']) for c in vi_candles]
+    vi_highs = [float(c['high']) for c in vi_candles]
+    vi_lows = [float(c['low']) for c in vi_candles]
     
     # Calculer le RSI pour la nouvelle bougie seulement
     print("📊 Calcul RSI(40) pour la nouvelle bougie...")
@@ -173,7 +183,7 @@ def update_indicator_history(new_candle):
     
     if avg_gain_prev is not None and avg_loss_prev is not None:
         # Calculer le RSI de la nouvelle bougie
-        rsi_result = calculate_rsi_for_new_candle(closes, avg_gain_prev, avg_loss_prev, 40)
+        rsi_result = calculate_rsi_for_new_candle(rsi_closes, avg_gain_prev, avg_loss_prev, 40)
         if rsi_result:
             new_rsi, new_avg_gain, new_avg_loss = rsi_result
             
@@ -193,36 +203,36 @@ def update_indicator_history(new_candle):
     else:
         # Première fois : recalculer tout l'historique
         print("📊 Recalcul complet de l'historique RSI (première fois)...")
-        rsi_history = calculate_complete_rsi_history(closes, 40)
-        if rsi_history:
-            indicator_history['rsi_history'] = rsi_history
-            
+        rsi_history = calculate_complete_rsi_history(rsi_closes, 40)
+    if rsi_history:
+        indicator_history['rsi_history'] = rsi_history
+        
             # Calculer et stocker les moyennes RMA finales
-            deltas = []
-            for i in range(1, len(closes)):
-                deltas.append(closes[i] - closes[i-1])
-            
-            gains = [max(delta, 0) for delta in deltas]
-            losses = [max(-delta, 0) for delta in deltas]
-            
+        deltas = []
+        for i in range(1, len(rsi_closes)):
+            deltas.append(rsi_closes[i] - rsi_closes[i-1])
+        
+        gains = [max(delta, 0) for delta in deltas]
+        losses = [max(-delta, 0) for delta in deltas]
+        
             # Calculer les moyennes RMA finales
-            avg_gain = sum(gains[:40]) / 40
-            avg_loss = sum(losses[:40]) / 40
-            
-            # Continuer le calcul RMA pour toutes les périodes suivantes
-            for i in range(40, len(deltas)):
-                avg_gain = (avg_gain * 39 + gains[i]) / 40
-                avg_loss = (avg_loss * 39 + losses[i]) / 40
-            
+        avg_gain = sum(gains[:40]) / 40
+        avg_loss = sum(losses[:40]) / 40
+        
+        # Continuer le calcul RMA pour toutes les périodes suivantes
+        for i in range(40, len(deltas)):
+            avg_gain = (avg_gain * 39 + gains[i]) / 40
+            avg_loss = (avg_loss * 39 + losses[i]) / 40
+        
             # Stocker les moyennes finales
-            indicator_history['rsi_avg_gain'] = avg_gain
-            indicator_history['rsi_avg_loss'] = avg_loss
-            
-            print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
-            print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
-        else:
-            print("❌ Impossible de recalculer l'historique RSI")
-            return False
+        indicator_history['rsi_avg_gain'] = avg_gain
+        indicator_history['rsi_avg_loss'] = avg_loss
+        
+        print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
+        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+    else:
+        print("❌ Impossible de recalculer l'historique RSI")
+        return False
     
     # Recalculer l'historique complet des Volatility Indexes
     print("📊 Recalcul Volatility Indexes...")
@@ -230,10 +240,10 @@ def update_indicator_history(new_candle):
     # NOUVELLE LOGIQUE RÉELLE : Calculer les VI selon la vraie logique découverte
     print("📊 Calcul VI avec la vraie logique (croisements + ATR)...")
     
-    # Extraire les données OHLC (convertir en float)
-    closes = [float(candle['close']) for candle in candles]
-    highs = [float(candle['high']) for candle in candles]
-    lows = [float(candle['low']) for candle in candles]
+    # Extraire les données OHLC pour les VI (convertir en float)
+    closes = vi_closes
+    highs = vi_highs
+    lows = vi_lows
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     previous_vi1 = indicator_history.get('vi1_history', [None])[-1] if indicator_history.get('vi1_history') else None
@@ -265,7 +275,7 @@ def update_indicator_history(new_candle):
         
         # Calculer les phases VI basées sur la position par rapport au close ACTUEL
         # On utilise seulement les valeurs finales des VI
-        current_close = float(candles[-1]['close'])  # Close de la dernière bougie
+        current_close = float(vi_candles[-1]['close'])  # Close de la dernière bougie
         
         # VI1 phases (utiliser seulement la dernière valeur)
         vi1_final = vi_real_logic['vi1_history'][-1]
@@ -336,21 +346,21 @@ def trading_loop():
     try:
         md = MarketData()
         
-        # Initialisation du buffer - RÉCUPÉRATION FORCÉE D'HISTORIQUE
+        # Initialisation du buffer VI - RÉCUPÉRATION FORCÉE D'HISTORIQUE
         if not candle_buffer.get_candles():
-            print("🔄 Buffer vide - RÉCUPÉRATION FORCÉE D'HISTORIQUE")
+            print("🔄 Buffer VI vide - RÉCUPÉRATION FORCÉE D'HISTORIQUE")
             
             # Récupérer 20 jours d'historique (1920 bougies 15min) pour des calculs précis
             print("📥 Récupération de 20 jours d'historique (1920 bougies)...")
             historical_candles = md.get_ohlcv_15m(limit=1920)
             
             if historical_candles and len(historical_candles) >= 1920:
-                # Ajouter toutes les bougies historiques au buffer (1920 bougies)
+                # Ajouter toutes les bougies historiques au buffer VI (1920 bougies)
                 for candle in historical_candles:
                     candle_buffer.add_candle(candle)
                 
-                print(f"✅ {len(historical_candles)} bougies historiques ajoutées au buffer (20 jours)")
-                print(f"📊 Buffer: {len(candle_buffer.get_candles())}/{candle_buffer.max_candles} bougies")
+                print(f"✅ {len(historical_candles)} bougies historiques ajoutées au buffer VI (20 jours)")
+                print(f"📊 Buffer VI: {len(candle_buffer.get_candles())}/{candle_buffer.max_candles} bougies")
                 
                 # Afficher le résumé détaillé du buffer
                 print("📋 " + candle_buffer.get_buffer_summary())
@@ -364,16 +374,37 @@ def trading_loop():
                 print("❌ Impossible de récupérer 20 jours d'historique - attente des données Kraken")
                 return
         else:
-            print("✅ Buffer déjà initialisé avec données")
+            print("✅ Buffer VI déjà initialisé avec données")
         
-        # Récupérer la dernière bougie fermée de Kraken
-        print("🔄 Récupération de la dernière bougie fermée")
+        # Initialisation du buffer RSI - RÉCUPÉRATION FORCÉE D'HISTORIQUE
+        if not rsi_buffer.get_candles():
+            print("🔄 Buffer RSI vide - RÉCUPÉRATION FORCÉE D'HISTORIQUE")
+            
+            # Récupérer 20 jours d'historique (1920 bougies 15min) pour le RSI avec l'ancienne logique
+            print("📥 Récupération de 20 jours d'historique RSI (1920 bougies)...")
+            historical_candles_rsi = md.get_ohlcv_15m_rsi(limit=1920)
+            
+            if historical_candles_rsi and len(historical_candles_rsi) >= 1920:
+                # Ajouter toutes les bougies historiques au buffer RSI (1920 bougies)
+                for candle in historical_candles_rsi:
+                    rsi_buffer.add_candle(candle)
+                
+                print(f"✅ {len(historical_candles_rsi)} bougies historiques ajoutées au buffer RSI (20 jours)")
+                print(f"📊 Buffer RSI: {len(rsi_buffer.get_candles())}/{rsi_buffer.max_candles} bougies")
+            else:
+                print("❌ Impossible de récupérer 20 jours d'historique RSI - attente des données Kraken")
+                return
+        else:
+            print("✅ Buffer RSI déjà initialisé avec données")
+        
+        # Récupérer la dernière bougie fermée de Kraken pour VI
+        print("🔄 Récupération de la dernière bougie fermée pour VI")
         new_candles = md.get_ohlcv_15m(limit=1)  # Récupérer seulement la dernière bougie
         
         print(f"🔄 DEBUG: new_candles récupérées: {len(new_candles) if new_candles else 0}")
         
         if new_candles:
-            # Vérifier si la bougie n'est pas déjà dans le buffer
+            # Vérifier si la bougie n'est pas déjà dans le buffer VI
             new_candle = new_candles[-1]  # L'avant-dernière bougie (la dernière fermée)
             # Note: data/market_data.py retourne déjà l'avant-dernière bougie quand limit=1
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
@@ -396,7 +427,24 @@ def trading_loop():
                 else:
                     print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
             else:
-                print(f"ℹ️  Bougie déjà présente dans le buffer: {new_candle['datetime']} - Continuation de l'analyse...")
+                print(f"ℹ️  Bougie déjà présente dans le buffer VI: {new_candle['datetime']} - Continuation de l'analyse...")
+            
+            # Récupérer la dernière bougie fermée de Kraken pour RSI (ancienne logique)
+            print("🔄 Récupération de la dernière bougie fermée pour RSI")
+            new_candles_rsi = md.get_ohlcv_15m_rsi(limit=1)  # Récupérer avec l'ancienne logique
+            
+            if new_candles_rsi:
+                new_candle_rsi = new_candles_rsi[-1]  # Dernière bougie fermée (ancienne logique)
+                buffer_times_rsi = [c['time'] for c in rsi_buffer.get_candles()]
+                
+                if new_candle_rsi['time'] not in buffer_times_rsi:
+                    rsi_candle_added = rsi_buffer.add_candle(new_candle_rsi)
+                    if rsi_candle_added:
+                        print(f"✅ Nouvelle bougie RSI ajoutée: {new_candle_rsi['datetime']} - Close: {new_candle_rsi['close']}")
+                    else:
+                        print(f"ℹ️  Bougie RSI déjà présente: {new_candle_rsi['datetime']}")
+                else:
+                    print(f"ℹ️  Bougie RSI déjà présente: {new_candle_rsi['datetime']}")
             
             # Mettre à jour l'historique des indicateurs dans tous les cas
             print("🔄 Tentative de mise à jour de l'historique des indicateurs...")

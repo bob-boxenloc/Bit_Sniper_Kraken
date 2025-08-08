@@ -129,6 +129,121 @@ class MarketData:
             self.logger.error(f"Erreur récupération bougies 15m pour {symbol}: {e}")
             raise
 
+    @handle_network_errors(max_retries=3, timeout=20.0)
+    def get_ohlcv_15m_rsi(self, symbol="PI_XBTUSD", limit=12):
+        """
+        Récupère les bougies 15m avec l'ANCIENNE logique pour le RSI.
+        Utilise la logique d'avant pour garder le RSI parfait.
+        """
+        try:
+            # Récupérer les données OHLCV via l'API Kraken
+            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
+            
+            # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
+            ohlcv = ohlc_data.get('candles', [])
+            
+            # On trie par timestamp croissant (du plus ancien au plus récent)
+            ohlcv = sorted(ohlcv, key=lambda x: x['time'])
+            
+            # FILTRER LES BOUGIES FERMÉES (volume > 0) - ANCIENNE LOGIQUE
+            closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
+            
+            if not closed_candles:
+                self.logger.warning("Aucune bougie fermée trouvée pour RSI")
+                return []
+            
+            # ANCIENNE LOGIQUE : Prendre la dernière bougie fermée
+            if limit == 1:
+                # Pour une seule bougie : prendre la dernière bougie fermée
+                if len(closed_candles) >= 1:
+                    target_candle = closed_candles[-1]  # Dernière bougie fermée
+                    ohlcv = [target_candle]
+                    target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
+                    self.logger.info(f"✅ RSI - Récupéré la dernière bougie fermée: {target_datetime}")
+                    self.logger.info(f"   High: {target_candle['high']}, Low: {target_candle['low']}, Close: {target_candle['close']}")
+                    self.logger.info(f"   Volume: {target_candle.get('volume', 'N/A')}, Count: {target_candle.get('count', 'N/A')}")
+                    self.logger.info(f"   True Range: {float(target_candle['high']) - float(target_candle['low']):.2f}")
+                else:
+                    self.logger.warning("Pas assez de bougies fermées pour RSI")
+                    return []
+            else:
+                # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
+                ohlcv = closed_candles[-limit:]
+            
+            # Récupérer le trade-count via l'endpoint Analytics
+            try:
+                trade_counts = self.get_trade_count_15m(symbol, limit)
+            except Exception as e:
+                self.logger.warning(f"Impossible de récupérer trade-count pour RSI: {e}")
+                trade_counts = {}
+            
+            # Fusionner les données OHLCV avec le trade-count
+            for c in ohlcv:
+                c['datetime'] = datetime.utcfromtimestamp(c['time']/1000)
+                # Ajouter le trade-count depuis les analytics
+                if c['time'] in trade_counts:
+                    c['count'] = trade_counts[c['time']]
+                else:
+                    c['count'] = 0
+            
+            self.logger.debug(f"RSI - Récupéré {len(ohlcv)} bougies 15m fermées pour {symbol}")
+            return ohlcv
+            
+        except Exception as e:
+            self.logger.error(f"Erreur récupération bougies 15m pour RSI: {e}")
+            raise
+
+class RSIBuffer:
+    """
+    Buffer spécial pour le RSI utilisant l'ancienne logique de récupération.
+    Garantit que le RSI reste parfait comme avant.
+    """
+    
+    def __init__(self, max_candles=1920):
+        self.candles = []
+        self.max_candles = max_candles
+        self.logger = logging.getLogger(__name__)
+        self.logger.info(f"RSI Buffer initialisé avec capacité max: {max_candles} bougies")
+    
+    def initialize_with_historical(self, historical_candles):
+        """Initialise le buffer RSI avec les données historiques"""
+        self.candles = historical_candles[-self.max_candles:]
+        self.logger.info(f"RSI Buffer initialisé avec {len(self.candles)} bougies historiques")
+    
+    def add_candle(self, new_candle):
+        """Ajoute une nouvelle bougie au buffer RSI (logique d'avant)"""
+        # Log avant ajout
+        self.logger.info(f"RSI Buffer - Ajout bougie: {new_candle['datetime']} - Close: {new_candle['close']}")
+        
+        # Vérifier si la bougie est déjà dans le buffer
+        existing_times = [c['time'] for c in self.candles]
+        if new_candle['time'] in existing_times:
+            self.logger.warning(f"RSI Buffer - Bougie déjà présente: {new_candle['datetime']}")
+            return False
+        
+        self.candles.append(new_candle)
+        
+        # Log si une bougie est supprimée
+        if len(self.candles) > self.max_candles:
+            removed_candle = self.candles.pop(0)
+            self.logger.info(f"RSI Buffer - Bougie supprimée: {removed_candle['datetime']}")
+        
+        self.logger.info(f"RSI Buffer après ajout: {len(self.candles)}/{self.max_candles} bougies")
+        return True
+    
+    def get_candles(self):
+        """Retourne la liste des bougies pour les calculs RSI"""
+        return self.candles
+    
+    def get_status(self):
+        """Retourne le statut du buffer RSI"""
+        return {
+            'total_candles': len(self.candles),
+            'max_candles': self.max_candles,
+            'is_full': len(self.candles) >= self.max_candles,
+            'latest_candle': self.candles[-1]['datetime'] if self.candles else None
+        }
+
 class CandleBuffer:
     """
     Gère un buffer de 12 bougies maximum pour les calculs.
