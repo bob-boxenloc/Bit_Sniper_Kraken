@@ -316,14 +316,17 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     logger.logger.info(f"   Nombre de True Ranges calculés: {len(true_ranges)}")
     logger.logger.info(f"   Période ATR: 28")
     
-    # Log des 28 derniers True Ranges utilisés
-    if len(true_ranges) >= 28:
-        logger.logger.info(f"   Les 28 derniers True Ranges utilisés:")
-        for i, tr in enumerate(true_ranges[-28:]):
+    # Log des 28 derniers True Ranges utilisés (excluant le dernier)
+    if len(true_ranges) >= 29:  # On a besoin d'au moins 29 pour exclure le dernier
+        logger.logger.info(f"   Les 28 derniers True Ranges utilisés (excluant le dernier):")
+        for i, tr in enumerate(true_ranges[-29:-1]):  # Exclure le dernier
             logger.logger.info(f"     TR[{i+1}]: {tr:.2f}")
+        logger.logger.info(f"     TR[{len(true_ranges)}]: {true_ranges[-1]:.2f} (EXCLUÉ - anormal)")
     
     # Calculer l'historique complet de l'ATR (RMA des True Ranges sur 28 périodes)
-    atr_rma_history = calculate_complete_rma_history(true_ranges, 28)
+    # Exclure le dernier True Range comme dans calculate_volatility_indexes_corrected
+    true_ranges_for_atr = true_ranges[:-1]  # Exclure le dernier True Range
+    atr_rma_history = calculate_complete_rma_history(true_ranges_for_atr, 28)
     if atr_rma_history is None:
         logger.logger.warning("Impossible de calculer l'historique de l'ATR RMA")
         return None
@@ -738,9 +741,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 113801  # BULLISH
-    vi2_n1 = 115616  # BULLISH
-    vi3_n1 = 116423  # BULLISH
+    vi1_n1 = 113944  # BULLISH
+    vi2_n1 = 115691  # BULLISH
+    vi3_n1 = 116468  # BULLISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BULLISH"
