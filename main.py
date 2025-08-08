@@ -6,7 +6,7 @@ import traceback
 from datetime import datetime, timedelta
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer, RSIBuffer
-from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, calculate_complete_volatility_indexes_history, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle
+from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, initialize_vi_history_from_user_values, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
@@ -91,17 +91,22 @@ def initialize_indicator_history(candles):
             print("❌ Impossible de calculer l'historique RSI")
             return False
         
-        # Calculer l'historique complet des Volatility Indexes
-        vi_history = calculate_complete_volatility_indexes_history(highs, lows, closes)
+        # Initialiser l'historique des VI en partant des valeurs de départ fournies par l'utilisateur
+        vi_history = initialize_vi_history_from_user_values(highs, lows, closes)
         if vi_history is None:
-            print("❌ Impossible de calculer l'historique des VI")
+            print("❌ Impossible d'initialiser l'historique des VI avec les valeurs de départ")
             return False
         
-        # Calculer l'historique complet des phases VI (nouvelle logique)
-        vi_phases_history = calculate_complete_vi_phases_history(vi_history['atr_history'])
-        if vi_phases_history is None:
-            print("❌ Impossible de calculer l'historique des phases VI")
-            return False
+        # Initialiser les phases VI avec les états de départ
+        vi_phases_history = {
+            'VI1_phases': ['BULLISH'],
+            'VI2_phases': ['BULLISH'],
+            'VI3_phases': ['BULLISH'],
+            'VI1_values': [113599],
+            'VI2_values': [115510],
+            'VI3_values': [116359],
+            'ATR_moyens': [vi_history['atr_history'][-1] if vi_history['atr_history'] else 200]
+        }
         
         # Initialiser l'historique global
         indicator_history['rsi_history'] = rsi_history
@@ -129,13 +134,12 @@ def initialize_indicator_history(candles):
         indicator_history['vi3_values'] = vi_phases_history['VI3_values']
         indicator_history['atr_moyens'] = vi_phases_history['ATR_moyens']
         
-        print(f"✅ Historique initialisé: {len(rsi_history)} valeurs RSI, {len(vi_history['VI1_selected_history'])} valeurs VI")
-        print(f"   Dernier RSI: {rsi_history[-1]:.2f}")
-        print(f"   Dernier VI1: {vi_history['VI1_selected_history'][-1]:.2f}")
-        print(f"   NOUVELLE LOGIQUE - Phases VI:")
-        print(f"     VI1: {vi_phases_history['VI1_phases'][-1] if vi_phases_history['VI1_phases'] else 'N/A'}")
-        print(f"     VI2: {vi_phases_history['VI2_phases'][-1] if vi_phases_history['VI2_phases'] else 'N/A'}")
-        print(f"     VI3: {vi_phases_history['VI3_phases'][-1] if vi_phases_history['VI3_phases'] else 'N/A'}")
+        print(f"✅ Historique initialisé avec valeurs de départ:")
+        print(f"   RSI: {len(rsi_history)} valeurs (dernier: {rsi_history[-1]:.2f})")
+        print(f"   VI1: {vi_history['VI1_selected_history'][-1]:.2f} (BULLISH)")
+        print(f"   VI2: {vi_history['VI2_selected_history'][-1]:.2f} (BULLISH)")
+        print(f"   VI3: {vi_history['VI3_selected_history'][-1]:.2f} (BULLISH)")
+        print(f"   ATR 28: {vi_history['atr_history'][-1]:.2f}")
         
         return True
         

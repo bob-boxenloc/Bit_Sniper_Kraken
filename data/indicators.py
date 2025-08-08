@@ -462,6 +462,101 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     
     return result
 
+def initialize_vi_history_from_user_values(highs, lows, closes):
+    """
+    Initialise l'historique des VI en partant des valeurs de départ fournies par l'utilisateur.
+    Cette fonction évite de recalculer tout l'historique et utilise les valeurs de référence.
+    
+    :param highs: liste des prix hauts
+    :param lows: liste des prix bas  
+    :param closes: liste des prix de clôture
+    :return: dictionnaire avec les historiques des VI
+    """
+    logger = BitSniperLogger()
+    logger.logger.info("🔧 DEBUG: Fonction initialize_vi_history_from_user_values appelée")
+    
+    # Valeurs de départ fournies par l'utilisateur
+    vi1_n1 = 113599  # BULLISH
+    vi2_n1 = 115510  # BULLISH
+    vi3_n1 = 116359  # BULLISH
+    
+    # États initiaux
+    vi1_state = "BULLISH"
+    vi2_state = "BULLISH"
+    vi3_state = "BULLISH"
+    
+    # Calculer l'ATR 28 pour avoir les données nécessaires
+    atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
+    if not atr_28_history:
+        logger.logger.warning("Impossible de calculer l'ATR 28")
+        return None
+    
+    # Créer des historiques factices basés sur les valeurs de départ
+    # On va créer un historique cohérent en partant des valeurs de départ
+    vi1_history = [vi1_n1]  # Valeur de départ
+    vi2_history = [vi2_n1]  # Valeur de départ  
+    vi3_history = [vi3_n1]  # Valeur de départ
+    
+    # Créer des historiques pour les phases VI
+    vi1_phases = [vi1_state]
+    vi2_phases = [vi2_state]
+    vi3_phases = [vi3_state]
+    
+    # Créer des historiques pour les bandes (pour compatibilité)
+    center_line_history = [closes[-1]]  # Utiliser le close actuel comme ligne centrale
+    atr_current = atr_28_history[-1] if atr_28_history else 200  # ATR actuel ou valeur par défaut
+    
+    # Calculer les bandes basées sur les valeurs de départ
+    vi1_upper = center_line_history[-1] + (atr_current * 19)
+    vi1_lower = center_line_history[-1] - (atr_current * 19)
+    vi2_upper = center_line_history[-1] + (atr_current * 10)
+    vi2_lower = center_line_history[-1] - (atr_current * 10)
+    vi3_upper = center_line_history[-1] + (atr_current * 6)
+    vi3_lower = center_line_history[-1] - (atr_current * 6)
+    
+    # Créer les historiques des bandes
+    vi1_upper_history = [vi1_upper]
+    vi1_lower_history = [vi1_lower]
+    vi2_upper_history = [vi2_upper]
+    vi2_lower_history = [vi2_lower]
+    vi3_upper_history = [vi3_upper]
+    vi3_lower_history = [vi3_lower]
+    
+    # Sélectionner les bonnes bandes selon les valeurs de départ
+    vi1_selected = vi1_lower if vi1_n1 < closes[-1] else vi1_upper
+    vi2_selected = vi2_lower if vi2_n1 < closes[-1] else vi2_upper
+    vi3_selected = vi3_lower if vi3_n1 < closes[-1] else vi3_upper
+    
+    vi1_selected_history = [vi1_selected]
+    vi2_selected_history = [vi2_selected]
+    vi3_selected_history = [vi3_selected]
+    
+    # Créer des True Ranges factices pour compatibilité
+    true_ranges = [atr_current]  # Utiliser l'ATR comme True Range
+    
+    result = {
+        'VI1_upper_history': vi1_upper_history,
+        'VI1_lower_history': vi1_lower_history,
+        'VI1_selected_history': vi1_selected_history,
+        'VI2_upper_history': vi2_upper_history,
+        'VI2_lower_history': vi2_lower_history,
+        'VI2_selected_history': vi2_selected_history,
+        'VI3_upper_history': vi3_upper_history,
+        'VI3_lower_history': vi3_lower_history,
+        'VI3_selected_history': vi3_selected_history,
+        'center_line_history': center_line_history,
+        'atr_history': atr_28_history,
+        'true_ranges': true_ranges
+    }
+    
+    logger.logger.info(f"✅ Historique VI initialisé avec valeurs de départ:")
+    logger.logger.info(f"   VI1: {vi1_n1} (État: {vi1_state})")
+    logger.logger.info(f"   VI2: {vi2_n1} (État: {vi2_state})")
+    logger.logger.info(f"   VI3: {vi3_n1} (État: {vi3_state})")
+    logger.logger.info(f"   ATR 28: {atr_28_history[-1]:.2f}")
+    
+    return result
+
 def calculate_complete_rsi_history(closes, period=40):
     """
     Calcule l'historique complet du RSI avec la méthode Wilder Smoothing.
