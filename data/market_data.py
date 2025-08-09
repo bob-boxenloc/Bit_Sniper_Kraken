@@ -65,8 +65,9 @@ class MarketData:
             # On trie par timestamp croissant (du plus ancien au plus récent)
             ohlcv = sorted(ohlcv, key=lambda x: x['time'])
             
-            # FILTRER LES BOUGIES FERMÉES (volume > 0)
-            closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
+            # FILTRER LES BOUGIES FERMÉES 
+            # Note: tick_type="mark" n'a pas de volume, donc on ne filtre pas sur le volume
+            closed_candles = ohlcv  # Prendre toutes les bougies pour tick_type="mark"
             
             if not closed_candles:
                 self.logger.warning("Aucune bougie fermée trouvée")
