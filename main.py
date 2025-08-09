@@ -212,38 +212,38 @@ def update_indicator_history(new_candle):
             print("❌ Impossible de calculer le RSI pour la nouvelle bougie")
             return False
     else:
-        # Première fois : recalculer tout l'historique
+        # Première fois - recalculer l'historique complet
         print("📊 Recalcul complet de l'historique RSI (première fois)...")
         rsi_history = calculate_complete_rsi_history(rsi_closes, 40)
-    if rsi_history:
-        indicator_history['rsi_history'] = rsi_history
-        
+        if rsi_history:
+            indicator_history['rsi_history'] = rsi_history
+            
             # Calculer et stocker les moyennes RMA finales
-        deltas = []
-        for i in range(1, len(rsi_closes)):
-            deltas.append(rsi_closes[i] - rsi_closes[i-1])
-        
-        gains = [max(delta, 0) for delta in deltas]
-        losses = [max(-delta, 0) for delta in deltas]
-        
+            deltas = []
+            for i in range(1, len(rsi_closes)):
+                deltas.append(rsi_closes[i] - rsi_closes[i-1])
+            
+            gains = [max(delta, 0) for delta in deltas]
+            losses = [max(-delta, 0) for delta in deltas]
+            
             # Calculer les moyennes RMA finales
-        avg_gain = sum(gains[:40]) / 40
-        avg_loss = sum(losses[:40]) / 40
-        
-        # Continuer le calcul RMA pour toutes les périodes suivantes
-        for i in range(40, len(deltas)):
-            avg_gain = (avg_gain * 39 + gains[i]) / 40
-            avg_loss = (avg_loss * 39 + losses[i]) / 40
-        
+            avg_gain = sum(gains[:40]) / 40
+            avg_loss = sum(losses[:40]) / 40
+            
+            # Continuer le calcul RMA pour toutes les périodes suivantes
+            for i in range(40, len(deltas)):
+                avg_gain = (avg_gain * 39 + gains[i]) / 40
+                avg_loss = (avg_loss * 39 + losses[i]) / 40
+            
             # Stocker les moyennes finales
-        indicator_history['rsi_avg_gain'] = avg_gain
-        indicator_history['rsi_avg_loss'] = avg_loss
-        
-        print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
-        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
-    else:
-        print("❌ Impossible de recalculer l'historique RSI")
-        return False
+            indicator_history['rsi_avg_gain'] = avg_gain
+            indicator_history['rsi_avg_loss'] = avg_loss
+            
+            print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
+            print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+        else:
+            print("❌ Impossible de recalculer l'historique RSI")
+            return False
     
     # Recalculer l'historique complet des Volatility Indexes
     print("📊 Recalcul Volatility Indexes...")
@@ -274,7 +274,7 @@ def update_indicator_history(new_candle):
     previous_vi3_state = indicator_history.get('vi3_state', "BEARISH")
     
     # Calculer l'ATR 28 pour avoir les données nécessaires
-    atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
+    atr_28_history = calculate_atr_history(vi_highs, vi_lows, vi_closes, period=28)
     if not atr_28_history or len(atr_28_history) < 2:
         print("❌ Impossible de calculer l'ATR 28 ou pas assez de données")
         return False
@@ -426,7 +426,7 @@ def trading_loop():
             print("✅ Buffer RSI déjà initialisé avec données")
         
         # Récupérer la dernière bougie fermée de Kraken pour VI
-        print("🔄 Récupération de la dernière bougie fermée pour VI")
+        print("�� Récupération de la dernière bougie fermée pour VI")
         new_candles = md.get_ohlcv_15m(limit=1)  # Récupérer seulement la dernière bougie
         
         print(f"🔄 DEBUG: new_candles récupérées: {len(new_candles) if new_candles else 0}")

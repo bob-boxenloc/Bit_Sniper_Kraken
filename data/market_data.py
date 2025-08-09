@@ -56,8 +56,8 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Utiliser le SDK avec tick_type="trade" pour avoir le volume
-            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
+            # Utiliser le SDK avec tick_type="mark" pour correspondre à Kraken web
+            ohlc_data = self.client.get_ohlc(tick_type="mark", symbol=symbol, resolution="15m")
             
             # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
             ohlcv = ohlc_data.get('candles', [])
@@ -121,7 +121,7 @@ class MarketData:
                 self.logger.info(f"   Close: {latest_candle['close']}")
                 self.logger.info(f"   Volume: {latest_candle.get('volume', 'N/A')}")
                 self.logger.info(f"   True Range calculé: {float(latest_candle['high']) - float(latest_candle['low']):.2f}")
-                self.logger.info(f"   Source: SDK Kraken avec tick_type=trade")
+                self.logger.info(f"   Source: SDK Kraken avec tick_type=mark")
             
             return ohlcv
             
