@@ -99,9 +99,9 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 114474  # BULLISH
-        vi2_n1 = 115970  # BULLISH
-        vi3_n1 = 116232  # BULLISH
+        vi1_n1 = 114220  # BULLISH
+        vi2_n1 = 115837  # BULLISH
+        vi3_n1 = 116396  # BULLISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
@@ -215,35 +215,35 @@ def update_indicator_history(new_candle):
         # Première fois - recalculer l'historique complet
         print("📊 Recalcul complet de l'historique RSI (première fois)...")
         rsi_history = calculate_complete_rsi_history(rsi_closes, 40)
-        if rsi_history:
-            indicator_history['rsi_history'] = rsi_history
-            
+    if rsi_history:
+        indicator_history['rsi_history'] = rsi_history
+        
             # Calculer et stocker les moyennes RMA finales
-            deltas = []
-            for i in range(1, len(rsi_closes)):
+        deltas = []
+        for i in range(1, len(rsi_closes)):
                 deltas.append(rsi_closes[i] - rsi_closes[i-1])
-            
-            gains = [max(delta, 0) for delta in deltas]
-            losses = [max(-delta, 0) for delta in deltas]
-            
+        
+        gains = [max(delta, 0) for delta in deltas]
+        losses = [max(-delta, 0) for delta in deltas]
+        
             # Calculer les moyennes RMA finales
-            avg_gain = sum(gains[:40]) / 40
-            avg_loss = sum(losses[:40]) / 40
-            
-            # Continuer le calcul RMA pour toutes les périodes suivantes
-            for i in range(40, len(deltas)):
-                avg_gain = (avg_gain * 39 + gains[i]) / 40
-                avg_loss = (avg_loss * 39 + losses[i]) / 40
-            
+        avg_gain = sum(gains[:40]) / 40
+        avg_loss = sum(losses[:40]) / 40
+        
+        # Continuer le calcul RMA pour toutes les périodes suivantes
+        for i in range(40, len(deltas)):
+            avg_gain = (avg_gain * 39 + gains[i]) / 40
+            avg_loss = (avg_loss * 39 + losses[i]) / 40
+        
             # Stocker les moyennes finales
-            indicator_history['rsi_avg_gain'] = avg_gain
-            indicator_history['rsi_avg_loss'] = avg_loss
-            
-            print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
-            print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
-        else:
-            print("❌ Impossible de recalculer l'historique RSI")
-            return False
+        indicator_history['rsi_avg_gain'] = avg_gain
+        indicator_history['rsi_avg_loss'] = avg_loss
+        
+        print(f"✅ RSI recalculé: {len(rsi_history)} valeurs")
+        print(f"   Dernière valeur: {rsi_history[-1]:.2f}")
+    else:
+        print("❌ Impossible de recalculer l'historique RSI")
+        return False
     
     # Recalculer l'historique complet des Volatility Indexes
     print("📊 Recalcul Volatility Indexes...")
@@ -258,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 114474  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 115970  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 116232  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 114220  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 115837  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 116396  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
