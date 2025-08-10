@@ -668,12 +668,23 @@ def get_indicators_with_validation(candles, rsi_period=40):
     # Volatility Indexes actuels
     volatility_indexes = calculate_volatility_indexes(highs, lows, closes)
     
+    # Calculer les phases VI pour avoir la même structure que l'historique
+    atr_history = calculate_atr_history(highs, lows, closes, period=28)
+    vi_phases = calculate_vi_phases(atr_history, period=28)
+    
+    # Structure complète identique à l'historique
     indicators = {
         'RSI': rsi,
-        **volatility_indexes
+        'VI1_phase': vi_phases['VI1_phase'] if vi_phases else 'BULLISH',
+        'VI2_phase': vi_phases['VI2_phase'] if vi_phases else 'BULLISH',
+        'VI3_phase': vi_phases['VI3_phase'] if vi_phases else 'BULLISH',
+        # Valeurs VI actuelles
+        'vi1': volatility_indexes['vi1'],
+        'vi2': volatility_indexes['vi2'],
+        'vi3': volatility_indexes['vi3']
     }
     
-    return True, indicators, f"Indicateurs calculés avec succès"
+    return True, indicators, f"Indicateurs calculés avec succès (fallback)"
 
 def calculate_vi_phases(atr_history, period=28):
     """

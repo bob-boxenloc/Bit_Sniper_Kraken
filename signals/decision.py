@@ -272,7 +272,7 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'reason': 'Conditions LONG_VI1 remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
             'entry_price': float(analysis['current_candle']['close']),
-            'entry_rsi': analysis['indicators']['rsi'],
+            'entry_rsi': analysis['rsi'],
             'position_type': 'LONG_VI1',
             'entry_time': time.time()
         }
@@ -283,7 +283,7 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'reason': 'Conditions LONG_VI2 remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
             'entry_price': float(analysis['current_candle']['close']),
-            'entry_rsi': analysis['indicators']['rsi'],
+            'entry_rsi': analysis['rsi'],
             'position_type': 'LONG_VI2',
             'entry_time': time.time()
         }
@@ -294,7 +294,7 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'reason': 'Conditions LONG_REENTRY remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
             'entry_price': float(analysis['current_candle']['close']),
-            'entry_rsi': analysis['indicators']['rsi'],
+            'entry_rsi': analysis['rsi'],
             'position_type': 'LONG_REENTRY',
             'entry_time': time.time()
         }

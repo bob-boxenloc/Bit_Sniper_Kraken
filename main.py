@@ -741,12 +741,12 @@ def trading_loop():
                     'entry_time': decision['entry_time']
                 })
             elif decision['action'].startswith('exit_'):
-                # Fermer la position dans l'état
-                current_pos = sm.get_current_position()
-                if current_pos:
-                    sm.update_position(current_pos['type'], 'close', {
-                        'exit_price': execution_result.get('price'),
-                        'exit_rsi': analysis['rsi_n1'],
+                    # Fermer la position dans l'état
+                    current_pos = sm.get_current_position()
+                    if current_pos:
+                        sm.update_position(current_pos['type'], 'close', {
+                            'exit_price': execution_result.get('price'),
+                            'exit_rsi': analysis['rsi'],
                         'pnl': execution_result.get('pnl', 0)
                     })
         else:
