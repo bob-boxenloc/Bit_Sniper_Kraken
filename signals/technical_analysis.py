@@ -14,11 +14,30 @@ def analyze_candles(candles, indicators):
     :param indicators: dict avec RSI et Volatility Indexes calculés
     :return: dict avec tous les indicateurs calculés et conditions
     """
-    if len(candles) < 1:
+    # VALIDATION DES DONNÉES D'ENTRÉE - PROTECTION CONTRE LES CRASHES
+    if not candles or len(candles) < 1:
+        logger.log_error("analyze_candles: candles est None, vide ou trop court")
         raise ValueError("Il faut au moins 1 bougie pour l'analyse")
+    
+    if not indicators:
+        logger.log_error("analyze_candles: indicators est None ou vide")
+        raise ValueError("Indicateurs requis pour l'analyse")
+    
+    # Vérifier que les clés essentielles existent dans indicators
+    required_indicator_keys = ['RSI', 'vi1', 'vi2', 'vi3']
+    missing_keys = [key for key in required_indicator_keys if key not in indicators]
+    
+    if missing_keys:
+        logger.log_error(f"analyze_candles: Clés manquantes dans indicators: {missing_keys}")
+        raise ValueError(f"Indicateurs incomplets - clés manquantes: {missing_keys}")
     
     # Utiliser la bougie actuelle (dernière bougie fermée)
     current_candle = candles[-1]
+    
+    # Vérifier que la bougie a les bonnes clés
+    if 'close' not in current_candle:
+        logger.log_error("analyze_candles: current_candle n'a pas de clé 'close'")
+        raise ValueError("Bougie incomplète - clé close manquante")
     
     # RSI actuel
     rsi = float(indicators['RSI'])

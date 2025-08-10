@@ -476,14 +476,14 @@ def initialize_vi_history_from_user_values(highs, lows, closes):
     logger.logger.info("🔧 DEBUG: Fonction initialize_vi_history_from_user_values appelée")
     
     # Valeurs de départ fournies par l'utilisateur
-    vi1_n1 = 114472  # BULLISH
-    vi2_n1 = 116596  # BULLISH
-    vi3_n1 = 117540  # BULLISH
+    vi1_n1 = 114510  # BULLISH
+    vi2_n1 = 116086  # BULLISH
+    vi3_n1 = 117797  # BEARISH
     
     # États initiaux
     vi1_state = "BULLISH"
     vi2_state = "BULLISH"
-    vi3_state = "BULLISH"
+    vi3_state = "BEARISH"
     
     # Calculer l'ATR 28 pour avoir les données nécessaires
     atr_28_history = calculate_atr_history(highs, lows, closes, period=28)
@@ -668,23 +668,12 @@ def get_indicators_with_validation(candles, rsi_period=40):
     # Volatility Indexes actuels
     volatility_indexes = calculate_volatility_indexes(highs, lows, closes)
     
-    # Calculer les phases VI pour avoir la même structure que l'historique
-    atr_history = calculate_atr_history(highs, lows, closes, period=28)
-    vi_phases = calculate_vi_phases(atr_history, period=28)
-    
-    # Structure complète identique à l'historique
     indicators = {
         'RSI': rsi,
-        'VI1_phase': vi_phases['VI1_phase'] if vi_phases else 'BULLISH',
-        'VI2_phase': vi_phases['VI2_phase'] if vi_phases else 'BULLISH',
-        'VI3_phase': vi_phases['VI3_phase'] if vi_phases else 'BULLISH',
-        # Valeurs VI actuelles
-        'vi1': volatility_indexes['vi1'],
-        'vi2': volatility_indexes['vi2'],
-        'vi3': volatility_indexes['vi3']
+        **volatility_indexes
     }
     
-    return True, indicators, f"Indicateurs calculés avec succès (fallback)"
+    return True, indicators, f"Indicateurs calculés avec succès"
 
 def calculate_vi_phases(atr_history, period=28):
     """
@@ -847,14 +836,14 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 114472  # BULLISH
-    vi2_n1 = 116596  # BULLISH
-    vi3_n1 = 117540  # BULLISH
+    vi1_n1 = 114510  # BULLISH
+    vi2_n1 = 116086  # BULLISH
+    vi3_n1 = 117797  # BEARISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BULLISH"
     vi2_state_initial = "BULLISH"
-    vi3_state_initial = "BULLISH"
+    vi3_state_initial = "BEARISH"
     
     # Utiliser les valeurs précédentes si fournies, sinon utiliser les valeurs de départ
     vi1_previous = previous_vi1 if previous_vi1 is not None else vi1_n1

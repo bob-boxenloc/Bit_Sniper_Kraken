@@ -17,6 +17,27 @@ def decide_action(analysis, conditions_check, account_summary, state_manager=Non
     :return: dict avec la décision prise
     """
     
+    # VALIDATION DES DONNÉES D'ANALYSE - PROTECTION CONTRE LES CRASHES
+    if not analysis:
+        logger.log_error("decide_action: analysis est None ou vide")
+        return {
+            'action': 'hold',
+            'reason': 'Données d\'analyse manquantes - protection anti-crash',
+            'details': {'error': 'analysis is None or empty'}
+        }
+    
+    # Vérifier que les clés essentielles existent
+    required_keys = ['rsi', 'current_candle']
+    missing_keys = [key for key in required_keys if key not in analysis]
+    
+    if missing_keys:
+        logger.log_error(f"decide_action: Clés manquantes dans analysis: {missing_keys}")
+        return {
+            'action': 'hold',
+            'reason': f'Données d\'analyse incomplètes - clés manquantes: {missing_keys}',
+            'details': {'missing_keys': missing_keys}
+        }
+    
     # Vérifications de base
     if not conditions_check['trading_allowed']:
         return {
@@ -40,6 +61,27 @@ def check_exit_conditions(analysis, open_positions, state_manager):
     """
     Vérifie les conditions de sortie pour les positions ouvertes selon la nouvelle stratégie.
     """
+    # VALIDATION DES DONNÉES D'ANALYSE - PROTECTION CONTRE LES CRASHES
+    if not analysis:
+        logger.log_error("check_exit_conditions: analysis est None ou vide")
+        return {
+            'action': 'hold',
+            'reason': 'Données d\'analyse manquantes - protection anti-crash',
+            'details': {'error': 'analysis is None or empty'}
+        }
+    
+    # Vérifier que les clés essentielles existent
+    required_keys = ['rsi', 'current_close']
+    missing_keys = [key for key in required_keys if key not in analysis]
+    
+    if missing_keys:
+        logger.log_error(f"check_exit_conditions: Clés manquantes dans analysis: {missing_keys}")
+        return {
+            'action': 'hold',
+            'reason': f'Données d\'analyse incomplètes - clés manquantes: {missing_keys}',
+            'details': {'missing_keys': missing_keys}
+        }
+    
     if not open_positions:
         return {'action': 'hold', 'reason': 'Aucune position à vérifier'}
     
@@ -246,6 +288,36 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
     """
     Vérifie les conditions d'entrée pour ouvrir de nouvelles positions.
     """
+    
+    # VALIDATION DES DONNÉES D'ANALYSE - PROTECTION CONTRE LES CRASHES
+    if not analysis:
+        logger.log_error("check_entry_conditions: analysis est None ou vide")
+        return {
+            'action': 'hold',
+            'reason': 'Données d\'analyse manquantes - protection anti-crash',
+            'details': {'error': 'analysis is None or empty'}
+        }
+    
+    # Vérifier que les clés essentielles existent
+    required_keys = ['rsi', 'current_candle']
+    missing_keys = [key for key in required_keys if key not in analysis]
+    
+    if missing_keys:
+        logger.log_error(f"check_entry_conditions: Clés manquantes dans analysis: {missing_keys}")
+        return {
+            'action': 'hold',
+            'reason': f'Données d\'analyse incomplètes - clés manquantes: {missing_keys}',
+            'details': {'missing_keys': missing_keys}
+        }
+    
+    # Vérifier que current_candle a les bonnes clés
+    if 'close' not in analysis['current_candle']:
+        logger.log_error("check_entry_conditions: current_candle n'a pas de clé 'close'")
+        return {
+            'action': 'hold',
+            'reason': 'Données de bougie incomplètes - clé close manquante',
+            'details': {'error': 'current_candle missing close key'}
+        }
     
     # Récupérer les informations d'état
     last_position_type = None
