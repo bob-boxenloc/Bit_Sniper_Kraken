@@ -99,9 +99,9 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 114424  # BULLISH
-        vi2_n1 = 116542  # BULLISH
-        vi3_n1 = 117483  # BULLISH
+        vi1_n1 = 114390  # BULLISH
+        vi2_n1 = 116553  # BULLISH
+        vi3_n1 = 117514  # BULLISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
@@ -258,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 114424  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 116542  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 117483  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 114390  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 116553  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 117514  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
