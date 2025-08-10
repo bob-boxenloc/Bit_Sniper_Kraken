@@ -261,7 +261,7 @@ def check_entry_conditions(analysis, conditions_check, account_summary, state_ma
             'reason': 'Conditions SHORT remplies',
             'size': account_summary['max_position_size']['max_btc_size'],
             'entry_price': float(analysis['current_candle']['close']),
-            'entry_rsi': analysis['indicators']['rsi'],
+            'entry_rsi': analysis['rsi'],
             'position_type': 'SHORT',
             'entry_time': time.time()
         }
