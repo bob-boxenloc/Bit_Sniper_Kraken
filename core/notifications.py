@@ -72,31 +72,79 @@ class BrevoNotifier:
             logger.error(f"Erreur lors de l'envoi d'email: {e}")
             return False
     
-    def send_trade_notification(self, action, position_type, price=None, datetime_str=None):
+    def send_trade_notification(self, action, position_type, price=None, datetime_str=None, size=None, pnl=None):
         """
-        Envoie une notification de trade.
+        Envoie une notification de trade enrichie.
         
-        :param action: 'ENTRÉE' ou 'SORTIE'
+        :param action: 'ENTRÉE', 'SORTIE', 'SORTIE D\'URGENCE', 'SORTIE CONTRÔLE 3H'
         :param position_type: Type de position (SHORT, LONG_VI1, etc.)
         :param price: Prix d'entrée/sortie (optionnel)
         :param datetime_str: Date/heure (optionnel)
+        :param size: Taille de la position (optionnel)
+        :param pnl: Profit/Loss réalisé (optionnel)
         """
         if not datetime_str:
             datetime_str = datetime.now().strftime("%d/%m %H:%M")
         
+        # Déterminer la couleur et l'icône selon l'action
+        if "ENTRÉE" in action:
+            color = "#28a745"  # Vert
+            icon = "🚀"
+        elif "CROISEMENT VI1" in action:
+            if "BEARISH" in position_type:
+                color = "#dc3545"  # Rouge pour BEARISH
+                icon = "📈"
+            else:  # BULLISH
+                color = "#28a745"  # Vert pour BULLISH
+                icon = "📉"
+        elif "SORTIE D'URGENCE" in action:
+            color = "#dc3545"  # Rouge
+            icon = "🚨"
+        elif "SORTIE CONTRÔLE" in action:
+            color = "#ffc107"  # Jaune
+            icon = "⚠️"
+        else:  # SORTIE normale
+            color = "#17a2b8"  # Bleu
+            icon = "📉"
+        
         subject = f"BitSniper - {action} {position_type} - {datetime_str}"
         
         html_content = f"""
-        <h2>BitSniper Trading Bot</h2>
-        <h3>{action} {position_type}</h3>
-        <p><strong>Date/Heure:</strong> {datetime_str}</p>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, {color}, #6c757d); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                <h1 style="margin: 0; text-align: center;">{icon} BitSniper Trading Bot</h1>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; border: 1px solid #dee2e6;">
+                <h2 style="color: {color}; margin-top: 0;">{action} {position_type}</h2>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid {color};">
+                    <p style="margin: 5px 0;"><strong>📅 Date/Heure:</strong> {datetime_str}</p>
+                    <p style="margin: 5px 0;"><strong>🎯 Type:</strong> {position_type}</p>
         """
         
-        if price:
-            html_content += f"<p><strong>Prix:</strong> {price}</p>"
+        if price and price != 'N/A':
+            html_content += f'<p style="margin: 5px 0;"><strong>💰 Prix:</strong> {price}</p>'
         
-        html_content += """
-        <p><em>Notification automatique du bot de trading</em></p>
+        if size:
+            html_content += f'<p style="margin: 5px 0;"><strong>📊 Taille:</strong> {size:.4f} BTC</p>'
+        
+        if pnl is not None and pnl != 0:
+            pnl_color = "#28a745" if pnl > 0 else "#dc3545"
+            pnl_icon = "📈" if pnl > 0 else "📉"
+            html_content += f'<p style="margin: 5px 0;"><strong>{pnl_icon} PnL:</strong> <span style="color: {pnl_color}; font-weight: bold;">${pnl:.2f}</span></p>'
+        
+        html_content += f"""
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px;">
+                    <p style="margin: 0; color: #6c757d; font-style: italic;">
+                        🤖 Notification automatique du bot de trading<br>
+                        <small>Stratégie RSI(40) + Volatility Indexes sur Kraken Futures</small>
+                    </p>
+                </div>
+            </div>
+        </div>
         """
         
         return self.send_email(subject, html_content)

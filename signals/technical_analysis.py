@@ -100,6 +100,12 @@ def analyze_candles(candles, indicators):
         'vi2_above_close': vi2_above_close,
         'vi3_above_close': vi3_above_close,
         
+        # DÉTECTION DES CROISEMENTS - Exposés directement pour les notifications
+        'vi1_crossing_over': vi1_crossing_over,      # VI1 traverse le close vers le haut
+        'vi1_crossing_under': vi1_crossing_under,    # VI1 traverse le close vers le bas
+        'vi2_crossing_over': vi2_crossing_over,      # VI2 traverse le close vers le haut
+        'vi2_crossing_under': vi2_crossing_under,    # VI2 traverse le close vers le bas
+        
         # Conditions pour SHORT
         'short_conditions': {
             'vi1_crossing_over': vi1_crossing_over,      # ✅ DÉCLENCHEUR: VI1 traverse le close vers le haut

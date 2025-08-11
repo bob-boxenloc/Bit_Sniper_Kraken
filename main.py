@@ -674,6 +674,41 @@ def trading_loop():
     print(analysis_summary)
     logger.log_technical_analysis(analysis, conditions_check)
     
+    # 📧 NOTIFICATION EMAIL - CROISEMENTS VI1
+    try:
+        vi1_crossing_over = analysis.get('vi1_crossing_over', False)
+        vi1_crossing_under = analysis.get('vi1_crossing_under', False)
+        
+        if vi1_crossing_over:
+            # VI1 traverse le close vers le haut (BEARISH)
+            current_price = float(analysis['current_candle']['close'])
+            current_time = datetime.now().strftime("%d/%m %H:%M")
+            
+            notification_manager.send_trade_notification(
+                action="CROISEMENT VI1",
+                position_type="BEARISH (au-dessus)",
+                price=f"${current_price:.2f}",
+                datetime_str=current_time
+            )
+            print(f"   📧 Email de notification envoyé pour le croisement VI1 BEARISH")
+            
+        elif vi1_crossing_under:
+            # VI1 traverse le close vers le bas (BULLISH)
+            current_price = float(analysis['current_candle']['close'])
+            current_time = datetime.now().strftime("%d/%m %H:%M")
+            
+            notification_manager.send_trade_notification(
+                action="CROISEMENT VI1",
+                position_type="BULLISH (en-dessous)",
+                price=f"${current_price:.2f}",
+                datetime_str=current_time
+            )
+            print(f"   📧 Email de notification envoyé pour le croisement VI1 BULLISH")
+            
+    except Exception as e:
+        logger.log_error(f"Erreur lors de l'envoi de la notification de croisement VI1: {e}")
+        print(f"   ⚠️  Erreur notification croisement VI1: {e}")
+    
     # Logger l'état de la nouvelle stratégie
     logger.log_new_strategy_state(sm)
     
@@ -768,6 +803,24 @@ def trading_loop():
                     'size': decision['size'],
                     'entry_time': decision['entry_time']
                 })
+                
+                # 📧 NOTIFICATION EMAIL - ENTRÉE EN POSITION
+                try:
+                    entry_price = decision['entry_price']
+                    entry_time = datetime.fromtimestamp(decision['entry_time']).strftime("%d/%m %H:%M")
+                    position_size = decision['size']
+                    notification_manager.send_trade_notification(
+                        action="ENTRÉE",
+                        position_type=position_type,
+                        price=f"${entry_price:.2f}",
+                        datetime_str=entry_time,
+                        size=position_size
+                    )
+                    print(f"   📧 Email de notification envoyé pour l'entrée en {position_type}")
+                except Exception as e:
+                    logger.log_error(f"Erreur lors de l'envoi de la notification email: {e}")
+                    print(f"   ⚠️  Erreur notification email: {e}")
+                
             elif decision['action'].startswith('exit_'):
                 # Fermer la position dans l'état
                 current_pos = sm.get_current_position()
@@ -777,6 +830,37 @@ def trading_loop():
                         'exit_rsi': analysis['rsi_n1'],
                         'pnl': execution_result.get('pnl', 0)
                     })
+                    
+                    # 📧 NOTIFICATION EMAIL - SORTIE DE POSITION
+                    try:
+                        exit_price = execution_result.get('price', 'N/A')
+                        exit_time = datetime.now().strftime("%d/%m %H:%M")
+                        pnl = execution_result.get('pnl', 0)
+                        
+                        # Déterminer le type de sortie
+                        exit_type = "SORTIE"
+                        if execution_result.get('exit_type') == 'emergency':
+                            exit_type = "SORTIE D'URGENCE"
+                        elif execution_result.get('exit_type') == 'control_3h':
+                            exit_type = "SORTIE CONTRÔLE 3H"
+                        
+                        notification_manager.send_trade_notification(
+                            action=exit_type,
+                            position_type=current_pos['type'],
+                            price=f"${exit_price}" if exit_price != 'N/A' else "N/A",
+                            datetime_str=exit_time,
+                            pnl=pnl
+                        )
+                        print(f"   📧 Email de notification envoyé pour la sortie de {current_pos['type']}")
+                        
+                        # Notification spéciale si PnL significatif
+                        if pnl != 0:
+                            pnl_str = f"${pnl:.2f}" if pnl > 0 else f"${pnl:.2f}"
+                            print(f"   💰 PnL réalisé: {pnl_str}")
+                            
+                    except Exception as e:
+                        logger.log_error(f"Erreur lors de l'envoi de la notification email: {e}")
+                        print(f"   ⚠️  Erreur notification email: {e}")
         else:
             print("   ❌ Erreur lors de l'exécution")
             logger.log_order_execution(execution_result)
