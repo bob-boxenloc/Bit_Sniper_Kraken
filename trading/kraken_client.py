@@ -85,10 +85,12 @@ class KrakenFuturesClient:
             self.logger.error(f"Erreur lors de la récupération des positions ouvertes : {e}")
             raise
 
-    def calculate_max_position_size(self):
+    def calculate_max_position_size(self, current_btc_price=None):
         """
         Calcule la taille maximale de position possible avec le levier x10
         Basé sur la marge disponible et les règles Kraken Futures
+        
+        :param current_btc_price: Prix BTC actuel pour un calcul précis (optionnel)
         """
         try:
             wallet_info = self.get_wallet_info()
@@ -99,10 +101,17 @@ class KrakenFuturesClient:
             # On prend 95% de la marge disponible pour être sûr
             max_position_value = usd_balance * 10 * 0.95
             
-            # Convertir en taille BTC (approximatif, le prix exact sera récupéré au moment de l'ordre)
-            # Prix BTC actuel ~ 40,000 USD, donc taille max en BTC
-            estimated_btc_price = 40000  # Prix approximatif pour le calcul
-            max_btc_size = max_position_value / estimated_btc_price
+            # Utiliser le prix BTC actuel si fourni, sinon utiliser une estimation
+            if current_btc_price and current_btc_price > 0:
+                btc_price = current_btc_price
+                self.logger.debug(f"Utilisation du prix BTC actuel: ${btc_price:.2f}")
+            else:
+                # Fallback: estimation approximative (pour compatibilité)
+                btc_price = 40000
+                self.logger.warning("Prix BTC non fourni, utilisation de l'estimation: $40,000")
+            
+            # Calculer la taille max en BTC avec le prix réel
+            max_btc_size = max_position_value / btc_price
             
             # Arrondir à 4 décimales (unité minimum 0.0001 BTC)
             max_btc_size = round(max_btc_size, 4)
@@ -115,10 +124,11 @@ class KrakenFuturesClient:
                 'max_btc_size': max_btc_size,
                 'max_usd_value': max_position_value,
                 'available_margin': usd_balance,
-                'leverage_used': 10
+                'leverage_used': 10,
+                'btc_price_used': btc_price
             }
             
-            self.logger.debug(f"Taille max calculée: {max_btc_size:.4f} BTC ({max_position_value:.2f} USD)")
+            self.logger.debug(f"Taille max calculée: {max_btc_size:.4f} BTC ({max_position_value:.2f} USD) avec prix BTC ${btc_price:.2f}")
             return result
             
         except Exception as e:
@@ -132,7 +142,8 @@ class KrakenFuturesClient:
         try:
             wallet_info = self.get_wallet_info()
             open_positions = self.get_open_positions()
-            max_size_info = self.calculate_max_position_size()
+            # CORRECTION: Passer le prix BTC actuel pour un calcul précis de la taille max
+            max_size_info = self.calculate_max_position_size(current_price)
             
             result = {
                 'wallet': wallet_info,
