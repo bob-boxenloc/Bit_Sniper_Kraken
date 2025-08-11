@@ -99,10 +99,30 @@ def test_notifications():
     )
     print(f"   Résultat: {'✅ Succès' if success6 else '❌ Échec'}")
     
+    # Test 7: Notification de crash TRADING
+    print("\n📧 Test 7: Notification de crash TRADING")
+    success7 = notifier.send_crash_notification(
+        error_type="CRASH TRADING",
+        error_message="Erreur de connexion à l'API Kraken",
+        stack_trace="Traceback (most recent call last):\n  File 'main.py', line 340, in trading_loop\n    md = MarketData()\nConnectionError: [Errno 111] Connection refused",
+        context="Test de notification de crash"
+    )
+    print(f"   Résultat: {'✅ Succès' if success7 else '❌ Échec'}")
+    
+    # Test 8: Notification de crash FATAL
+    print("\n📧 Test 8: Notification de crash FATAL")
+    success8 = notifier.send_crash_notification(
+        error_type="CRASH FATAL",
+        error_message="Erreur critique dans le système de monitoring",
+        stack_trace="Traceback (most recent call last):\n  File 'main.py', line 900, in main\n    run_every_15min(trading_loop)\nSystemError: Critical system failure",
+        context="Test de notification de crash fatal"
+    )
+    print(f"   Résultat: {'✅ Succès' if success8 else '❌ Échec'}")
+    
     # Résumé
     print("\n" + "=" * 50)
     print("📊 RÉSUMÉ DES TESTS")
-    tests = [success1, success2, success3, success4, success5, success6]
+    tests = [success1, success2, success3, success4, success5, success6, success7, success8]
     successful = sum(tests)
     total = len(tests)
     

@@ -173,6 +173,78 @@ class BrevoNotifier:
         """
         
         return self.send_email(subject, html_content)
+    
+    def send_crash_notification(self, error_type, error_message, stack_trace=None, context=None):
+        """
+        Envoie une notification d'urgence en cas de crash du bot.
+        
+        :param error_type: Type d'erreur ('CRASH FATAL', 'ERREUR TRADING', etc.)
+        :param error_message: Message d'erreur
+        :param stack_trace: Stack trace complet (optionnel)
+        :param context: Contexte de l'erreur (optionnel)
+        """
+        datetime_str = datetime.now().strftime("%d/%m %H:%M")
+        subject = f"🚨 URGENCE BitSniper - {error_type} - {datetime_str}"
+        
+        # Déterminer la couleur selon le type d'erreur
+        if "FATAL" in error_type:
+            color = "#dc3545"  # Rouge
+            icon = "💥"
+        elif "TRADING" in error_type:
+            color = "#ffc107"  # Jaune
+            icon = "⚠️"
+        else:
+            color = "#fd7e14"  # Orange
+            icon = "🚨"
+        
+        html_content = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <div style="background: linear-gradient(135deg, {color}, #dc3545); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+                <h1 style="margin: 0; text-align: center;">{icon} URGENCE BitSniper Trading Bot</h1>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 0 0 10px 10px; border: 1px solid #dee2e6;">
+                <h2 style="color: {color}; margin-top: 0;">{error_type}</h2>
+                
+                <div style="background: white; padding: 15px; border-radius: 8px; margin: 15px 0; border-left: 4px solid {color};">
+                    <p style="margin: 5px 0;"><strong>🚨 Date/Heure du crash:</strong> {datetime_str}</p>
+                    <p style="margin: 5px 0;"><strong>💥 Type d'erreur:</strong> {error_type}</p>
+                    <p style="margin: 5px 0;"><strong>📝 Message:</strong> {error_message}</p>
+        """
+        
+        if context:
+            html_content += f'<p style="margin: 5px 0;"><strong>🔍 Contexte:</strong> {context}</p>'
+        
+        if stack_trace:
+            # Limiter la stack trace pour éviter des emails trop longs
+            stack_preview = stack_trace[:500] + "..." if len(stack_trace) > 500 else stack_trace
+            html_content += f'<p style="margin: 5px 0;"><strong>📚 Stack Trace:</strong></p>'
+            html_content += f'<pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; font-size: 12px; overflow-x: auto;">{stack_preview}</pre>'
+        
+        html_content += f"""
+                </div>
+                
+                <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <h4 style="margin-top: 0; color: #856404;">🚨 ACTIONS IMMÉDIATES REQUISES :</h4>
+                    <ol style="margin: 0; padding-left: 20px;">
+                        <li>Se connecter au serveur : <code>ssh bitsniper@149.202.40.139</code></li>
+                        <li>Vérifier le statut : <code>sudo systemctl status bitsniper</code></li>
+                        <li>Voir les logs : <code>sudo journalctl -u bitsniper -f</code></li>
+                        <li>Redémarrer si nécessaire : <code>sudo systemctl restart bitsniper</code></li>
+                    </ol>
+                </div>
+                
+                <div style="text-align: center; margin-top: 20px; padding: 15px; background: #e9ecef; border-radius: 8px;">
+                    <p style="margin: 0; color: #6c757d; font-style: italic;">
+                        🤖 Notification automatique de crash - Intervention humaine requise<br>
+                        <small>Bot de trading RSI(40) + Volatility Indexes sur Kraken Futures</small>
+                    </p>
+                </div>
+            </div>
+        </div>
+        """
+        
+        return self.send_email(subject, html_content)
 
 # Instance globale du notificateur
 notifier = BrevoNotifier() 

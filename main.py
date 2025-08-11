@@ -338,6 +338,47 @@ def update_indicator_history(new_candle):
     return True
 
 def trading_loop():
+    """
+    Boucle principale de trading avec gestion d'erreur globale.
+    """
+    try:
+        _trading_loop_internal()
+    except Exception as e:
+        # 🚨 CRASH DÉTECTÉ DANS LA BOUCLE DE TRADING
+        error_type = type(e).__name__
+        error_message = str(e)
+        
+        logger.log_error(f"CRASH dans trading_loop: {error_type} - {error_message}")
+        print(f"\n🚨 CRASH DÉTECTÉ DANS LA BOUCLE DE TRADING !")
+        print(f"   Type d'erreur: {error_type}")
+        print(f"   Message: {error_message}")
+        
+        # 📧 NOTIFICATION EMAIL D'URGENCE - CRASH TRADING
+        try:
+            import traceback
+            stack_trace = traceback.format_exc()
+            
+            notification_manager.send_crash_notification(
+                error_type="CRASH TRADING",
+                error_message=error_message,
+                stack_trace=stack_trace,
+                context="Erreur fatale dans la boucle de trading (récupération données, analyse, exécution)"
+            )
+            print("   📧 Email d'urgence envoyé pour le crash trading")
+            
+        except Exception as email_error:
+            logger.log_error(f"Impossible d'envoyer l'email de crash trading: {email_error}")
+            print(f"   ❌ Impossible d'envoyer l'email de crash: {email_error}")
+        
+        # Relancer la boucle après un délai (pour éviter les boucles infinies de crash)
+        print("   🔄 Redémarrage de la boucle dans 60 secondes...")
+        time.sleep(60)
+        return
+
+def _trading_loop_internal():
+    """
+    Implémentation interne de la boucle de trading.
+    """
     logger.log_scheduler_tick()
     
     # Vérifier la santé du système avant de commencer
@@ -915,13 +956,33 @@ if __name__ == "__main__":
             
     except Exception as e:
         logger.log_error(f"Erreur fatale: {str(e)}")
-        print(f"\nErreur fatale: {e}")
+        print(f"\n🚨 ERREUR FATALE DÉTECTÉE !")
+        print(f"   Type: {type(e).__name__}")
+        print(f"   Message: {str(e)}")
+        
+        # 📧 NOTIFICATION EMAIL D'URGENCE - CRASH FATAL
+        try:
+            import traceback
+            stack_trace = traceback.format_exc()
+            
+            notification_manager.send_crash_notification(
+                error_type="CRASH FATAL",
+                error_message=str(e),
+                stack_trace=stack_trace,
+                context="Erreur fatale dans la boucle principale du bot"
+            )
+            print("   📧 Email d'urgence envoyé pour le crash fatal")
+            
+        except Exception as email_error:
+            logger.log_error(f"Impossible d'envoyer l'email de crash: {email_error}")
+            print(f"   ❌ Impossible d'envoyer l'email de crash: {email_error}")
         
         # Sauvegarder les données de monitoring en cas d'erreur fatale
         try:
             system_monitor.save_monitoring_data("error_monitoring_data.json")
-            print("Données de monitoring sauvegardées (erreur fatale)")
+            print("   💾 Données de monitoring sauvegardées (erreur fatale)")
         except Exception as save_error:
             logger.log_error(f"Erreur lors de la sauvegarde d'urgence: {save_error}")
+            print(f"   ❌ Erreur sauvegarde monitoring: {save_error}")
         
         raise 
