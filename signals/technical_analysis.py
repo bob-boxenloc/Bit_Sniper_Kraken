@@ -115,8 +115,8 @@ def analyze_candles(candles, indicators):
         # Conditions pour LONG_VI1
         'long_vi1_conditions': {
             'vi1_crossing_under': vi1_crossing_under,    # ✅ DÉCLENCHEUR: VI1 traverse le close vers le bas
-            'vi2_above_close': not vi2_above_close,       # ✅ CONDITION: VI2 est en-dessous du close
-            'vi3_above_close': not vi3_above_close,       # ✅ CONDITION: VI3 est en-dessous du close
+            'vi2_under_close': not vi2_above_close,       # ✅ CONDITION: VI2 est en-dessous du close
+            'vi3_under_close': not vi3_above_close,       # ✅ CONDITION: VI3 est en-dessous du close
             'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
             'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH

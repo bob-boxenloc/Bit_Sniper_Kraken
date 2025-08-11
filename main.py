@@ -546,15 +546,20 @@ def trading_loop():
         vi2_current_old = indicator_history['vi2_history'][-1]
         vi3_current_old = indicator_history['vi3_history'][-1]
         
+        # CORRECTION CRITIQUE: Utiliser les vraies valeurs VI actuelles pour les croisements
+        vi1_current = indicator_history['vi1_history'][-1]  # Dernière valeur VI1 calculée
+        vi2_current = indicator_history['vi2_history'][-1]  # Dernière valeur VI2 calculée
+        vi3_current = indicator_history['vi3_history'][-1]  # Dernière valeur VI3 calculée
+        
         indicators = {
             'RSI': rsi_current,
             'VI1_phase': vi1_phase,
             'VI2_phase': vi2_phase,
             'VI3_phase': vi3_phase,
-            # Valeurs VI actuelles
-            'vi1': vi1_current_old,
-            'vi2': vi2_current_old,
-            'vi3': vi3_current_old
+            # CORRECTION: Vraies valeurs VI actuelles pour les croisements
+            'vi1': vi1_current,
+            'vi2': vi2_current,
+            'vi3': vi3_current
         }
         
         indicators_success = True
@@ -566,7 +571,7 @@ def trading_loop():
         print(f"     VI1: {indicators['VI1_phase']}")
         print(f"     VI2: {indicators['VI2_phase']}")
         print(f"     VI3: {indicators['VI3_phase']}")
-        print(f"   ANCIENNE LOGIQUE - Valeurs VI (debug):")
+        print(f"   VALEURS VI ACTUELLES (pour croisements):")
         print(f"     VI1: {indicators['vi1']:.2f}")
         print(f"     VI2: {indicators['vi2']:.2f}")
         print(f"     VI3: {indicators['vi3']:.2f}")
