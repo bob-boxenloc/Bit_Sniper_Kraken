@@ -789,6 +789,45 @@ def _trading_loop_internal():
         print(f"   Taille max: {max_size['max_btc_size']:.4f} BTC (minimum: 0.0001 BTC)")
         return
     
+    # 🚨 VÉRIFICATION CRITIQUE - POSITION APRÈS CRASH
+    has_open_position = len(positions) > 0
+    local_position = sm.get_current_position()
+    
+    if has_open_position and local_position is None:
+        # 🚨 CRASH AVEC POSITION OUVERTE DÉTECTÉ !
+        print("\n🚨 ALERTE CRITIQUE - POSITION APRÈS CRASH DÉTECTÉE !")
+        print("   📊 Position sur Kraken: OUI")
+        print("   💾 Position dans l'état local: NON")
+        print("   🔒 TRADING BLOQUÉ - INTERVENTION HUMAINE REQUISE")
+        
+        # 📧 NOTIFICATION EMAIL D'URGENCE - CRASH AVEC POSITION
+        try:
+            position_info = positions[0]  # Première position
+            position_side = position_info.get('side', 'UNKNOWN')
+            position_size = position_info.get('size', 0)
+            position_price = position_info.get('price', 0)
+            
+            notification_manager.send_crash_notification(
+                error_type="CRASH AVEC POSITION OUVERTE",
+                error_message=f"Position {position_side} {position_size:.4f} BTC @ ${position_price:.2f} détectée sur Kraken mais pas dans l'état local",
+                context="Le bot a crashé avec une position ouverte. Intervention humaine requise pour fermer la position manuellement.",
+                stack_trace="Position détectée après redémarrage - État local perdu lors du crash"
+            )
+            print("   📧 Email d'urgence envoyé pour crash avec position ouverte")
+            
+        except Exception as email_error:
+            logger.log_error(f"Impossible d'envoyer l'email de crash avec position: {email_error}")
+            print(f"   ❌ Erreur notification email: {email_error}")
+        
+        print("\n🔧 ACTIONS REQUISES:")
+        print("   1. Se connecter au serveur: ssh bitsniper@149.202.40.139")
+        print("   2. Fermer manuellement la position sur Kraken")
+        print("   3. Redémarrer le bot: sudo systemctl restart bitsniper")
+        print("   4. Vérifier que le bot redémarre sans position")
+        
+        print("\n⏸️  Bot en mode surveillance - Trading bloqué")
+        return  # Skip tout le trading
+    
     print(f"✅ Compte accessible - Solde: ${wallet['usd_balance']:.2f}")
     print(f"   Prix BTC actuel: ${current_price:.2f}")
     print(f"   Taille max position: {max_size['max_btc_size']:.4f} BTC (${max_size['max_usd_value']:.2f})")

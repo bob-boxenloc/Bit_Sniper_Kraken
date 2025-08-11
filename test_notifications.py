@@ -119,10 +119,20 @@ def test_notifications():
     )
     print(f"   Résultat: {'✅ Succès' if success8 else '❌ Échec'}")
     
+    # Test 9: Notification de crash avec position ouverte
+    print("\n📧 Test 9: Notification de crash avec position ouverte")
+    success9 = notifier.send_crash_notification(
+        error_type="CRASH AVEC POSITION OUVERTE",
+        error_message="Position LONG 0.0025 BTC @ $45,250.00 détectée sur Kraken mais pas dans l'état local",
+        context="Le bot a crashé avec une position ouverte. Intervention humaine requise pour fermer la position manuellement.",
+        stack_trace="Position détectée après redémarrage - État local perdu lors du crash"
+    )
+    print(f"   Résultat: {'✅ Succès' if success9 else '❌ Échec'}")
+    
     # Résumé
     print("\n" + "=" * 50)
     print("📊 RÉSUMÉ DES TESTS")
-    tests = [success1, success2, success3, success4, success5, success6, success7, success8]
+    tests = [success1, success2, success3, success4, success5, success6, success7, success8, success9]
     successful = sum(tests)
     total = len(tests)
     

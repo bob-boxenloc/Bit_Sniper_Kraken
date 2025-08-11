@@ -190,6 +190,9 @@ class BrevoNotifier:
         if "FATAL" in error_type:
             color = "#dc3545"  # Rouge
             icon = "💥"
+        elif "POSITION OUVERTE" in error_type:
+            color = "#dc3545"  # Rouge (même niveau que FATAL)
+            icon = "🚨"
         elif "TRADING" in error_type:
             color = "#ffc107"  # Jaune
             icon = "⚠️"
