@@ -15,9 +15,9 @@ def analyze_candles(candles, indicators):
     :return: dict avec tous les indicateurs calculés et conditions
     """
     # VALIDATION DES DONNÉES D'ENTRÉE - PROTECTION CONTRE LES CRASHES
-    if not candles or len(candles) < 1:
+    if not candles or len(candles) < 2:
         logger.log_error("analyze_candles: candles est None, vide ou trop court")
-        raise ValueError("Il faut au moins 1 bougie pour l'analyse")
+        raise ValueError("Il faut au moins 2 bougies pour détecter les croisements")
     
     if not indicators:
         logger.log_error("analyze_candles: indicators est None ou vide")
@@ -31,13 +31,14 @@ def analyze_candles(candles, indicators):
         logger.log_error(f"analyze_candles: Clés manquantes dans indicators: {missing_keys}")
         raise ValueError(f"Indicateurs incomplets - clés manquantes: {missing_keys}")
     
-    # Utiliser la bougie actuelle (dernière bougie fermée)
-    current_candle = candles[-1]
+    # Utiliser les 2 dernières bougies pour détecter les croisements
+    current_candle = candles[-1]    # Bougie N-1 (actuelle)
+    previous_candle = candles[-2]    # Bougie N-2 (précédente)
     
-    # Vérifier que la bougie a les bonnes clés
-    if 'close' not in current_candle:
-        logger.log_error("analyze_candles: current_candle n'a pas de clé 'close'")
-        raise ValueError("Bougie incomplète - clé close manquante")
+    # Vérifier que les bougies ont les bonnes clés
+    if 'close' not in current_candle or 'close' not in previous_candle:
+        logger.log_error("analyze_candles: current_candle ou previous_candle n'a pas de clé 'close'")
+        raise ValueError("Bougies incomplètes - clé close manquante")
     
     # RSI actuel
     rsi = float(indicators['RSI'])
@@ -47,13 +48,30 @@ def analyze_candles(candles, indicators):
     vi2 = float(indicators['vi2'])
     vi3 = float(indicators['vi3'])
     
-    # Prix de clôture de la bougie actuelle
+    # Prix de clôture des 2 bougies
     current_close = float(current_candle['close'])
+    previous_close = float(previous_candle['close'])
     
-    # Positions des VI par rapport au close
+    # Positions des VI par rapport au close ACTUEL (conditions statiques)
     vi1_above_close = vi1 > current_close
     vi2_above_close = vi2 > current_close
     vi3_above_close = vi3 > current_close
+    
+    # DÉTECTION DES VRAIS CROISEMENTS (comparaison 2 bougies)
+    # On utilise les indicateurs des 2 bougies pour détecter les croisements
+    vi1_current_above = vi1 > current_close
+    vi1_previous_above = vi1 > previous_close
+    
+    vi2_current_above = vi2 > current_close
+    vi2_previous_above = vi2 > previous_close
+    
+    # Croisements VI1
+    vi1_crossing_over = vi1_previous_above == False and vi1_current_above == True   # VI1 traverse vers le haut
+    vi1_crossing_under = vi1_previous_above == True and vi1_current_above == False  # VI1 traverse vers le bas
+    
+    # Croisements VI2
+    vi2_crossing_over = vi2_previous_above == False and vi2_current_above == True   # VI2 traverse vers le haut
+    vi2_crossing_under = vi2_previous_above == True and vi2_current_above == False  # VI2 traverse vers le bas
     
     # NOUVELLE LOGIQUE - Phases VI
     vi1_phase = indicators.get('VI1_phase', 'BULLISH')  # Par défaut BULLISH
@@ -84,49 +102,49 @@ def analyze_candles(candles, indicators):
         
         # Conditions pour SHORT
         'short_conditions': {
-            'vi1_crossing_over': vi1_above_close,  # VI1 au-dessus du close
-            'vi2_above_close': vi2_above_close,     # VI2 au-dessus du close
-            'vi3_above_close': vi3_above_close,     # VI3 au-dessus du close
-            'rsi_condition': rsi <= 50,             # RSI ≤ 50
+            'vi1_crossing_over': vi1_crossing_over,      # ✅ DÉCLENCHEUR: VI1 traverse le close vers le haut
+            'vi2_above_close': vi2_above_close,           # ✅ CONDITION: VI2 est au-dessus du close
+            'vi3_above_close': vi3_above_close,           # ✅ CONDITION: VI3 est au-dessus du close
+            'rsi_condition': rsi <= 50,                   # ✅ CONDITION: RSI ≤ 50
             # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bearish': vi1_phase == 'BEARISH',  # VI1 en phase BEARISH
-            'vi2_phase_bearish': vi2_phase == 'BEARISH',  # VI2 en phase BEARISH
-            'vi3_phase_bearish': vi3_phase == 'BEARISH'   # VI3 en phase BEARISH
+            'vi1_phase_bearish': vi1_phase == 'BEARISH',  # ✅ CONDITION: VI1 en phase BEARISH
+            'vi2_phase_bearish': vi2_phase == 'BEARISH',  # ✅ CONDITION: VI2 en phase BEARISH
+            'vi3_phase_bearish': vi3_phase == 'BEARISH'   # ✅ CONDITION: VI3 en phase BEARISH
         },
         
         # Conditions pour LONG_VI1
         'long_vi1_conditions': {
-            'vi1_crossing_under': not vi1_above_close,  # VI1 en-dessous du close
-            'vi2_above_close': not vi2_above_close,     # VI2 en-dessous du close
-            'vi3_above_close': not vi3_above_close,     # VI3 en-dessous du close
-            'rsi_condition': rsi >= 45,                  # RSI ≥ 45
+            'vi1_crossing_under': vi1_crossing_under,    # ✅ DÉCLENCHEUR: VI1 traverse le close vers le bas
+            'vi2_above_close': not vi2_above_close,       # ✅ CONDITION: VI2 est en-dessous du close
+            'vi3_above_close': not vi3_above_close,       # ✅ CONDITION: VI3 est en-dessous du close
+            'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # VI1 en phase BULLISH
-            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # VI2 en phase BULLISH
-            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # VI3 en phase BULLISH
+            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
+            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # ✅ CONDITION: VI2 en phase BULLISH
+            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI3 en phase BULLISH
         },
         
         # Conditions pour LONG_VI2
         'long_vi2_conditions': {
-            'vi1_already_under': not vi1_above_close,   # VI1 déjà en-dessous du close
-            'vi2_crossing_under': not vi2_above_close,  # VI2 crossing-under
-            'rsi_condition': rsi >= 45,                  # RSI ≥ 45
+            'vi1_already_under': not vi1_above_close,     # ✅ CONDITION: VI1 est déjà en-dessous du close
+            'vi2_crossing_under': vi2_crossing_under,     # ✅ DÉCLENCHEUR: VI2 traverse le close vers le bas
+            'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # VI1 en phase BULLISH
-            'vi2_phase_bullish': vi2_phase == 'BULLISH'   # VI2 en phase BULLISH
+            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
+            'vi2_phase_bullish': vi2_phase == 'BULLISH'   # ✅ CONDITION: VI2 en phase BULLISH
         },
         
         # Conditions pour LONG_REENTRY
         'long_reentry_conditions': {
-            'vi1_not_crossed_over': not vi1_above_close,  # VI1 pas encore repassé au-dessus
-            'vi3_under_close': not vi3_above_close,       # VI3 sous le close
-            'vi2_above_close': vi2_above_close,           # VI2 au-dessus du close
-            'vi2_crossing_under': not vi2_above_close,    # VI2 crossing-under
-            'rsi_condition': rsi >= 45,                    # RSI ≥ 45
+            'vi1_not_crossed_over': not vi1_above_close,  # ✅ CONDITION: VI1 pas encore repassé au-dessus
+            'vi3_under_close': not vi3_above_close,       # ✅ CONDITION: VI3 est sous le close
+            'vi2_above_close': vi2_above_close,           # ✅ CONDITION: VI2 est au-dessus du close
+            'vi2_crossing_under': vi2_crossing_under,     # ✅ DÉCLENCHEUR: VI2 traverse le close vers le bas
+            'rsi_condition': rsi >= 45,                    # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # VI1 en phase BULLISH
-            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # VI2 en phase BULLISH
-            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # VI3 en phase BULLISH
+            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
+            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # ✅ CONDITION: VI2 en phase BULLISH
+            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI3 en phase BULLISH
         }
     }
     

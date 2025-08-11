@@ -656,7 +656,14 @@ def trading_loop():
         print(f"   ATR moyen: {indicator_history['atr_moyens'][-1]:.2f}")
         print(f"   Ratio ATR: {indicator_history['atr_history'][-1] / indicator_history['atr_moyens'][-1]:.3f}")
     
-    analysis = analyze_candles(candles, indicators)
+    # CORRECTION: Passer les 2 dernières bougies pour détecter les croisements
+    latest_candles = candle_buffer.get_latest_candles(2)
+    if len(latest_candles) < 2:
+        logger.log_warning("Pas assez de bougies pour détecter les croisements")
+        print("❌ TRADING IMPOSSIBLE: Pas assez de bougies pour détecter les croisements")
+        return
+    
+    analysis = analyze_candles(latest_candles, indicators)
     conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp())
     analysis_summary = get_analysis_summary(analysis, conditions_check)
     print(analysis_summary)
