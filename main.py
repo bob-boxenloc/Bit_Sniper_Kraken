@@ -99,9 +99,9 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 115111  # BULLISH
-        vi2_n1 = 116932  # BULLISH
-        vi3_n1 = 117742  # BULLISH
+        vi1_n1 = 116705  # BULLISH
+        vi2_n1 = 119394  # BULLISH
+        vi3_n1 = 120589  # BULLISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
