@@ -890,9 +890,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
             # Calculer d'abord la nouvelle VI1 sans croisement pour voir où elle finit
             atr_diff = atr_28_current - atr_28_previous
             if vi1_state == "BEARISH":  # VI1 > close
-                vi1_temp = vi1_history[-1] + (atr_diff * 19)
+                vi1_temp = vi1_history[-1] - (atr_diff * 19)  # ✅ CORRECTION: Baisse quand BEARISH
             else:  # BULLISH: VI1 < close
-                vi1_temp = vi1_history[-1] - (atr_diff * 19)
+                vi1_temp = vi1_history[-1] + (atr_diff * 19)  # ✅ CORRECTION: Monte quand BULLISH
             
             # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
             vi1_crossing = False
@@ -939,9 +939,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
             # Calculer d'abord la nouvelle VI2 sans croisement pour voir où elle finit
             atr_diff = atr_28_current - atr_28_previous
             if vi2_state == "BEARISH":  # VI2 > close
-                vi2_temp = vi2_history[-1] + (atr_diff * 10)
+                vi2_temp = vi2_history[-1] - (atr_diff * 10)  # ✅ CORRECTION: Baisse quand BEARISH
             else:  # BULLISH: VI2 < close
-                vi2_temp = vi2_history[-1] - (atr_diff * 10)
+                vi2_temp = vi2_history[-1] + (atr_diff * 10)  # ✅ CORRECTION: Monte quand BULLISH
             
             # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
             vi2_crossing = False
@@ -1001,11 +1001,11 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 # Pas de croisement - utiliser différence ATR (avec signe)
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
                 if vi3_state == "BEARISH":  # VI3 > close
-                    # BEARISH: VI monte si ATR monte, baisse si ATR baisse
-                    vi3_new = vi3_history[-1] + (atr_diff * 6)
+                    # BEARISH: VI baisse si ATR monte, monte si ATR baisse
+                    vi3_new = vi3_history[-1] - (atr_diff * 6)  # ✅ CORRECTION: Baisse quand BEARISH
                 else:  # vi3_state == "BULLISH" - VI3 < close
-                    # BULLISH: VI baisse si ATR monte, monte si ATR baisse
-                    vi3_new = vi3_history[-1] - (atr_diff * 6)
+                    # BULLISH: VI monte si ATR monte, baisse si ATR baisse
+                    vi3_new = vi3_history[-1] + (atr_diff * 6)  # ✅ CORRECTION: Monte quand BULLISH
             
             vi3_history.append(vi3_new)
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
@@ -1095,11 +1095,11 @@ def calculate_new_vi_values_only(previous_vi1, previous_vi2, previous_vi3,
     else:
         # Pas de croisement - utiliser différence ATR (avec signe)
         if previous_vi2_state == "BEARISH":  # VI2 > close
-            # BEARISH: VI monte si ATR monte, baisse si ATR baisse
-            vi2_new = previous_vi2 + (atr_diff * 10)
+            # BEARISH: VI baisse si ATR monte, monte si ATR baisse
+            vi2_new = previous_vi2 - (atr_diff * 10)  # ✅ CORRECTION: Baisse quand BEARISH
         else:  # BULLISH: VI2 < close
-            # BULLISH: VI baisse si ATR monte, monte si ATR baisse
-            vi2_new = previous_vi2 - (atr_diff * 10)
+            # BULLISH: VI monte si ATR monte, baisse si ATR baisse
+            vi2_new = previous_vi2 + (atr_diff * 10)  # ✅ CORRECTION: Monte quand BULLISH
     
     # VI3 (ATR × 6)
     vi3_crossing = False
@@ -1108,9 +1108,9 @@ def calculate_new_vi_values_only(previous_vi1, previous_vi2, previous_vi3,
     # Calculer d'abord la nouvelle VI3 sans croisement pour voir où elle finit
     atr_diff = current_atr - previous_atr
     if previous_vi3_state == "BEARISH":  # VI3 > close
-        vi3_temp = previous_vi3 + (atr_diff * 6)
+        vi3_temp = previous_vi3 - (atr_diff * 6)  # ✅ CORRECTION: Baisse quand BEARISH
     else:  # BULLISH: VI3 < close
-        vi3_temp = previous_vi3 - (atr_diff * 6)
+        vi3_temp = previous_vi3 + (atr_diff * 6)  # ✅ CORRECTION: Monte quand BULLISH
     
     # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
     if previous_vi3_state == "BULLISH" and previous_vi3 > current_close:
@@ -1137,11 +1137,11 @@ def calculate_new_vi_values_only(previous_vi1, previous_vi2, previous_vi3,
     else:
         # Pas de croisement - utiliser différence ATR (avec signe)
         if previous_vi3_state == "BEARISH":  # VI3 > close
-            # BEARISH: VI monte si ATR monte, baisse si ATR baisse
-            vi3_new = previous_vi3 + (atr_diff * 6)
+            # BEARISH: VI baisse si ATR monte, monte si ATR baisse
+            vi3_new = previous_vi3 - (atr_diff * 6)  # ✅ CORRECTION: Baisse quand BEARISH
         else:  # BULLISH: VI3 < close
-            # BULLISH: VI baisse si ATR monte, monte si ATR baisse
-            vi3_new = previous_vi3 - (atr_diff * 6)
+            # BULLISH: VI monte si ATR monte, baisse si ATR baisse
+            vi3_new = previous_vi3 + (atr_diff * 6)  # ✅ CORRECTION: Monte quand BULLISH
     
     logger.logger.info(f"   VI1 nouveau: {vi1_new:.2f} (État: {vi1_state_new})")
     logger.logger.info(f"   VI2 nouveau: {vi2_new:.2f} (État: {vi2_state_new})")
