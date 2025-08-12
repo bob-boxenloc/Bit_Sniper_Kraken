@@ -804,7 +804,7 @@ def calculate_complete_vi_phases_history(atr_history, period=28):
     
     return result
 
-def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=None, previous_vi2=None, previous_vi3=None, previous_vi1_state=None, previous_vi2_state=None, previous_vi3_state=None):
+def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=None, previous_vi2=None, previous_vi3=None, previous_vi1_state=None, previous_vi2_state=None, previous_vi3_state=None, vi1_crossed_last_candle=False, vi2_crossed_last_candle=False, vi3_crossed_last_candle=False, vi1_crossing_direction=None, vi2_crossing_direction=None, vi3_crossing_direction=None):
     """
     Calcule les Volatility Indexes selon la vraie logique découverte (CORRIGÉE).
     
@@ -824,6 +824,12 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
     :param previous_vi1_state: État précédent de VI1 (si None, utilise l'état initial)
     :param previous_vi2_state: État précédent de VI2 (si None, utilise l'état initial)
     :param previous_vi3_state: État précédent de VI3 (si None, utilise l'état initial)
+    :param vi1_crossed_last_candle: Flag indiquant si VI1 a croisé à la bougie précédente
+    :param vi2_crossed_last_candle: Flag indiquant si VI2 a croisé à la bougie précédente
+    :param vi3_crossed_last_candle: Flag indiquant si VI3 a croisé à la bougie précédente
+    :param vi1_crossing_direction: Direction du croisement VI1 ("UP" ou "DOWN")
+    :param vi2_crossing_direction: Direction du croisement VI2 ("UP" ou "DOWN")
+    :param vi3_crossing_direction: Direction du croisement VI3 ("UP" ou "DOWN")
     :return: Dictionnaire avec les VI calculés
     """
     if len(closes) < 28:
@@ -853,6 +859,10 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
     vi1_state = previous_vi1_state if previous_vi1_state is not None else vi1_state_initial
     vi2_state = previous_vi2_state if previous_vi2_state is not None else vi2_state_initial
     vi3_state = previous_vi3_state if previous_vi3_state is not None else vi3_state_initial
+    
+    # ✅ NOUVEAU : Utiliser les flags de croisement passés en paramètres
+    # Ces flags indiquent si un croisement a été détecté à la bougie précédente
+    # et seront appliqués MAINTENANT (bougie N) si ils sont True
     
     # Initialiser les historiques avec la valeur précédente (ou de départ)
     vi1_history = [vi1_previous]  # n-1
@@ -887,12 +897,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
             atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
             atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
             
-            # Calculer d'abord la nouvelle VI1 sans croisement pour voir où elle finit
-            atr_diff = atr_28_current - atr_28_previous
-            if vi1_state == "BEARISH":  # VI1 > close
-                vi1_temp = vi1_history[-1] - (atr_diff * 19)  # ✅ CORRECTION: Baisse quand BEARISH
-            else:  # BULLISH: VI1 < close
-                vi1_temp = vi1_history[-1] + (atr_diff * 19)  # ✅ CORRECTION: Monte quand BULLISH
+            # ✅ CORRECTION : Supprimer le calcul vi1_temp inutile qui contredisait la logique finale
             
             # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
             vi1_crossing = False
@@ -901,23 +906,34 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 # VI1 était en dessous (BULLISH) et EST MAINTENANT au-dessus → croisement vers le HAUT
                 vi1_crossing = True
                 vi1_direction = "UP"
+                vi1_crossed_last_candle = True  # ✅ MARQUER pour la prochaine bougie
+                vi1_crossing_direction = "UP"
+                print(f"   🔍 VI1 CROISEMENT HAUT DÉTECTÉ ! (sera appliqué à la prochaine bougie)")
             elif vi1_state == "BEARISH" and vi1_history[-1] < current_close:
                 # VI1 était au-dessus (BEARISH) et EST MAINTENANT en dessous → croisement vers le BAS
                 vi1_crossing = True
                 vi1_direction = "DOWN"
+                vi1_crossed_last_candle = True  # ✅ MARQUER pour la prochaine bougie
+                vi1_crossing_direction = "DOWN"
+                print(f"   🔍 VI1 CROISEMENT BAS DÉTECTÉ ! (sera appliqué à la prochaine bougie)")
             
-            if vi1_crossing:
-                # Croisement détecté - utiliser ATR entier
-                if vi1_direction == "UP":
-                    # Explosion vers le HAUT (VI1 passe au-dessus du close)
+            # ✅ NOUVELLE LOGIQUE : Vérifier s'il y a eu un croisement à la bougie précédente
+            if vi1_crossed_last_candle:
+                # Croisement détecté à la bougie précédente - utiliser ATR entier MAINTENANT
+                if vi1_crossing_direction == "UP":
+                    # Explosion vers le HAUT (VI1 était passé au-dessus du close)
                     vi1_new = vi1_history[-1] + (atr_28_current * 19)
-                    vi1_state = "BEARISH"
-                    print(f"   🔥 VI1 CROISEMENT HAUT détecté ! {vi1_history[-1]:.2f} → {vi1_new:.2f}")
-                else:  # vi1_direction == "DOWN"
-                    # Explosion vers le BAS (VI1 passe en dessous du close)
+                    vi1_state = "BEARISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    print(f"   🔥 VI1 CROISEMENT HAUT APPLIQUÉ ! {vi1_history[-1]:.2f} → {vi1_new:.2f}")
+                else:  # vi1_crossing_direction == "DOWN"
+                    # Explosion vers le BAS (VI1 était passé en dessous du close)
                     vi1_new = vi1_history[-1] - (atr_28_current * 19)
-                    vi1_state = "BULLISH"
-                    print(f"   🔥 VI1 CROISEMENT BAS détecté ! {vi1_history[-1]:.2f} → {vi1_new:.2f}")
+                    vi1_state = "BULLISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    print(f"   🔥 VI1 CROISEMENT BAS APPLIQUÉ ! {vi1_history[-1]:.2f} → {vi1_new:.2f}")
+                
+                # ✅ RÉINITIALISER le flag après application
+                vi1_crossed_last_candle = False
+                vi1_crossing_direction = None
             else:
                 # Pas de croisement - utiliser différence ATR (avec signe)
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
@@ -936,12 +952,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
             atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
             atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
             
-            # Calculer d'abord la nouvelle VI2 sans croisement pour voir où elle finit
-            atr_diff = atr_28_current - atr_28_previous
-            if vi2_state == "BEARISH":  # VI2 > close
-                vi2_temp = vi2_history[-1] - (atr_diff * 10)  # ✅ CORRECTION: Baisse quand BEARISH
-            else:  # BULLISH: VI2 < close
-                vi2_temp = vi2_history[-1] + (atr_diff * 10)  # ✅ CORRECTION: Monte quand BULLISH
+            # ✅ CORRECTION : Supprimer le calcul vi2_temp inutile qui contredisait la logique finale
             
             # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
             vi2_crossing = False
@@ -950,32 +961,43 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 # VI2 était en dessous (BULLISH) et EST MAINTENANT au-dessus → croisement vers le HAUT
                 vi2_crossing = True
                 vi2_direction = "UP"
+                vi2_crossed_last_candle = True  # ✅ MARQUER pour la prochaine bougie
+                vi2_crossing_direction = "UP"
+                print(f"   🔍 VI2 CROISEMENT HAUT DÉTECTÉ ! (sera appliqué à la prochaine bougie)")
             elif vi2_state == "BEARISH" and vi2_history[-1] < current_close:
                 # VI2 était au-dessus (BEARISH) et EST MAINTENANT en dessous → croisement vers le BAS
                 vi2_crossing = True
                 vi2_direction = "DOWN"
+                vi2_crossed_last_candle = True  # ✅ MARQUER pour la prochaine bougie
+                vi2_crossing_direction = "DOWN"
+                print(f"   🔍 VI2 CROISEMENT BAS DÉTECTÉ ! (sera appliqué à la prochaine bougie)")
             
-            if vi2_crossing:
-                # Croisement détecté - utiliser ATR entier
-                if vi2_direction == "UP":
-                    # Explosion vers le HAUT (VI2 passe au-dessus du close)
+            # ✅ NOUVELLE LOGIQUE : Vérifier s'il y a eu un croisement à la bougie précédente
+            if vi2_crossed_last_candle:
+                # Croisement détecté à la bougie précédente - utiliser ATR entier MAINTENANT
+                if vi2_crossing_direction == "UP":
+                    # Explosion vers le HAUT (VI2 était passé au-dessus du close)
                     vi2_new = vi2_history[-1] + (atr_28_current * 10)
-                    vi2_state = "BEARISH"
-                    print(f"   🔥 VI2 CROISEMENT HAUT détecté ! {vi2_history[-1]:.2f} → {vi2_new:.2f}")
-                else:  # vi2_direction == "DOWN"
-                    # Explosion vers le BAS (VI2 passe en dessous du close)
+                    vi2_state = "BEARISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    print(f"   🔥 VI2 CROISEMENT HAUT APPLIQUÉ ! {vi2_history[-1]:.2f} → {vi2_new:.2f}")
+                else:  # vi2_crossing_direction == "DOWN"
+                    # Explosion vers le BAS (VI2 était passé en dessous du close)
                     vi2_new = vi2_history[-1] - (atr_28_current * 10)
-                    vi2_state = "BULLISH"
-                    print(f"   🔥 VI2 CROISEMENT BAS détecté ! {vi2_history[-1]:.2f} → {vi2_new:.2f}")
+                    vi2_state = "BULLISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    print(f"   🔥 VI2 CROISEMENT BAS APPLIQUÉ ! {vi2_history[-1]:.2f} → {vi2_new:.2f}")
+                
+                # ✅ RÉINITIALISER le flag après application
+                vi2_crossed_last_candle = False
+                vi2_crossing_direction = None
             else:
                 # Pas de croisement - utiliser différence ATR (avec signe)
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
                 if vi2_state == "BEARISH":  # VI2 > close
                     # BEARISH: VI monte si ATR monte, baisse si ATR baisse
-                    vi2_new = vi2_history[-1] + (atr_diff * 10)
+                    vi2_new = vi2_history[-1] + (atr_diff * 10)  # ✅ CORRECTION: Même logique que VI1
                 else:  # vi2_state == "BULLISH" - VI2 < close
                     # BULLISH: VI baisse si ATR monte, monte si ATR baisse
-                    vi2_new = vi2_history[-1] - (atr_diff * 10)
+                    vi2_new = vi2_history[-1] - (atr_diff * 10)  # ✅ CORRECTION: Même logique que VI1
             
             vi2_history.append(vi2_new)
             print(f"   VI2 calculé: {vi2_new:.2f} (État: {vi2_state})")
@@ -985,27 +1007,52 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
             atr_28_current = atr_28_history[-1]  # ATR de la nouvelle bougie
             atr_28_previous = atr_28_history[-2]  # ATR de la bougie précédente
             
-            # Détecter si VI3 croise le close
-            vi3_crossing = (vi3_history[-1] > current_close and vi3_state == "BULLISH") or \
-                          (vi3_history[-1] < current_close and vi3_state == "BEARISH")
+            # ✅ CORRECTION : VI3 suit maintenant la même logique unifiée que VI1 et VI2
             
-            if vi3_crossing:
-                # Croisement détecté - utiliser ATR entier
-                if vi3_history[-1] > current_close:
-                    vi3_new = vi3_history[-1] - (atr_28_current * 6)
-                    vi3_state = "BEARISH"
-                else:
+            # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
+            vi3_crossing = False
+            vi3_direction = None
+            if vi3_state == "BULLISH" and vi3_history[-1] > current_close:
+                # VI3 était en dessous (BULLISH) et EST MAINTENANT au-dessus → croisement vers le HAUT
+                vi3_crossing = True
+                vi3_direction = "UP"
+                vi3_crossed_last_candle = True  # ✅ MARQUER pour la prochaine bougie
+                vi3_crossing_direction = "UP"
+                print(f"   🔍 VI3 CROISEMENT HAUT DÉTECTÉ ! (sera appliqué à la prochaine bougie)")
+            elif vi3_state == "BEARISH" and vi3_history[-1] < current_close:
+                # VI3 était au-dessus (BEARISH) et EST MAINTENANT en dessous → croisement vers le BAS
+                vi3_crossing = True
+                vi3_direction = "DOWN"
+                vi3_crossed_last_candle = True  # ✅ MARQUER pour la prochaine bougie
+                vi3_crossing_direction = "DOWN"
+                print(f"   🔍 VI3 CROISEMENT BAS DÉTECTÉ ! (sera appliqué à la prochaine bougie)")
+            
+            # ✅ NOUVELLE LOGIQUE : Vérifier s'il y a eu un croisement à la bougie précédente
+            if vi3_crossed_last_candle:
+                # Croisement détecté à la bougie précédente - utiliser ATR entier MAINTENANT
+                if vi3_crossing_direction == "UP":
+                    # Explosion vers le HAUT (VI3 était passé au-dessus du close)
                     vi3_new = vi3_history[-1] + (atr_28_current * 6)
-                    vi3_state = "BULLISH"
+                    vi3_state = "BEARISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    print(f"   🔥 VI3 CROISEMENT HAUT APPLIQUÉ ! {vi3_history[-1]:.2f} → {vi3_new:.2f}")
+                else:  # vi3_crossing_direction == "DOWN"
+                    # Explosion vers le BAS (VI3 était passé en dessous du close)
+                    vi3_new = vi3_history[-1] - (atr_28_current * 6)
+                    vi3_state = "BULLISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    print(f"   🔥 VI3 CROISEMENT BAS APPLIQUÉ ! {vi3_history[-1]:.2f} → {vi3_new:.2f}")
+                
+                # ✅ RÉINITIALISER le flag après application
+                vi3_crossed_last_candle = False
+                vi3_crossing_direction = None
             else:
                 # Pas de croisement - utiliser différence ATR (avec signe)
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
                 if vi3_state == "BEARISH":  # VI3 > close
-                    # BEARISH: VI baisse si ATR monte, monte si ATR baisse
-                    vi3_new = vi3_history[-1] - (atr_diff * 6)  # ✅ CORRECTION: Baisse quand BEARISH
+                    # BEARISH: VI monte si ATR monte, baisse si ATR baisse
+                    vi3_new = vi3_history[-1] + (atr_diff * 6)  # ✅ CORRECTION: Même logique que VI1
                 else:  # vi3_state == "BULLISH" - VI3 < close
-                    # BULLISH: VI monte si ATR monte, baisse si ATR baisse
-                    vi3_new = vi3_history[-1] + (atr_diff * 6)  # ✅ CORRECTION: Monte quand BULLISH
+                    # BULLISH: VI baisse si ATR monte, monte si ATR baisse
+                    vi3_new = vi3_history[-1] - (atr_diff * 6)  # ✅ CORRECTION: Même logique que VI1
             
             vi3_history.append(vi3_new)
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
@@ -1020,144 +1067,15 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         'VI2_lower': vi2_history[-1] - (atr_28_current * 10),
         'VI3_upper': vi3_history[-1] + (atr_28_current * 6),
         'VI3_lower': vi3_history[-1] - (atr_28_current * 6),
-        'center_line': closes[-1]  # Utiliser le close actuel comme ligne centrale
-    }
-
-def calculate_new_vi_values_only(previous_vi1, previous_vi2, previous_vi3, 
-                                previous_vi1_state, previous_vi2_state, previous_vi3_state,
-                                current_close, current_atr, previous_atr):
-    """
-    Calcule UNIQUEMENT les nouvelles valeurs VI basées sur les valeurs précédentes.
-    Cette fonction évite de recalculer tout l'historique et utilise les valeurs de référence.
-    
-    :param previous_vi1: VI1 précédent
-    :param previous_vi2: VI2 précédent  
-    :param previous_vi3: VI3 précédent
-    :param previous_vi1_state: État précédent de VI1
-    :param previous_vi2_state: État précédent de VI2
-    :param previous_vi3_state: État précédent de VI3
-    :param current_close: Close de la nouvelle bougie
-    :param current_atr: ATR de la nouvelle bougie
-    :param previous_atr: ATR de la bougie précédente
-    :return: Dictionnaire avec les nouvelles valeurs VI
-    """
-    logger = BitSniperLogger()
-    
-    # Calculer la différence ATR (avec signe)
-    atr_diff = current_atr - previous_atr
-    
-    logger.logger.info(f"🔧 DEBUG NOUVELLE VI SEULEMENT:")
-    logger.logger.info(f"   Close actuel: {current_close:.2f}")
-    logger.logger.info(f"   ATR actuel: {current_atr:.2f}")
-    logger.logger.info(f"   ATR précédent: {previous_atr:.2f}")
-    logger.logger.info(f"   Différence ATR: {atr_diff:.2f}")
-    logger.logger.info(f"   VI1 précédent: {previous_vi1:.2f} (État: {previous_vi1_state})")
-    logger.logger.info(f"   VI2 précédent: {previous_vi2:.2f} (État: {previous_vi2_state})")
-    logger.logger.info(f"   VI3 précédent: {previous_vi3:.2f} (État: {previous_vi3_state})")
-    
-    # Calculer les nouvelles valeurs VI
-    vi1_new = previous_vi1
-    vi2_new = previous_vi2
-    vi3_new = previous_vi3
-    vi1_state_new = previous_vi1_state
-    vi2_state_new = previous_vi2_state
-    vi3_state_new = previous_vi3_state
-    
-    # VI1 (ATR × 19)
-    vi1_crossing = (previous_vi1 > current_close and previous_vi1_state == "BULLISH") or \
-                   (previous_vi1 < current_close and previous_vi1_state == "BEARISH")
-    
-    if vi1_crossing:
-        # Croisement détecté - utiliser ATR entier
-        if previous_vi1 > current_close:
-            vi1_new = previous_vi1 - (current_atr * 19)
-            vi1_state_new = "BEARISH"
-        else:
-            vi1_new = previous_vi1 + (current_atr * 19)
-            vi1_state_new = "BULLISH"
-    else:
-        # Pas de croisement - utiliser différence ATR (avec signe)
-        if previous_vi1_state == "BEARISH":  # VI1 > close
-            # BEARISH: VI monte si ATR monte, baisse si ATR baisse
-            vi1_new = previous_vi1 + (atr_diff * 19)
-        else:  # BULLISH: VI1 < close
-            # BULLISH: VI baisse si ATR monte, monte si ATR baisse
-            vi1_new = previous_vi1 - (atr_diff * 19)
-    
-    # VI2 (ATR × 10)
-    vi2_crossing = (previous_vi2 > current_close and previous_vi2_state == "BULLISH") or \
-                   (previous_vi2 < current_close and previous_vi2_state == "BEARISH")
-    
-    if vi2_crossing:
-        # Croisement détecté - utiliser ATR entier
-        if previous_vi2 > current_close:
-            vi2_new = previous_vi2 - (current_atr * 10)
-            vi2_state_new = "BEARISH"
-        else:
-            vi2_new = previous_vi2 + (current_atr * 10)
-            vi2_state_new = "BULLISH"
-    else:
-        # Pas de croisement - utiliser différence ATR (avec signe)
-        if previous_vi2_state == "BEARISH":  # VI2 > close
-            # BEARISH: VI baisse si ATR monte, monte si ATR baisse
-            vi2_new = previous_vi2 - (atr_diff * 10)  # ✅ CORRECTION: Baisse quand BEARISH
-        else:  # BULLISH: VI2 < close
-            # BULLISH: VI monte si ATR monte, baisse si ATR baisse
-            vi2_new = previous_vi2 + (atr_diff * 10)  # ✅ CORRECTION: Monte quand BULLISH
-    
-    # VI3 (ATR × 6)
-    vi3_crossing = False
-    vi3_direction = None
-    
-    # Calculer d'abord la nouvelle VI3 sans croisement pour voir où elle finit
-    atr_diff = current_atr - previous_atr
-    if previous_vi3_state == "BEARISH":  # VI3 > close
-        vi3_temp = previous_vi3 - (atr_diff * 6)  # ✅ CORRECTION: Baisse quand BEARISH
-    else:  # BULLISH: VI3 < close
-        vi3_temp = previous_vi3 + (atr_diff * 6)  # ✅ CORRECTION: Monte quand BULLISH
-    
-    # Détecter le croisement en comparant la position PRÉCÉDENTE avec le close ACTUEL
-    if previous_vi3_state == "BULLISH" and previous_vi3 > current_close:
-        # VI3 était en dessous (BULLISH) et EST MAINTENANT au-dessus → croisement vers le HAUT
-        vi3_crossing = True
-        vi3_direction = "UP"
-    elif previous_vi3_state == "BEARISH" and previous_vi3 < current_close:
-        # VI3 était au-dessus (BEARISH) et EST MAINTENANT en dessous → croisement vers le BAS
-        vi3_crossing = True
-        vi3_direction = "DOWN"
-    
-    if vi3_crossing:
-        # Croisement détecté - utiliser ATR entier
-        if vi3_direction == "UP":
-            # Explosion vers le HAUT (VI3 passe au-dessus du close)
-            vi3_new = previous_vi3 + (current_atr * 6)
-            vi3_state_new = "BEARISH"
-            print(f"   🔥 VI3 CROISEMENT HAUT détecté ! {previous_vi3:.2f} → {vi3_new:.2f}")
-        else:  # vi3_direction == "DOWN"
-            # Explosion vers le BAS (VI3 passe en dessous du close)
-            vi3_new = previous_vi3 - (current_atr * 6)
-            vi3_state_new = "BULLISH"
-            print(f"   🔥 VI3 CROISEMENT BAS détecté ! {previous_vi3:.2f} → {vi3_new:.2f}")
-    else:
-        # Pas de croisement - utiliser différence ATR (avec signe)
-        if previous_vi3_state == "BEARISH":  # VI3 > close
-            # BEARISH: VI baisse si ATR monte, monte si ATR baisse
-            vi3_new = previous_vi3 - (atr_diff * 6)  # ✅ CORRECTION: Baisse quand BEARISH
-        else:  # BULLISH: VI3 < close
-            # BULLISH: VI monte si ATR monte, baisse si ATR baisse
-            vi3_new = previous_vi3 + (atr_diff * 6)  # ✅ CORRECTION: Monte quand BULLISH
-    
-    logger.logger.info(f"   VI1 nouveau: {vi1_new:.2f} (État: {vi1_state_new})")
-    logger.logger.info(f"   VI2 nouveau: {vi2_new:.2f} (État: {vi2_state_new})")
-    logger.logger.info(f"   VI3 nouveau: {vi3_new:.2f} (État: {vi3_state_new})")
-    
-    return {
-        'vi1_history': [vi1_new],
-        'vi2_history': [vi2_new],
-        'vi3_history': [vi3_new],
-        'vi1_state': vi1_state_new,
-        'vi2_state': vi2_state_new,
-        'vi3_state': vi3_state_new
+        'center_line': closes[-1],  # Utiliser le close actuel comme ligne centrale
+        
+        # ✅ NOUVEAU : Flags de croisement pour la prochaine bougie
+        'vi1_crossed_last_candle': vi1_crossed_last_candle,
+        'vi2_crossed_last_candle': vi2_crossed_last_candle,
+        'vi3_crossed_last_candle': vi3_crossed_last_candle,
+        'vi1_crossing_direction': vi1_crossing_direction,
+        'vi2_crossing_direction': vi2_crossing_direction,
+        'vi3_crossing_direction': vi3_crossing_direction
     }
 
 def calculate_rsi_for_new_candle(closes, avg_gain_prev, avg_loss_prev, period=40):

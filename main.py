@@ -6,7 +6,7 @@ import traceback
 from datetime import datetime, timedelta
 from core.error_handler import error_handler
 from data.market_data import MarketData, CandleBuffer, RSIBuffer
-from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, initialize_vi_history_from_user_values, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle, calculate_atr_history, calculate_new_vi_values_only
+from data.indicators import get_indicators_with_validation, calculate_complete_rsi_history, initialize_vi_history_from_user_values, calculate_vi_phases, calculate_complete_vi_phases_history, calculate_volatility_indexes_corrected, calculate_rsi_for_new_candle, calculate_atr_history
 from trading.kraken_client import KrakenFuturesClient
 from trading.trade_manager import TradeManager
 from signals.technical_analysis import analyze_candles, check_all_conditions, get_analysis_summary
@@ -258,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 115111  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 116932  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 117742  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 117498  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 121107  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 120078  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
@@ -268,10 +268,18 @@ def update_indicator_history(new_candle):
     previous_vi3 = indicator_history.get('vi3_history', [vi3_n1])[-1] if indicator_history.get('vi3_history') else vi3_n1
     
     # Récupérer les états précédents des VI (si disponibles)
-    # Utiliser BULLISH comme état de départ par défaut pour VI1, VI2 et VI3
+    # Utiliser les états de départ corrects pour VI1, VI2 et VI3
     previous_vi1_state = indicator_history.get('vi1_state', "BULLISH")
-    previous_vi2_state = indicator_history.get('vi2_state', "BULLISH")
-    previous_vi3_state = indicator_history.get('vi3_state', "BULLISH")
+    previous_vi2_state = indicator_history.get('vi2_state', "BEARISH")
+    previous_vi3_state = indicator_history.get('vi3_state', "BEARISH")
+    
+    # ✅ NOUVEAU : Récupérer les flags de croisement de la bougie précédente
+    vi1_crossed_last_candle = indicator_history.get('vi1_crossed_last_candle', False)
+    vi2_crossed_last_candle = indicator_history.get('vi2_crossed_last_candle', False)
+    vi3_crossed_last_candle = indicator_history.get('vi3_crossed_last_candle', False)
+    vi1_crossing_direction = indicator_history.get('vi1_crossing_direction', None)
+    vi2_crossing_direction = indicator_history.get('vi2_crossing_direction', None)
+    vi3_crossing_direction = indicator_history.get('vi3_crossing_direction', None)
     
     # Calculer l'ATR 28 pour avoir les données nécessaires
     atr_28_history = calculate_atr_history(vi_highs, vi_lows, vi_closes, period=28)
@@ -284,37 +292,48 @@ def update_indicator_history(new_candle):
     current_atr = atr_28_history[-1]
     previous_atr = atr_28_history[-2]
     
-    vi_new_values = calculate_new_vi_values_only(
+    vi_new_values = calculate_volatility_indexes_corrected(
+        closes, highs, lows,
         previous_vi1, previous_vi2, previous_vi3,
         previous_vi1_state, previous_vi2_state, previous_vi3_state,
-        current_close, current_atr, previous_atr
+        vi1_crossed_last_candle, vi2_crossed_last_candle, vi3_crossed_last_candle,
+        vi1_crossing_direction, vi2_crossing_direction, vi3_crossing_direction
     )
     
     if vi_new_values:
         # Stocker les nouvelles valeurs VI (seulement les valeurs finales)
-        indicator_history['vi1_history'] = vi_new_values['vi1_history']
-        indicator_history['vi2_history'] = vi_new_values['vi2_history']
-        indicator_history['vi3_history'] = vi_new_values['vi3_history']
+        indicator_history['vi1_history'] = [vi_new_values['VI1']]
+        indicator_history['vi2_history'] = [vi_new_values['VI2']]
+        indicator_history['vi3_history'] = [vi_new_values['VI3']]
         
         # Stocker les états des VI pour la prochaine itération
-        indicator_history['vi1_state'] = vi_new_values['vi1_state']
-        indicator_history['vi2_state'] = vi_new_values['vi2_state']
-        indicator_history['vi3_state'] = vi_new_values['vi3_state']
+        # Les états sont calculés dynamiquement selon la position par rapport au close
+        indicator_history['vi1_state'] = "BEARISH" if vi_new_values['VI1'] > current_close else "BULLISH"
+        indicator_history['vi2_state'] = "BEARISH" if vi_new_values['VI2'] > current_close else "BULLISH"
+        indicator_history['vi3_state'] = "BEARISH" if vi_new_values['VI3'] > current_close else "BULLISH"
+        
+        # ✅ NOUVEAU : Stocker les flags de croisement pour la prochaine bougie
+        indicator_history['vi1_crossed_last_candle'] = vi_new_values.get('vi1_crossed_last_candle', False)
+        indicator_history['vi2_crossed_last_candle'] = vi_new_values.get('vi2_crossed_last_candle', False)
+        indicator_history['vi3_crossed_last_candle'] = vi_new_values.get('vi3_crossed_last_candle', False)
+        indicator_history['vi1_crossing_direction'] = vi_new_values.get('vi1_crossing_direction', None)
+        indicator_history['vi2_crossing_direction'] = vi_new_values.get('vi2_crossing_direction', None)
+        indicator_history['vi3_crossing_direction'] = vi_new_values.get('vi3_crossing_direction', None)
         
         # Calculer les phases VI basées sur la position par rapport au close ACTUEL
         # On utilise seulement les valeurs finales des VI
         current_close = float(vi_candles[-1]['close'])  # Close de la dernière bougie
         
         # VI1 phases (utiliser seulement la dernière valeur)
-        vi1_final = vi_new_values['vi1_history'][-1]
+        vi1_final = vi_new_values['VI1']  # ✅ CORRECTION : Utiliser la clé correcte
         vi1_phase = "BEARISH" if vi1_final > current_close else "BULLISH"
         
         # VI2 phases (utiliser seulement la dernière valeur)
-        vi2_final = vi_new_values['vi2_history'][-1]
+        vi2_final = vi_new_values['VI2']  # ✅ CORRECTION : Utiliser la clé correcte
         vi2_phase = "BEARISH" if vi2_final > current_close else "BULLISH"
         
         # VI3 phases (utiliser seulement la dernière valeur)
-        vi3_final = vi_new_values['vi3_history'][-1]
+        vi3_final = vi_new_values['VI3']  # ✅ CORRECTION : Utiliser la clé correcte
         vi3_phase = "BEARISH" if vi3_final > current_close else "BULLISH"
         
         # Stocker seulement les phases finales (pas d'historique)
@@ -322,16 +341,16 @@ def update_indicator_history(new_candle):
         indicator_history['vi2_phases'] = [vi2_phase]
         indicator_history['vi3_phases'] = [vi3_phase]
         
-        print(f"✅ VI calculés avec la nouvelle logique (seulement nouvelle valeur):")
-        print(f"   VI1: {vi_new_values['vi1_history'][-1]:.2f} (Phase: {vi1_phase})")
-        print(f"   VI2: {vi_new_values['vi2_history'][-1]:.2f} (Phase: {vi2_phase})")
-        print(f"   VI3: {vi_new_values['vi3_history'][-1]:.2f} (Phase: {vi3_phase})")
+        print(f"✅ VI calculés avec la logique correcte (calculate_volatility_indexes_corrected):")
+        print(f"   VI1: {vi_new_values['VI1']:.2f} (Phase: {vi1_phase})")
+        print(f"   VI2: {vi_new_values['VI2']:.2f} (Phase: {vi2_phase})")
+        print(f"   VI3: {vi_new_values['VI3']:.2f} (Phase: {vi3_phase})")
         print(f"   États finaux:")
-        print(f"     VI1: {vi_new_values['vi1_state']}")
-        print(f"     VI2: {vi_new_values['vi2_state']}")
-        print(f"     VI3: {vi_new_values['vi3_state']}")
+        print(f"     VI1: {indicator_history['vi1_state']}")
+        print(f"     VI2: {indicator_history['vi2_state']}")
+        print(f"     VI3: {indicator_history['vi3_state']}")
     else:
-        print("❌ Impossible de calculer les VI avec la nouvelle logique")
+        print("❌ Impossible de calculer les VI avec la logique correcte")
         return False
     
     print("✅ Historique complet recalculé avec succès")
@@ -613,9 +632,9 @@ def _trading_loop_internal():
         print(f"     VI2: {indicators['VI2_phase']}")
         print(f"     VI3: {indicators['VI3_phase']}")
         print(f"   VALEURS VI ACTUELLES (pour croisements):")
-        print(f"     VI1: {indicators['vi1']:.2f}")
-        print(f"     VI2: {indicators['vi2']:.2f}")
-        print(f"     VI3: {indicators['vi3']:.2f}")
+        print(f"     VI1: {indicators['VI1']:.2f}")  # ✅ CORRECTION : Clé correcte
+        print(f"     VI2: {indicators['VI2']:.2f}")  # ✅ CORRECTION : Clé correcte
+        print(f"     VI3: {indicators['VI3']:.2f}")  # ✅ CORRECTION : Clé correcte
         
         # Debug: Afficher les valeurs pour les 2 dernières bougies
         if len(indicator_history['rsi_history']) >= 2:
@@ -635,11 +654,11 @@ def _trading_loop_internal():
         print(f"❌ TRADING IMPOSSIBLE: {indicators_message}")
         return
     
-    print(f"✅ {indicators_message}")
-    print(f"   RSI: {indicators['RSI']:.2f}")
-    print(f"   VI1: {indicators['vi1']:.2f}")
-    print(f"   VI2: {indicators['vi2']:.2f}")
-    print(f"   VI3: {indicators['vi3']:.2f}")
+        print(f"✅ {indicators_message}")
+        print(f"   RSI: {indicators['RSI']:.2f}")
+        print(f"   VI1: {indicators['VI1']:.2f}")  # ✅ CORRECTION : Clé correcte
+        print(f"   VI2: {indicators['VI2']:.2f}")  # ✅ CORRECTION : Clé correcte
+        print(f"   VI3: {indicators['VI3']:.2f}")  # ✅ CORRECTION : Clé correcte
     
     # Logger l'analyse des bougies
     logger.log_candle_analysis(candles, indicators_success, indicators_message)
@@ -662,7 +681,7 @@ def _trading_loop_internal():
     
     # Debug: Afficher les valeurs utilisées pour l'analyse
     print(f"🔧 DEBUG ANALYSE - Close actuel: {float(current_candle['close']):.2f}")
-    print(f"   VI1 vs Close: {indicators['vi1']:.2f} vs {float(current_candle['close']):.2f}")
+    print(f"   VI1 vs Close: {indicators['VI1']:.2f} vs {float(current_candle['close']):.2f}")  # ✅ CORRECTION : Clé correcte
     
     # 3. Analyse technique complète avec nouveaux indicateurs
     print("\n🔍 ANALYSE TECHNIQUE (Nouvelle Stratégie - Phases VI)")
@@ -678,7 +697,7 @@ def _trading_loop_internal():
     print(f"   VI3: {vi3_current_phase}")
     
     # ANCIENNE LOGIQUE (gardée pour debug)
-    vi1_current_old = indicators['vi1']
+    vi1_current_old = indicators['VI1']  # ✅ CORRECTION : Clé correcte
     current_close = float(current_candle['close'])
     vi1_above_close_old = vi1_current_old > current_close
     current_phase_old = 'SHORT' if vi1_above_close_old else 'LONG'
