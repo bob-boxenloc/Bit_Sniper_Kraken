@@ -99,15 +99,15 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 115536  # BULLISH
-        vi2_n1 = 122377  # BEARISH
-        vi3_n1 = 120936  # BEARISH
+        vi1_n1 = 117498  # BULLISH
+        vi2_n1 = 121107  # BEARISH
+        vi3_n1 = 120078  # BEARISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
             'VI1_phases': ['BULLISH'],
-            'VI2_phases': ['BULLISH'],
-            'VI3_phases': ['BULLISH'],
+            'VI2_phases': ['BEARISH'],
+            'VI3_phases': ['BEARISH'],
             'VI1_values': [vi1_n1],
             'VI2_values': [vi2_n1],
             'VI3_values': [vi3_n1],
@@ -144,8 +144,8 @@ def initialize_indicator_history(candles):
         print(f"✅ Historique initialisé avec valeurs de départ:")
         print(f"   RSI: {len(rsi_history)} valeurs (dernier: {rsi_history[-1]:.2f})")
         print(f"   VI1: {vi1_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
-        print(f"   VI2: {vi2_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
-        print(f"   VI3: {vi3_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
+        print(f"   VI2: {vi2_n1:.2f} (BEARISH) - VALEUR DE DÉPART UTILISATEUR")
+        print(f"   VI3: {vi3_n1:.2f} (BEARISH) - VALEUR DE DÉPART UTILISATEUR")
         print(f"   ATR 28: {vi_history['atr_history'][-1]:.2f}")
         
         return True
