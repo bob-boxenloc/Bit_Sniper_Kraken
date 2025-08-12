@@ -637,7 +637,7 @@ def has_sufficient_history_for_indicators(candles, rsi_period=40, vi_period=28):
     lows = [float(c['low']) for c in candles]
     
     rsi = compute_rsi_40(closes, rsi_period)
-    volatility_indexes = calculate_volatility_indexes(highs, lows, closes)
+    volatility_indexes = calculate_volatility_indexes_corrected(closes, highs, lows)
     
     # Vérifier que tous les indicateurs sont calculables
     if rsi is None or any(v is None for v in volatility_indexes.values()):
@@ -666,7 +666,7 @@ def get_indicators_with_validation(candles, rsi_period=40):
     rsi = compute_rsi_40(closes, rsi_period)
     
     # Volatility Indexes actuels
-    volatility_indexes = calculate_volatility_indexes(highs, lows, closes)
+    volatility_indexes = calculate_volatility_indexes_corrected(closes, highs, lows)
     
     indicators = {
         'RSI': rsi,
@@ -1011,12 +1011,16 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
     
     return {
-        'vi1_history': vi1_history,
-        'vi2_history': vi2_history,
-        'vi3_history': vi3_history,
-        'vi1_state': vi1_state,
-        'vi2_state': vi2_state,
-        'vi3_state': vi3_state
+        'VI1': vi1_history[-1],
+        'VI2': vi2_history[-1],
+        'VI3': vi3_history[-1],
+        'VI1_upper': vi1_history[-1] + (atr_28_current * 19),
+        'VI1_lower': vi1_history[-1] - (atr_28_current * 19),
+        'VI2_upper': vi2_history[-1] + (atr_28_current * 10),
+        'VI2_lower': vi2_history[-1] - (atr_28_current * 10),
+        'VI3_upper': vi3_history[-1] + (atr_28_current * 6),
+        'VI3_lower': vi3_history[-1] - (atr_28_current * 6),
+        'center_line': closes[-1]  # Utiliser le close actuel comme ligne centrale
     }
 
 def calculate_new_vi_values_only(previous_vi1, previous_vi2, previous_vi3, 
@@ -1203,7 +1207,7 @@ if __name__ == "__main__":
     print(rsi)
     
     # Test Volatility Indexes
-    vi = calculate_volatility_indexes(highs, lows, closes)
+    vi = calculate_volatility_indexes_corrected(closes, highs, lows)
     print("\nVolatility Indexes :")
     for name, value in vi.items():
         print(f"{name}: {value}")
