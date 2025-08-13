@@ -494,6 +494,142 @@ sudo systemctl start bitsniper
 
 ---
 
+## 🔄 PROCÉDURE DE MISE À JOUR DES VI
+
+**⚠️ ATTENTION :** Cette procédure est **OBLIGATOIRE** chaque fois que vous modifiez les valeurs ou états des Volatility Indexes !
+
+### Pourquoi cette procédure ?
+Le bot utilise des fichiers de cache Python (`__pycache__`) pour aller plus vite. **Sans cette procédure**, le bot continuera d'utiliser les anciennes valeurs même après modification du code !
+
+### 📍 LISTE EXACTE DES ENDROITS À MODIFIER
+
+**Vous DEVEZ modifier ces 6 endroits exacts :**
+
+#### **main.py**
+```python
+# Ligne 102-104 : Initialisation des phases VI
+vi1_n1 = 117298  # BULLISH
+vi2_n1 = 120957  # BEARISH
+vi3_n1 = 118685  # BULLISH
+
+# Ligne 261-263 : Valeurs de départ utilisateur
+vi1_n1 = 117298  # Valeur de départ fournie par l'utilisateur
+vi2_n1 = 120957  # Valeur de départ fournie par l'utilisateur
+vi3_n1 = 118685  # Valeur de départ fournie par l'utilisateur
+```
+
+#### **data/indicators.py**
+```python
+# Ligne 479-481 : Fonction initialize_vi_history_from_user_values
+vi1_n1 = 117298  # BULLISH
+vi2_n1 = 120957  # BEARISH
+vi3_n1 = 118685  # BULLISH
+
+# Ligne 845-847 : Fonction calculate_volatility_indexes_corrected
+vi1_n1 = 117298  # BULLISH
+vi2_n1 = 120957  # BEARISH
+vi3_n1 = 118685  # BULLISH
+```
+
+### 🔍 PROCÉDURE COMPLÈTE (5 minutes)
+
+#### 1️⃣ Mise à jour du code local
+```bash
+# Modifier TOUS les endroits listés ci-dessus
+# Vérifier que les états correspondent :
+# - VI1 : BULLISH (en-dessous du close)
+# - VI2 : BEARISH (au-dessus du close)  
+# - VI3 : BULLISH (en-dessous du close)
+```
+
+#### 2️⃣ Vérification locale COMPLÈTE
+```bash
+# Vérifier que TOUTES les anciennes valeurs ont été remplacées
+grep -r "116196\|121537\|120234" .                    # Aucun résultat = OK
+grep -r "117498\|121107\|120078" .                    # Aucun résultat = OK
+
+# Vérifier que les nouvelles valeurs sont partout
+grep -r "117298\|120957\|118685" .                    # 6 résultats = OK
+grep -r "vi1_n1.*=.*117298" .                        # 4 résultats = OK
+grep -r "vi2_n1.*=.*120957" .                        # 4 résultats = OK  
+grep -r "vi3_n1.*=.*118685" .                        # 4 résultats = OK
+```
+
+#### 3️⃣ Envoi sur le serveur
+```bash
+git add .
+git commit -m "Mise à jour VI: VI1=117298(BULLISH), VI2=120957(BEARISH), VI3=118685(BULLISH)"
+git push
+```
+
+#### 4️⃣ Nettoyage et mise à jour sur le serveur
+```bash
+# Se connecter au serveur
+ssh bitsniper@149.202.40.139
+cd Bit_Sniper_Kraken
+source venv/bin/activate
+
+# NETTOYAGE COMPLET DU CACHE PYTHON (OBLIGATOIRE !)
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+
+# Récupérer les changements
+git pull
+```
+
+#### 5️⃣ Redémarrage du bot
+```bash
+sudo systemctl restart bitsniper
+sudo systemctl status bitsniper
+sudo journalctl -u bitsniper -f
+```
+
+### 🎯 VÉRIFICATIONS FINALES COMPLÈTES
+
+#### **Vérification 1 : Logs du bot**
+Dans les logs, vous devez voir :
+```
+VI1: 117298 (BULLISH) - VALEUR DE DÉPART UTILISATEUR
+VI2: 120957 (BEARISH) - VALEUR DE DÉPART UTILISATEUR  
+VI3: 118685 (BULLISH) - VALEUR DE DÉPART UTILISATEUR
+```
+
+#### **Vérification 2 : Code source sur le serveur**
+```bash
+# Vérifier que le serveur a les bonnes valeurs
+grep -n "vi1_n1.*=" main.py data/indicators.py
+grep -n "vi2_n1.*=" main.py data/indicators.py  
+grep -n "vi3_n1.*=" main.py data/indicators.py
+
+# Résultat attendu : 4 lignes pour chaque VI avec les bonnes valeurs
+```
+
+#### **Vérification 3 : Cache Python supprimé**
+```bash
+# Vérifier qu'il n'y a plus de cache
+find . -name "*.pyc" | wc -l                    # Résultat = 0
+find . -name "__pycache__" | wc -l              # Résultat = 0
+```
+
+### ❌ SIGNAUX D'ALERTE
+**Si vous voyez :**
+- D'autres valeurs que `117298`, `120957`, `118685` → **Procédure incomplète !**
+- Messages d'erreur Git → **Cache Python non supprimé !**
+- Anciennes valeurs dans les logs → **Redémarrage manqué !**
+
+### 🔧 EN CAS DE PROBLÈME
+```bash
+# Nettoyage d'urgence
+sudo systemctl stop bitsniper
+find . -name "*.pyc" -delete
+find . -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+git reset --hard HEAD
+git pull
+sudo systemctl start bitsniper
+```
+
+---
+
 ## À venir
 - Définition des positions "long2" et "long3"
 - Implémentation des modules
