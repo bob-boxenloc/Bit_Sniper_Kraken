@@ -65,6 +65,9 @@ def analyze_candles(candles, indicators):
     vi2_current_above = vi2 > current_close
     vi2_previous_above = vi2 > previous_close
     
+    vi3_current_above = vi3 > current_close
+    vi3_previous_above = vi3 > previous_close
+    
     # Croisements VI1
     vi1_crossing_over = vi1_previous_above == False and vi1_current_above == True   # VI1 traverse vers le haut
     vi1_crossing_under = vi1_previous_above == True and vi1_current_above == False  # VI1 traverse vers le bas
@@ -72,6 +75,10 @@ def analyze_candles(candles, indicators):
     # Croisements VI2
     vi2_crossing_over = vi2_previous_above == False and vi2_current_above == True   # VI2 traverse vers le haut
     vi2_crossing_under = vi2_previous_above == True and vi2_current_above == False  # VI2 traverse vers le bas
+    
+    # Croisements VI3
+    vi3_crossing_over = vi3_previous_above == False and vi3_current_above == True   # VI3 traverse vers le haut
+    vi3_crossing_under = vi3_previous_above == True and vi3_current_above == False  # VI3 traverse vers le bas
     
     # NOUVELLE LOGIQUE - Phases VI
     vi1_phase = indicators.get('VI1_phase', 'BULLISH')  # Par défaut BULLISH
@@ -104,13 +111,15 @@ def analyze_candles(candles, indicators):
         'vi1_crossing_over': vi1_crossing_over,      # VI1 traverse le close vers le haut
         'vi1_crossing_under': vi1_crossing_under,    # VI1 traverse le close vers le bas
         'vi2_crossing_over': vi2_crossing_over,      # VI2 traverse le close vers le haut
-        'vi2_crossing_under': vi2_crossing_under,    # VI2 traverse le close vers le bas
+        'vi2_crossing_under': vi2_crossing_under,     # VI2 traverse le close vers le bas
+        'vi3_crossing_over': vi3_crossing_over,      # VI3 traverse le close vers le haut
+        'vi3_crossing_under': vi3_crossing_under,    # VI3 traverse le close vers le bas
         
         # Conditions pour SHORT
         'short_conditions': {
             'vi1_crossing_over': vi1_crossing_over,      # ✅ DÉCLENCHEUR: VI1 traverse le close vers le haut
-            'vi2_above_close': vi2_above_close,           # ✅ CONDITION: VI2 est au-dessus du close
-            'vi3_above_close': vi3_above_close,           # ✅ CONDITION: VI3 est au-dessus du close
+            'vi2_previous_above_close': vi2_previous_above,  # ✅ CORRECTION: VI2 était au-dessus du close (état précédent)
+            'vi3_previous_above_close': vi3_previous_above,  # ✅ CORRECTION: VI3 était au-dessus du close (état précédent)
             'rsi_condition': rsi <= 50,                   # ✅ CONDITION: RSI ≤ 50
             # NOUVELLE LOGIQUE - Phases VI
             'vi1_phase_bearish': vi1_phase == 'BEARISH',  # ✅ CONDITION: VI1 en phase BEARISH
@@ -121,8 +130,8 @@ def analyze_candles(candles, indicators):
         # Conditions pour LONG_VI1
         'long_vi1_conditions': {
             'vi1_crossing_under': vi1_crossing_under,    # ✅ DÉCLENCHEUR: VI1 traverse le close vers le bas
-            'vi2_under_close': not vi2_above_close,       # ✅ CONDITION: VI2 est en-dessous du close
-            'vi3_under_close': not vi3_above_close,       # ✅ CONDITION: VI3 est en-dessous du close
+            'vi2_previous_under_close': not vi2_previous_above,  # ✅ CORRECTION: VI2 était en-dessous du close (état précédent)
+            'vi3_previous_under_close': not vi3_previous_above,  # ✅ CORRECTION: VI3 était en-dessous du close (état précédent)
             'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
             'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
@@ -132,7 +141,7 @@ def analyze_candles(candles, indicators):
         
         # Conditions pour LONG_VI2
         'long_vi2_conditions': {
-            'vi1_already_under': not vi1_above_close,     # ✅ CONDITION: VI1 est déjà en-dessous du close
+            'vi1_previous_under': not vi1_previous_above,  # ✅ CORRECTION: VI1 était déjà en-dessous du close (état précédent)
             'vi2_crossing_under': vi2_crossing_under,     # ✅ DÉCLENCHEUR: VI2 traverse le close vers le bas
             'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
@@ -143,14 +152,14 @@ def analyze_candles(candles, indicators):
         # Conditions pour LONG_REENTRY
         'long_reentry_conditions': {
             'vi1_not_crossed_over': not vi1_above_close,  # ✅ CONDITION: VI1 pas encore repassé au-dessus
-            'vi3_under_close': not vi3_above_close,       # ✅ CONDITION: VI3 est sous le close
-            'vi2_above_close': vi2_above_close,           # ✅ CONDITION: VI2 est au-dessus du close
+            'vi3_previous_under_close': not vi3_previous_above,  # ✅ CORRECTION: VI3 était sous le close (état précédent)
+            'vi2_previous_above_close': vi2_previous_above,  # ✅ CORRECTION: VI2 était au-dessus du close (état précédent)
             'vi2_crossing_under': vi2_crossing_under,     # ✅ DÉCLENCHEUR: VI2 traverse le close vers le bas
             'rsi_condition': rsi >= 45,                    # ✅ CONDITION: RSI ≥ 45
             # NOUVELLE LOGIQUE - Phases VI
             'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
             'vi2_phase_bullish': vi2_phase == 'BULLISH',  # ✅ CONDITION: VI2 en phase BULLISH
-            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI3 en phase BULLISH
+            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI2 en phase BULLISH
         }
     }
     
