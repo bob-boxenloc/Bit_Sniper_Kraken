@@ -99,9 +99,9 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 116221  # BULLISH
-        vi2_n1 = 118592  # BULLISH
-        vi3_n1 = 119889  # BULLISH
+        vi1_n1 = 114564  # BULLISH
+        vi2_n1 = 118040  # BULLISH
+        vi3_n1 = 119646  # BULLISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
@@ -258,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 116221  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 118592  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 119889  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 114564  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 118040  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 119646  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
@@ -729,10 +729,11 @@ def _trading_loop_internal():
         return
     
     analysis = analyze_candles(latest_candles, indicators)
-    conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp())
-    analysis_summary = get_analysis_summary(analysis, conditions_check)
+    # CORRECTION: check_all_conditions sera appelé APRÈS la récupération du compte
+    # pour pouvoir vérifier les positions manuelles
+    analysis_summary = get_analysis_summary(analysis, {})  # Temporaire
     print(analysis_summary)
-    logger.log_technical_analysis(analysis, conditions_check)
+    logger.log_technical_analysis(analysis, {})  # Temporaire
     
     # 📧 NOTIFICATION EMAIL - CROISEMENTS VI1
     try:
@@ -822,30 +823,34 @@ def _trading_loop_internal():
         # 📧 NOTIFICATION EMAIL D'URGENCE - CRASH AVEC POSITION
         try:
             position_info = positions[0]  # Première position
-            position_side = position_info.get('side', 'UNKNOWN')
-            position_size = position_info.get('size', 0)
-            position_price = position_info.get('price', 0)
-            
-            notification_manager.send_crash_notification(
-                error_type="CRASH AVEC POSITION OUVERTE",
-                error_message=f"Position {position_side} {position_size:.4f} BTC @ ${position_price:.2f} détectée sur Kraken mais pas dans l'état local",
-                context="Le bot a crashé avec une position ouverte. Intervention humaine requise pour fermer la position manuellement.",
-                stack_trace="Position détectée après redémarrage - État local perdu lors du crash"
+            current_time = datetime.now().strftime("%d/%m %H:%M")
+            notification_manager.send_trade_notification(
+                action="🚨 CRASH AVEC POSITION",
+                position_type=f"{position_info['side'].upper()} {position_info['size']:.4f} BTC",
+                price=f"${position_info['price']:.2f}",
+                datetime_str=current_time
             )
-            print("   📧 Email d'urgence envoyé pour crash avec position ouverte")
-            
-        except Exception as email_error:
-            logger.log_error(f"Impossible d'envoyer l'email de crash avec position: {email_error}")
-            print(f"   ❌ Erreur notification email: {email_error}")
+            print(f"   📧 Email d'urgence envoyé pour crash avec position")
+        except Exception as e:
+            logger.log_error(f"Erreur lors de l'envoi de la notification d'urgence: {e}")
+            print(f"   ⚠️  Erreur notification d'urgence: {e}")
         
-        print("\n🔧 ACTIONS REQUISES:")
-        print("   1. Se connecter au serveur: ssh bitsniper@149.202.40.139")
-        print("   2. Fermer manuellement la position sur Kraken")
-        print("   3. Redémarrer le bot: sudo systemctl restart bitsniper")
-        print("   4. Vérifier que le bot redémarre sans position")
-        
-        print("\n⏸️  Bot en mode surveillance - Trading bloqué")
-        return  # Skip tout le trading
+        return
+    
+    # ✅ NOUVEAU: Vérification des conditions de trading APRÈS récupération du compte
+    print("\n🔍 VÉRIFICATION DES CONDITIONS DE TRADING")
+    conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp(), account_summary)
+    
+    # Vérifier si le trading est autorisé
+    if not conditions_check['trading_allowed']:
+        print(f"❌ TRADING BLOQUÉ: {conditions_check['reason']}")
+        logger.log_warning(f"Trading bloqué: {conditions_check['reason']}")
+        return
+    
+    # Mettre à jour l'analyse avec les vraies conditions
+    analysis_summary = get_analysis_summary(analysis, conditions_check)
+    print(analysis_summary)
+    logger.log_technical_analysis(analysis, conditions_check)
     
     print(f"✅ Compte accessible - Solde: ${wallet['usd_balance']:.2f}")
     print(f"   Prix BTC actuel: ${current_price:.2f}")

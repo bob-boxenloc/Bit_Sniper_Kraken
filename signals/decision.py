@@ -183,11 +183,11 @@ def check_short_exit_conditions(analysis, position, current_rsi, current_close,
             }
         
     # Exit de dernier recours: VI1 repasse en-dessous du close
-    if not analysis['vi1_above_close']:
-        logger.log_position_exit_conditions("SHORT", current_rsi, entry_rsi, hours_elapsed, "VI1 repasse en-dessous du close")
+    if analysis['vi1_phase_bullish']:  # VI1 repasse en phase BULLISH
+        logger.log_position_exit_conditions("SHORT", current_rsi, entry_rsi, hours_elapsed, "VI1 repasse en phase BULLISH")
         return {
             'action': 'exit_short',
-            'reason': 'VI1 repasse en-dessous du close',
+            'reason': 'VI1 repasse en phase BULLISH',
             'position': position,
             'exit_type': 'last_resort'
         }
@@ -266,12 +266,12 @@ def check_long_exit_conditions(analysis, position, current_rsi, current_close,
                 'exit_type': 'target'
             }
     
-    # Exit de dernier recours: VI1 repasse au-dessus du close
-    if analysis['vi1_above_close']:
-        logger.log_position_exit_conditions(position_type, current_rsi, entry_rsi, hours_elapsed, "VI1 repasse au-dessus du close")
+    # Exit de dernier recours: VI1 repasse en phase BEARISH
+    if analysis['vi1_phase_bearish']:  # VI1 repasse en phase BEARISH
+        logger.log_position_exit_conditions(position_type, current_rsi, entry_rsi, hours_elapsed, "VI1 repasse en phase BEARISH")
         return {
             'action': 'exit_long',
-            'reason': 'VI1 repasse au-dessus du close',
+            'reason': 'VI1 repasse en phase BEARISH',
             'position': position,
             'exit_type': 'last_resort'
             }

@@ -65,9 +65,6 @@ def analyze_candles(candles, indicators):
     vi2_current_above = vi2 > current_close
     vi2_previous_above = vi2 > previous_close
     
-    vi3_current_above = vi3 > current_close
-    vi3_previous_above = vi3 > previous_close
-    
     # Croisements VI1
     vi1_crossing_over = vi1_previous_above == False and vi1_current_above == True   # VI1 traverse vers le haut
     vi1_crossing_under = vi1_previous_above == True and vi1_current_above == False  # VI1 traverse vers le bas
@@ -75,10 +72,6 @@ def analyze_candles(candles, indicators):
     # Croisements VI2
     vi2_crossing_over = vi2_previous_above == False and vi2_current_above == True   # VI2 traverse vers le haut
     vi2_crossing_under = vi2_previous_above == True and vi2_current_above == False  # VI2 traverse vers le bas
-    
-    # Croisements VI3
-    vi3_crossing_over = vi3_previous_above == False and vi3_current_above == True   # VI3 traverse vers le haut
-    vi3_crossing_under = vi3_previous_above == True and vi3_current_above == False  # VI3 traverse vers le bas
     
     # NOUVELLE LOGIQUE - Phases VI
     vi1_phase = indicators.get('VI1_phase', 'BULLISH')  # Par défaut BULLISH
@@ -111,18 +104,12 @@ def analyze_candles(candles, indicators):
         'vi1_crossing_over': vi1_crossing_over,      # VI1 traverse le close vers le haut
         'vi1_crossing_under': vi1_crossing_under,    # VI1 traverse le close vers le bas
         'vi2_crossing_over': vi2_crossing_over,      # VI2 traverse le close vers le haut
-        'vi2_crossing_under': vi2_crossing_under,     # VI2 traverse le close vers le bas
-        'vi3_crossing_over': vi3_crossing_over,      # VI3 traverse le close vers le haut
-        'vi3_crossing_under': vi3_crossing_under,    # VI3 traverse le close vers le bas
+        'vi2_crossing_under': vi2_crossing_under,    # VI2 traverse le close vers le bas
         
         # Conditions pour SHORT
         'short_conditions': {
             'vi1_crossing_over': vi1_crossing_over,      # ✅ DÉCLENCHEUR: VI1 traverse le close vers le haut
-            'vi2_previous_above_close': vi2_previous_above,  # ✅ CORRECTION: VI2 était au-dessus du close (état précédent)
-            'vi3_previous_above_close': vi3_previous_above,  # ✅ CORRECTION: VI3 était au-dessus du close (état précédent)
             'rsi_condition': rsi <= 50,                   # ✅ CONDITION: RSI ≤ 50
-            # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bearish': vi1_phase == 'BEARISH',  # ✅ CONDITION: VI1 en phase BEARISH
             'vi2_phase_bearish': vi2_phase == 'BEARISH',  # ✅ CONDITION: VI2 en phase BEARISH
             'vi3_phase_bearish': vi3_phase == 'BEARISH'   # ✅ CONDITION: VI3 en phase BEARISH
         },
@@ -130,51 +117,58 @@ def analyze_candles(candles, indicators):
         # Conditions pour LONG_VI1
         'long_vi1_conditions': {
             'vi1_crossing_under': vi1_crossing_under,    # ✅ DÉCLENCHEUR: VI1 traverse le close vers le bas
-            'vi2_previous_under_close': not vi2_previous_above,  # ✅ CORRECTION: VI2 était en-dessous du close (état précédent)
-            'vi3_previous_under_close': not vi3_previous_above,  # ✅ CORRECTION: VI3 était en-dessous du close (état précédent)
             'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
-            # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
             'vi2_phase_bullish': vi2_phase == 'BULLISH',  # ✅ CONDITION: VI2 en phase BULLISH
             'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI3 en phase BULLISH
         },
         
         # Conditions pour LONG_VI2
         'long_vi2_conditions': {
-            'vi1_previous_under': not vi1_previous_above,  # ✅ CORRECTION: VI1 était déjà en-dessous du close (état précédent)
             'vi2_crossing_under': vi2_crossing_under,     # ✅ DÉCLENCHEUR: VI2 traverse le close vers le bas
             'rsi_condition': rsi >= 45,                   # ✅ CONDITION: RSI ≥ 45
-            # NOUVELLE LOGIQUE - Phases VI
-            'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
-            'vi2_phase_bullish': vi2_phase == 'BULLISH'   # ✅ CONDITION: VI2 en phase BULLISH
+            'vi1_phase_bullish': vi1_phase == 'BULLISH'   # ✅ CONDITION: VI1 en phase BULLISH
         },
         
         # Conditions pour LONG_REENTRY
         'long_reentry_conditions': {
-            'vi1_not_crossed_over': not vi1_above_close,  # ✅ CONDITION: VI1 pas encore repassé au-dessus
-            'vi3_previous_under_close': not vi3_previous_above,  # ✅ CORRECTION: VI3 était sous le close (état précédent)
-            'vi2_previous_above_close': vi2_previous_above,  # ✅ CORRECTION: VI2 était au-dessus du close (état précédent)
             'vi2_crossing_under': vi2_crossing_under,     # ✅ DÉCLENCHEUR: VI2 traverse le close vers le bas
             'rsi_condition': rsi >= 45,                    # ✅ CONDITION: RSI ≥ 45
-            # NOUVELLE LOGIQUE - Phases VI
             'vi1_phase_bullish': vi1_phase == 'BULLISH',  # ✅ CONDITION: VI1 en phase BULLISH
-            'vi2_phase_bullish': vi2_phase == 'BULLISH',  # ✅ CONDITION: VI2 en phase BULLISH
-            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI2 en phase BULLISH
+            'vi3_phase_bullish': vi3_phase == 'BULLISH'   # ✅ CONDITION: VI3 en phase BULLISH
         }
     }
     
     return analysis
 
-def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=None):
+def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=None, account_summary=None):
     """
     Vérifie toutes les conditions pour chaque stratégie.
     
     :param analysis: dict retourné par analyze_candles()
     :param last_position_type: type de la dernière position (pour LONG_REENTRY)
     :param vi1_phase_timestamp: timestamp du dernier changement de phase VI1
+    :param account_summary: résumé du compte pour vérifier les positions manuelles
     :return: dict avec les résultats des vérifications
     """
     import time
+    
+    # 🚨 NOUVELLE PROTECTION: Bloquer le trading si position manuelle détectée
+    if account_summary and account_summary.get('has_open_position', False):
+        return {
+            'trading_allowed': False,
+            'reason': 'Position manuelle détectée sur Kraken',
+            'short_ready': False,
+            'long_vi1_ready': False,
+            'long_vi2_ready': False,
+            'long_reentry_ready': False,
+            'vi1_protection_active': False,
+            'details': {
+                'short': {},
+                'long_vi1': {},
+                'long_vi2': {},
+                'long_reentry': {}
+            }
+        }
     
     short_conditions = analysis['short_conditions']
     long_vi1_conditions = analysis['long_vi1_conditions']
@@ -209,6 +203,10 @@ def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=
     if vi1_protection_active and not analysis['vi1_above_close']:
         long_vi2_ready = False  # Interdire LONGS si protection active
         logger.log_protection_activation("LONG_VI2", "Bloqué par protection VI1 (72h)")
+    # NOUVELLE PROTECTION: Bloquer LONG_VI2 si position précédente = LONG
+    if last_position_type in ["LONG_VI1", "LONG_VI2", "LONG_REENTRY"]:
+        long_vi2_ready = False  # Bloquer si on vient de faire un LONG
+        logger.log_protection_activation("LONG_VI2", f"Bloqué: position précédente = {last_position_type}")
     
     # Vérification LONG_REENTRY
     long_reentry_ready = all(long_reentry_conditions.values())
@@ -218,6 +216,13 @@ def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=
     if vi1_protection_active and not analysis['vi1_above_close']:
         long_reentry_ready = False  # Interdire LONGS si protection active
         logger.log_protection_activation("LONG_REENTRY", "Bloqué par protection VI1 (72h)")
+    
+    # NOUVELLE PROTECTION GLOBALE: Bloquer tous les LONGS après LONG_REENTRY
+    if last_position_type == "LONG_REENTRY":
+        long_vi1_ready = False  # Bloquer LONG_VI1 après LONG_REENTRY
+        long_vi2_ready = False  # Bloquer LONG_VI2 après LONG_REENTRY
+        long_reentry_ready = False  # Bloquer LONG_REENTRY après LONG_REENTRY
+        logger.log_protection_activation("TOUS LES LONGS", "Bloqués: position précédente = LONG_REENTRY")
     
     return {
         'trading_allowed': True,
