@@ -213,9 +213,9 @@ class BitSniperLogger:
             # Log de base
             self.logger.info("Analyse technique effectuée (Nouvelle Stratégie)", extra={
                 'rsi': analysis['rsi'],
-                'vi1': analysis['vi1'],
-                'vi2': analysis['vi2'],
-                'vi3': analysis['vi3'],
+                'VI1': analysis['VI1'],
+                'VI2': analysis['VI2'],
+                'VI3': analysis['VI3'],
                 'vi1_above_close': analysis['vi1_above_close'],
                 'vi2_above_close': analysis['vi2_above_close'],
                 'vi3_above_close': analysis['vi3_above_close'],
@@ -241,9 +241,9 @@ class BitSniperLogger:
                     },
                 'indicators': {
                     'rsi': analysis['rsi'],
-                    'vi1': analysis['vi1'],
-                    'vi2': analysis['vi2'],
-                    'vi3': analysis['vi3'],
+                    'VI1': analysis['VI1'],
+                    'VI2': analysis['VI2'],
+                    'VI3': analysis['VI3'],
                     'vi1_above_close': analysis['vi1_above_close'],
                     'vi2_above_close': analysis['vi2_above_close'],
                     'vi3_above_close': analysis['vi3_above_close']
@@ -291,9 +291,9 @@ class BitSniperLogger:
                 'timestamp': datetime.utcnow().isoformat(),
                 'indicators': {
                     'RSI': indicators.get('RSI'),
-                    'vi1': indicators.get('vi1'),
-                    'vi2': indicators.get('vi2'),
-                    'vi3': indicators.get('vi3')
+                                    'VI1': indicators.get('VI1'),
+                'VI2': indicators.get('VI2'),
+                'VI3': indicators.get('VI3')
                 }
             }
             

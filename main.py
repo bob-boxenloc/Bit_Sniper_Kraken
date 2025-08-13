@@ -617,9 +617,9 @@ def _trading_loop_internal():
             'VI2_phase': vi2_phase,
             'VI3_phase': vi3_phase,
             # CORRECTION: Vraies valeurs VI actuelles pour les croisements
-            'vi1': vi1_current,
-            'vi2': vi2_current,
-            'vi3': vi3_current
+                    'VI1': vi1_current,
+        'VI2': vi2_current,
+        'VI3': vi3_current
         }
         
         indicators_success = True

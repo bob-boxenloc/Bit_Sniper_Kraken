@@ -24,7 +24,7 @@ def analyze_candles(candles, indicators):
         raise ValueError("Indicateurs requis pour l'analyse")
     
     # Vérifier que les clés essentielles existent dans indicators
-    required_indicator_keys = ['RSI', 'vi1', 'vi2', 'vi3']
+    required_indicator_keys = ['RSI', 'VI1', 'VI2', 'VI3']
     missing_keys = [key for key in required_indicator_keys if key not in indicators]
     
     if missing_keys:
@@ -86,9 +86,9 @@ def analyze_candles(candles, indicators):
         'current_close': current_close,
         
         # Volatility Indexes (anciennes valeurs pour compatibilité)
-        'vi1': vi1,
-        'vi2': vi2,
-        'vi3': vi3,
+        'VI1': vi1,
+        'VI2': vi2,
+        'VI3': vi3,
         
         # NOUVELLE LOGIQUE - Phases VI
         'vi1_phase': vi1_phase,
@@ -237,9 +237,9 @@ def get_analysis_summary(analysis, conditions_check):
     summary = []
     summary.append("📊 ANALYSE TECHNIQUE (nouvelle stratégie):")
     summary.append(f"   RSI: {analysis['rsi']:.2f}")
-    summary.append(f"   VI1: {analysis['vi1']:.2f} ({'au-dessus' if analysis['vi1_above_close'] else 'en-dessous'} du close)")
-    summary.append(f"   VI2: {analysis['vi2']:.2f} ({'au-dessus' if analysis['vi2_above_close'] else 'en-dessous'} du close)")
-    summary.append(f"   VI3: {analysis['vi3']:.2f} ({'au-dessus' if analysis['vi3_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI1: {analysis['VI1']:.2f} ({'au-dessus' if analysis['vi1_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI2: {analysis['VI2']:.2f} ({'au-dessus' if analysis['vi2_above_close'] else 'en-dessous'} du close)")
+    summary.append(f"   VI3: {analysis['VI3']:.2f} ({'au-dessus' if analysis['vi3_above_close'] else 'en-dessous'} du close)")
     summary.append(f"   Close: {analysis['current_close']:.2f}")
     
     if conditions_check['vi1_protection_active']:
