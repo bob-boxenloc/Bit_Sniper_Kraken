@@ -731,9 +731,6 @@ def _trading_loop_internal():
     analysis = analyze_candles(latest_candles, indicators)
     # CORRECTION: check_all_conditions sera appelé APRÈS la récupération du compte
     # pour pouvoir vérifier les positions manuelles
-    analysis_summary = get_analysis_summary(analysis, {})  # Temporaire
-    print(analysis_summary)
-    logger.log_technical_analysis(analysis, {})  # Temporaire
     
     # 📧 NOTIFICATION EMAIL - CROISEMENTS VI1
     try:
