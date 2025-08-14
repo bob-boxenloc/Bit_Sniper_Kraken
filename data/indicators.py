@@ -204,7 +204,8 @@ def calculate_volatility_indexes(highs, lows, closes):
 
 def calculate_atr_history(highs, lows, closes, period=28):
     """
-    Calcule l'historique complet de l'ATR avec Wilder Smoothing (RMA).
+    Calcule l'historique complet de l'ATR avec Moyenne Mobile Simple (SMA).
+    ⚠️ CHANGEMENT : Remplacé Wilder Smoothing par SMA pour plus de réactivité !
     
     :param highs: Liste des prix hauts
     :param lows: Liste des prix bas
@@ -228,7 +229,7 @@ def calculate_atr_history(highs, lows, closes, period=28):
     for i in range(max(0, len(closes)-5), len(closes)):
         print(f"     Bougie {i}: H={highs[i]:.2f}, L={lows[i]:.2f}, C={closes[i]:.2f}")
     
-    for i in range(0, len(closes)):  # CORRECTION: commencer à i=0 pour inclure toutes les bougies
+    for i in range(0, len(closes)):
         # Kraken utilise simplement: High - Low
         true_range = highs[i] - lows[i]
         true_ranges.append(true_range)
@@ -243,44 +244,50 @@ def calculate_atr_history(highs, lows, closes, period=28):
     print(f"   Nombre de True Ranges calculés: {len(true_ranges)}")
     print(f"   Période ATR: {period}")
     
-    # Log des 28 derniers True Ranges utilisés (EXCLUANT le dernier anormal)
-    if len(true_ranges) >= period + 1:
-        print(f"   Les {period} derniers True Ranges utilisés (excluant le dernier):")
-        for i, tr in enumerate(true_ranges[-period-1:-1]):
+    # Log des 28 derniers True Ranges utilisés
+    if len(true_ranges) >= period:
+        print(f"   Les {period} derniers True Ranges utilisés:")
+        for i, tr in enumerate(true_ranges[-period:]):
             print(f"     TR[{i+1}]: {tr:.2f}")
-        print(f"     TR[{period+1}]: {true_ranges[-1]:.2f} (EXCLUÉ - anormal)")
     
-    # Calculer l'ATR avec Wilder Smoothing (RMA) - EXCLUANT le dernier True Range anormal
-    true_ranges_for_atr = true_ranges[:-1]  # Exclure le dernier True Range
-    atr_history = calculate_complete_rma_history(true_ranges_for_atr, period)
+    # ✅ NOUVEAU : Calculer l'ATR avec Moyenne Mobile Simple (SMA) au lieu de Wilder
+    atr_history = calculate_complete_sma_history(true_ranges, period)
     
     if atr_history:
         print(f"   Premier ATR (moyenne des {period} premiers): {atr_history[0]:.2f}")
-        print(f"   Dernier ATR (Wilder): {atr_history[-1]:.2f}")
+        print(f"   Dernier ATR (SMA): {atr_history[-1]:.2f}")
         print(f"   Nombre d'ATR calculés: {len(atr_history)}")
+        print(f"   ⚠️ CHANGEMENT : Utilisation SMA au lieu de Wilder pour plus de réactivité !")
     
     return atr_history
 
-def calculate_complete_rma_history(values, period):
+def calculate_complete_sma_history(values, period):
     """
-    Calcule l'historique complet du RMA pour toutes les valeurs.
-    Cette fonction est utilisée au démarrage pour initialiser correctement les indicateurs.
+    Calcule l'historique complet du SMA (Moyenne Mobile Simple) pour toutes les valeurs.
+    ✅ NOUVEAU : Remplacé RMA par SMA pour plus de réactivité !
     
     :param values: liste des valeurs (du plus ancien au plus récent)
-    :param period: période du RMA
-    :return: liste des valeurs RMA calculées
+    :param period: période du SMA
+    :return: liste des valeurs SMA calculées
     """
     if len(values) < period:
         return None
     
-    # Initialisation : SMA sur les 'period' premières valeurs
-    rmas = [sum(values[:period]) / period]
+    # Calculer SMA glissant pour toutes les valeurs
+    smas = []
     
-    # Lissage Wilder pour les valeurs suivantes
-    for v in values[period:]:
-        rmas.append((rmas[-1] * (period - 1) + v) / period)
+    # Premier SMA : moyenne des 'period' premières valeurs
+    first_sma = sum(values[:period]) / period
+    smas.append(first_sma)
     
-    return rmas
+    # SMA glissant pour les valeurs suivantes
+    for i in range(period, len(values)):
+        # Supprimer la plus ancienne valeur et ajouter la nouvelle
+        window_sum = sum(values[i-period+1:i+1])
+        sma = window_sum / period
+        smas.append(sma)
+    
+    return smas
 
 def calculate_complete_volatility_indexes_history(highs, lows, closes):
     """
@@ -326,7 +333,7 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
     # Calculer l'historique complet de l'ATR (RMA des True Ranges sur 28 périodes)
     # Exclure le dernier True Range comme dans calculate_volatility_indexes_corrected
     true_ranges_for_atr = true_ranges[:-1]  # Exclure le dernier True Range
-    atr_rma_history = calculate_complete_rma_history(true_ranges_for_atr, 28)
+    atr_rma_history = calculate_complete_sma_history(true_ranges_for_atr, 28)
     if atr_rma_history is None:
         logger.logger.warning("Impossible de calculer l'historique de l'ATR RMA")
         return None
@@ -337,7 +344,7 @@ def calculate_complete_volatility_indexes_history(highs, lows, closes):
         logger.logger.info(f"   Nombre d'ATR calculés: {len(atr_rma_history)}")
     
     # Calculer l'historique complet de la ligne centrale (RMA des closes sur 28 périodes)
-    center_line_history = calculate_complete_rma_history(closes, 28)
+    center_line_history = calculate_complete_sma_history(closes, 28)
     if center_line_history is None:
         logger.logger.warning("Impossible de calculer l'historique de la ligne centrale RMA")
         return None
