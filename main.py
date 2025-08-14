@@ -145,7 +145,7 @@ def initialize_indicator_history(candles):
         print(f"   RSI: {len(rsi_history)} valeurs (dernier: {rsi_history[-1]:.2f})")
         print(f"   VI1: {vi1_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
         print(f"   VI2: {vi2_n1:.2f} (BEARISH) - VALEUR DE DÉPART UTILISATEUR")
-        print(f"   VI3: {vi3_n1:.2f} (BULLISH) - VALEUR DE DÉPART UTILISATEUR")
+        print(f"   VI3: {vi3_n1:.2f} (BEARISH) - VALEUR DE DÉPART UTILISATEUR")
         print(f"   ATR 28: {vi_history['atr_history'][-1]:.2f}")
         
         return True
