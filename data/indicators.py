@@ -864,6 +864,20 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
     # Ces flags indiquent si un croisement a été détecté à la bougie précédente
     # et seront appliqués MAINTENANT (bougie N) si ils sont True
     
+    # ✅ CORRECTION CRITIQUE : Initialiser les flags de croisement qui étaient manquants !
+    if vi1_crossed_last_candle is None:
+        vi1_crossed_last_candle = False
+    if vi2_crossed_last_candle is None:
+        vi2_crossed_last_candle = False
+    if vi3_crossed_last_candle is None:
+        vi3_crossed_last_candle = False
+    if vi1_crossing_direction is None:
+        vi1_crossing_direction = None
+    if vi2_crossing_direction is None:
+        vi2_crossing_direction = None
+    if vi3_crossing_direction is None:
+        vi3_crossing_direction = None
+    
     # Initialiser les historiques avec la valeur précédente (ou de départ)
     vi1_history = [vi1_previous]  # n-1
     vi2_history = [vi2_previous]  # n-1
