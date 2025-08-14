@@ -107,7 +107,7 @@ def initialize_indicator_history(candles):
         vi_phases_history = {
             'VI1_phases': ['BULLISH'],
             'VI2_phases': ['BEARISH'],
-            'VI3_phases': ['BULLISH'],
+            'VI3_phases': ['BEARISH'],
             'VI1_values': [vi1_n1],
             'VI2_values': [vi2_n1],
             'VI3_values': [vi3_n1],
@@ -271,7 +271,7 @@ def update_indicator_history(new_candle):
     # Utiliser les états de départ corrects pour VI1, VI2 et VI3
     previous_vi1_state = indicator_history.get('vi1_state', "BULLISH")
     previous_vi2_state = indicator_history.get('vi2_state', "BEARISH")
-    previous_vi3_state = indicator_history.get('vi3_state', "BULLISH")
+    previous_vi3_state = indicator_history.get('vi3_state', "BEARISH")
     
     # ✅ NOUVEAU : Récupérer les flags de croisement de la bougie précédente
     vi1_crossed_last_candle = indicator_history.get('vi1_crossed_last_candle', False)
