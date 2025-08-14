@@ -503,35 +503,76 @@ Le bot utilise des fichiers de cache Python (`__pycache__`) pour aller plus vite
 
 ### 📍 LISTE EXACTE DES ENDROITS À MODIFIER
 
-**Vous DEVEZ modifier ces 6 endroits exacts :**
+**⚠️ ATTENTION : Vous DEVEZ modifier TOUS ces endroits pour éviter les erreurs !**
 
-#### **main.py**
+#### **main.py (4 endroits)**
 ```python
 # Ligne 102-104 : Initialisation des phases VI
 vi1_n1 = 117298  # BULLISH
 vi2_n1 = 120957  # BEARISH
 vi3_n1 = 118685  # BULLISH
 
+# Ligne 109 : Phases VI hardcodées
+'VI3_phases': ['BEARISH'],  # ⚠️ CRITIQUE : Éviter les erreurs d'état !
+
+# Ligne 147 : Print d'affichage
+print(f"   VI3: {vi3_n1:.2f} (BEARISH) - VALEUR DE DÉPART UTILISATEUR")
+
 # Ligne 261-263 : Valeurs de départ utilisateur
 vi1_n1 = 117298  # Valeur de départ fournie par l'utilisateur
 vi2_n1 = 120957  # Valeur de départ fournie par l'utilisateur
 vi3_n1 = 118685  # Valeur de départ fournie par l'utilisateur
+
+# Ligne 273 : Valeur par défaut previous_vi3_state
+previous_vi3_state = indicator_history.get('vi3_state', "BEARISH")
 ```
 
-#### **data/indicators.py**
+#### **data/indicators.py (4 endroits)**
 ```python
 # Ligne 479-481 : Fonction initialize_vi_history_from_user_values
 vi1_n1 = 117298  # BULLISH
 vi2_n1 = 120957  # BEARISH
 vi3_n1 = 118685  # BULLISH
 
+# Ligne 485-487 : États initiaux
+vi1_state = "BULLISH"
+vi2_state = "BEARISH"
+vi3_state = "BEARISH"
+
 # Ligne 845-847 : Fonction calculate_volatility_indexes_corrected
 vi1_n1 = 117298  # BULLISH
 vi2_n1 = 120957  # BEARISH
 vi3_n1 = 118685  # BULLISH
+
+# Ligne 851-853 : États initiaux (utilisés seulement si pas d'états précédents)
+vi1_state_initial = "BULLISH"
+vi2_state_initial = "BEARISH"
+vi3_state_initial = "BEARISH"
 ```
 
-### 🔍 PROCÉDURE COMPLÈTE (5 minutes)
+**⚠️ TOTAL : 8 endroits à modifier (pas 6 !)**
+
+### 🚨 AVERTISSEMENTS CRITIQUES
+
+#### **1. ÉVITER LES ERREURS D'ÉTATS :**
+- **VI1** : Toujours BULLISH (en-dessous du close)
+- **VI2** : Toujours BEARISH (au-dessus du close)  
+- **VI3** : Toujours BEARISH (au-dessus du close)
+
+#### **2. VÉRIFIER LES HARCODÉS :**
+- **Ligne 109** : `'VI3_phases': ['BEARISH']` (pas BULLISH !)
+- **Ligne 147** : Print avec le bon état (BEARISH pour VI3)
+- **Ligne 273** : Valeur par défaut BEARISH pour VI3
+
+#### **3. ERREURS FRÉQUENTES À ÉVITER :**
+- ❌ Oublier les hardcodés dans main.py
+- ❌ Mélanger BULLISH/BEARISH selon les valeurs
+- ❌ Oublier les valeurs par défaut et phases
+- ❌ Se contenter de modifier seulement les valeurs numériques
+
+**💡 CONSEIL : Utilisez la commande grep pour vérifier TOUS les endroits !**
+
+###  PROCÉDURE COMPLÈTE (5 minutes)
 
 #### 1️⃣ Mise à jour du code local
 ```bash
@@ -549,10 +590,21 @@ grep -r "116196\|121537\|120234" .                    # Aucun résultat = OK
 grep -r "117498\|121107\|120078" .                    # Aucun résultat = OK
 
 # Vérifier que les nouvelles valeurs sont partout
-grep -r "117298\|120957\|118685" .                    # 6 résultats = OK
+grep -r "117298\|120957\|118685" .                    # 8 résultats = OK
 grep -r "vi1_n1.*=.*117298" .                        # 4 résultats = OK
 grep -r "vi2_n1.*=.*120957" .                        # 4 résultats = OK  
 grep -r "vi3_n1.*=.*118685" .                        # 4 résultats = OK
+
+# ⚠️ VÉRIFICATION CRITIQUE DES HARCODÉS ET ÉTATS
+grep -r "VI3.*BULLISH" .                              # Aucun résultat = OK (sauf dans README)
+grep -r "vi3_state.*BULLISH" .                        # Aucun résultat = OK
+grep -r "vi3_phase.*BULLISH" .                        # Aucun résultat = OK
+grep -r "VI3_phases.*BULLISH" .                       # Aucun résultat = OK
+
+# Vérifier que les états sont corrects
+grep -r "vi1_state.*=.*BULLISH" .                     # 2 résultats = OK
+grep -r "vi2_state.*=.*BEARISH" .                     # 2 résultats = OK
+grep -r "vi3_state.*=.*BEARISH" .                     # 2 résultats = OK
 ```
 
 #### 3️⃣ Envoi sur le serveur
