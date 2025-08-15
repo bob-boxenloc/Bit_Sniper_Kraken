@@ -282,9 +282,9 @@ def calculate_complete_sma_history(values, period):
     
     # SMA glissant pour les valeurs suivantes
     for i in range(period, len(values)):
-        # ✅ CORRECTION CRITIQUE : i-period au lieu de i-period+1 !
+        # ✅ CORRECTION CRITIQUE : Fenêtre de taille 'period' exactement !
         # Supprimer la plus ancienne valeur et ajouter la nouvelle
-        window_sum = sum(values[i-period:i+1])  # ⚠️ CORRIGÉ : i-period au lieu de i-period+1
+        window_sum = sum(values[i-period+1:i+1])  # ⚠️ CORRIGÉ : i-period+1 pour fenêtre de taille period
         sma = window_sum / period
         smas.append(sma)
     
