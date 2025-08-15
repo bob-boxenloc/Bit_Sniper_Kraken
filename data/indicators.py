@@ -282,8 +282,9 @@ def calculate_complete_sma_history(values, period):
     
     # SMA glissant pour les valeurs suivantes
     for i in range(period, len(values)):
+        # ✅ CORRECTION CRITIQUE : i-period au lieu de i-period+1 !
         # Supprimer la plus ancienne valeur et ajouter la nouvelle
-        window_sum = sum(values[i-period+1:i+1])
+        window_sum = sum(values[i-period:i+1])  # ⚠️ CORRIGÉ : i-period au lieu de i-period+1
         sma = window_sum / period
         smas.append(sma)
     
@@ -1060,7 +1061,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 else:  # vi3_state == "BULLISH" - VI3 < close
                     # BULLISH: VI baisse si ATR monte, monte si ATR baisse
                     vi3_new = vi3_history[-1] - (atr_diff * 6)  # ✅ CORRECTION: Même logique que VI1
-    
+            
             vi3_history.append(vi3_new)
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
     
