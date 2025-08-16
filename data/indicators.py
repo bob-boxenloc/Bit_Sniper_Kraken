@@ -484,9 +484,9 @@ def initialize_vi_history_from_user_values(highs, lows, closes):
     logger.logger.info("🔧 DEBUG: Fonction initialize_vi_history_from_user_values appelée")
     
     # Valeurs de départ fournies par l'utilisateur
-    vi1_n1 = 120094  # BEARISH
-    vi2_n1 = 118583  # BEARISH
-    vi3_n1 = 117911  # BEARISH
+    vi1_n1 = 120131  # BEARISH
+    vi2_n1 = 118602  # BEARISH
+    vi3_n1 = 117923  # BEARISH
     
     # États initiaux
     vi1_state = "BEARISH"
@@ -850,9 +850,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 120094  # BEARISH
-    vi2_n1 = 118583  # BEARISH
-    vi3_n1 = 117911  # BEARISH
+    vi1_n1 = 120131  # BEARISH
+    vi2_n1 = 118602  # BEARISH
+    vi3_n1 = 117923  # BEARISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BEARISH"
@@ -1061,7 +1061,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 else:  # vi3_state == "BULLISH" - VI3 < close
                     # BULLISH: VI baisse si ATR monte, monte si ATR baisse
                     vi3_new = vi3_history[-1] - (atr_diff * 6)  # ✅ CORRECTION: Même logique que VI1
-            
+    
             vi3_history.append(vi3_new)
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
     
