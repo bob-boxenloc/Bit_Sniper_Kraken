@@ -31,7 +31,7 @@ class KrakenWebSocketMonitor:
         self.interval = 15  # 15 minutes
         
         # NOUVEAU : Mode ponctuel (pas de monitoring continu)
-        self.connection_timeout = 30  # Timeout de connexion en secondes
+        self.connection_timeout = 60  # Augmenter le timeout à 60 secondes  # Timeout de connexion en secondes
         
     def start_monitoring(self):
         """Démarre le monitoring WebSocket en arrière-plan"""
@@ -72,9 +72,12 @@ class KrakenWebSocketMonitor:
                 # Attendre le snapshot
                 timeout = self.connection_timeout
                 self.logger.info(f"⏳ DEBUG: Attente snapshot (timeout: {timeout}s)...")
+                start_time = time.time()
                 while not self.latest_candle and timeout > 0:
                     time.sleep(0.1)
                     timeout -= 0.1
+                    if int(time.time() - start_time) % 5 == 0 and int(time.time() - start_time) > 0:
+                        self.logger.info(f"⏳ DEBUG: Attente snapshot... {int(time.time() - start_time)}s écoulées")
                 
                 if self.latest_candle:
                     self.logger.info("✅ Snapshot OHLC WebSocket reçu")
@@ -198,13 +201,19 @@ class KrakenWebSocketMonitor:
     def _process_ohlc_message(self, data):
         """Traite les messages OHLC reçus"""
         try:
-            for candle in data.get('data', []):
-                # Stocker la dernière bougie
-                self.latest_candle = candle
+            self.logger.info(f"🔍 DEBUG: Message WebSocket reçu: {data.get('channel', 'N/A')}")
+            
+            if data.get('channel') == 'ohlc':
+                candle_data = data.get('data', [])
+                self.logger.info(f"🔍 DEBUG: Données OHLC trouvées: {len(candle_data)} bougies")
                 
-                # Log de la bougie reçue
-                self._log_ohlc_candle(candle)
-                
+                for candle in candle_data:
+                    # Stocker la dernière bougie
+                    self.latest_candle = candle
+                    
+                    # Log de la bougie reçue
+                    self._log_ohlc_candle(candle)
+                    
         except Exception as e:
             self.logger.error(f"❌ Erreur traitement bougie OHLC: {e}")
             
