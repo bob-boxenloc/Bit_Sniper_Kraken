@@ -30,8 +30,8 @@ class KrakenWebSocketMonitor:
         self.symbol = "XBT/USD"  # CORRECTION : Futures Kraken, pas Spot !
         self.interval = 15  # 15 minutes
         
-        # Thread de monitoring
-        self.monitor_thread = None
+        # NOUVEAU : Mode ponctuel (pas de monitoring continu)
+        self.connection_timeout = 30  # Timeout de connexion en secondes
         
     def start_monitoring(self):
         """Démarre le monitoring WebSocket en arrière-plan"""
@@ -44,9 +44,8 @@ class KrakenWebSocketMonitor:
         self.logger.info(f"   Symbol: {self.symbol}")
         self.logger.info(f"   Interval: {self.interval} minutes")
         
-        # Démarrer le thread de monitoring
-        self.monitor_thread = threading.Thread(target=self._monitor_loop, daemon=True)
-        self.monitor_thread.start()
+        # NOUVEAU : Mode ponctuel - pas de thread continu
+        self.is_monitoring = True
         
     def stop_monitoring(self):
         """Arrête le monitoring WebSocket"""
@@ -56,38 +55,46 @@ class KrakenWebSocketMonitor:
         if self.ws:
             self.ws.close()
             
-    def _monitor_loop(self):
-        """Boucle principale de monitoring WebSocket"""
-        self.is_monitoring = True
-        reconnect_delay = 5  # Délai initial de reconnexion
-        
-        while self.is_monitoring:
-            try:
-                if not self.is_connected:
-                    self.logger.info(f"🔄 Tentative de reconnexion WebSocket (délai: {reconnect_delay}s)")
-                    self._connect()
-                    
-                if self.is_connected:
-                    # Maintenir la connexion active
-                    time.sleep(1)
-                    reconnect_delay = 5  # Réinitialiser le délai si connecté
-                    
-            except Exception as e:
-                self.logger.error(f"Erreur dans la boucle de monitoring: {e}")
-                self.is_connected = False
-                
-                # Délai de reconnexion progressif (max 60 secondes)
-                reconnect_delay = min(reconnect_delay * 2, 60)
-                self.logger.info(f"⏳ Attente de {reconnect_delay}s avant reconnexion...")
-                time.sleep(reconnect_delay)
-                
-    def _connect(self):
-        """Établit la connexion WebSocket"""
+    def get_ohlc_snapshot(self):
+        """
+        NOUVEAU : Récupère un snapshot OHLC ponctuel.
+        À appeler au moment de la comparaison avec l'API REST.
+        """
         try:
-            self.logger.info("🔌 Connexion au WebSocket Kraken...")
+            self.logger.info("📡 Connexion WebSocket ponctuelle pour snapshot OHLC...")
             
-            # Créer la connexion WebSocket avec options de robustesse
-            websocket.enableTrace(False)  # Désactiver les traces pour la production
+            # Connexion ponctuelle
+            if self._connect_ponctual():
+                # Attendre le snapshot
+                timeout = self.connection_timeout
+                while not self.latest_candle and timeout > 0:
+                    time.sleep(0.1)
+                    timeout -= 0.1
+                
+                if self.latest_candle:
+                    self.logger.info("✅ Snapshot OHLC WebSocket reçu")
+                    return self.latest_candle
+                else:
+                    self.logger.warning("⚠️ Timeout attente snapshot OHLC")
+                    return None
+            else:
+                self.logger.error("❌ Impossible de se connecter au WebSocket")
+                return None
+                
+        except Exception as e:
+            self.logger.error(f"❌ Erreur snapshot OHLC: {e}")
+            return None
+        finally:
+            # Fermer la connexion après utilisation
+            self._disconnect()
+                
+    def _connect_ponctual(self):
+        """NOUVEAU : Connexion WebSocket ponctuelle pour snapshot"""
+        try:
+            self.logger.info("🔌 Connexion WebSocket ponctuelle...")
+            
+            # Créer la connexion WebSocket simple
+            websocket.enableTrace(False)
             self.ws = websocket.WebSocketApp(
                 self.ws_url,
                 on_message=self._on_message,
@@ -96,30 +103,40 @@ class KrakenWebSocketMonitor:
                 on_open=self._on_open
             )
             
-            # Démarrer la connexion avec options de robustesse
+            # Démarrer la connexion avec timeout court
             ws_thread = threading.Thread(
                 target=lambda: self.ws.run_forever(
-                    ping_interval=30,      # Ping toutes les 30 secondes
-                    ping_timeout=10,       # Timeout ping 10 secondes
-                    ping_payload="ping",   # Payload ping
-                    sslopt={"cert_reqs": 0}  # Ignorer les erreurs SSL
+                    ping_interval=None,    # Pas de ping automatique
+                    ping_timeout=None,     # Pas de timeout ping
+                    sslopt={"cert_reqs": 0}
                 ), 
                 daemon=True
             )
             ws_thread.start()
             
-            # Attendre la connexion avec timeout plus long
-            timeout = 20  # Augmenté à 20 secondes
+            # Attendre la connexion avec timeout court
+            timeout = 10  # Timeout court pour connexion ponctuelle
             while not self.is_connected and timeout > 0:
                 time.sleep(0.1)
                 timeout -= 0.1
                 
             if not self.is_connected:
-                self.logger.error("❌ Timeout de connexion WebSocket")
+                self.logger.error("❌ Timeout de connexion WebSocket ponctuelle")
+                return False
+                
+            return True
                 
         except Exception as e:
-            self.logger.error(f"❌ Erreur de connexion WebSocket: {e}")
+            self.logger.error(f"❌ Erreur de connexion WebSocket ponctuelle: {e}")
             self.is_connected = False
+            return False
+            
+    def _disconnect(self):
+        """NOUVEAU : Ferme la connexion WebSocket"""
+        if self.ws:
+            self.ws.close()
+            self.ws = None
+        self.is_connected = False
             
     def _on_open(self, ws):
         """Callback appelé quand la connexion WebSocket s'ouvre"""
@@ -211,11 +228,14 @@ class KrakenWebSocketMonitor:
         
     def log_comparison(self, rest_api_candle):
         """
-        Log de comparaison entre WebSocket et REST API.
+        NOUVEAU : Log de comparaison avec snapshot WebSocket ponctuel.
         À appeler depuis le code principal pour comparer les données.
         """
-        if not self.latest_candle:
-            self.logger.warning("⚠️ Aucune bougie WebSocket disponible pour comparaison")
+        # Récupérer un snapshot WebSocket ponctuel
+        websocket_candle = self.get_ohlc_snapshot()
+        
+        if not websocket_candle:
+            self.logger.warning("⚠️ Impossible de récupérer snapshot WebSocket pour comparaison")
             return
             
         try:
@@ -225,13 +245,13 @@ class KrakenWebSocketMonitor:
             self.logger.info(f"   Interval: {self.interval} minutes")
             self.logger.info(f"")
             
-            # Données WebSocket
-            ws_open = self.latest_candle.get('open', 'N/A')
-            ws_high = self.latest_candle.get('high', 'N/A')
-            ws_low = self.latest_candle.get('low', 'N/A')
-            ws_close = self.latest_candle.get('close', 'N/A')
-            ws_volume = self.latest_candle.get('volume', 'N/A')
-            ws_trades = self.latest_candle.get('trades', 'N/A')
+            # Données WebSocket (snapshot ponctuel)
+            ws_open = websocket_candle.get('open', 'N/A')
+            ws_high = websocket_candle.get('high', 'N/A')
+            ws_low = websocket_candle.get('low', 'N/A')
+            ws_close = websocket_candle.get('close', 'N/A')
+            ws_volume = websocket_candle.get('volume', 'N/A')
+            ws_trades = websocket_candle.get('trades', 'N/A')
             
             # Données REST API
             rest_open = rest_api_candle.get('open', 'N/A')
