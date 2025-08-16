@@ -18,6 +18,15 @@ from core.monitor import SystemMonitor
 from core.notifications import BrevoNotifier
 from core.state_manager import StateManager
 
+# Import du module WebSocket pour comparaison OHLC (COMPLÈTEMENT ISOLÉ)
+try:
+    from websocket_ohlc_monitor import start_websocket_monitoring, websocket_monitor
+    WEBSOCKET_AVAILABLE = True
+    print("✅ Module WebSocket chargé avec succès")
+except ImportError as e:
+    print(f"⚠️ Module WebSocket non disponible: {e}")
+    WEBSOCKET_AVAILABLE = False
+
 # Variables globales
 logger = BitSniperLogger()
 system_monitor = SystemMonitor()
@@ -496,6 +505,14 @@ def _trading_loop_internal():
             new_candle = new_candles[-1]  # L'avant-dernière bougie (la dernière fermée)
             # Note: data/market_data.py retourne déjà l'avant-dernière bougie quand limit=1
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
+            
+            # COMPARAISON WEBSOCKET vs REST API (COMPLÈTEMENT ISOLÉ)
+            if WEBSOCKET_AVAILABLE and websocket_monitor:
+                try:
+                    websocket_monitor.log_comparison(new_candle)
+                except Exception as e:
+                    print(f"⚠️ Erreur comparaison WebSocket: {e}")
+                    logger.log_warning(f"Erreur comparaison WebSocket: {e}")
             
             print(f"🔄 DEBUG: new_candle time: {new_candle['time']}")
             print(f"🔄 DEBUG: buffer_times contient {new_candle['time']}: {new_candle['time'] in buffer_times}")
@@ -994,6 +1011,19 @@ if __name__ == "__main__":
     print("Synchronisé sur les bougies 15m. En attente de la prochaine clôture...")
     print("="*60)
     
+    # DÉMARRER LE MONITORING WEBSOCKET (COMPLÈTEMENT ISOLÉ)
+    if WEBSOCKET_AVAILABLE:
+        try:
+            print("🔌 Démarrage du monitoring WebSocket Kraken OHLC...")
+            start_websocket_monitoring()
+            print("✅ Monitoring WebSocket démarré avec succès")
+            logger.log_info("✅ Monitoring WebSocket démarré avec succès")
+        except Exception as e:
+            print(f"⚠️ Erreur démarrage monitoring WebSocket: {e}")
+            logger.log_warning(f"Erreur démarrage monitoring WebSocket: {e}")
+    else:
+        print("⚠️ Monitoring WebSocket non disponible")
+    
     # Affichage initial du statut système
     try:
         print("\n📊 STATUT SYSTÈME INITIAL")
@@ -1006,6 +1036,15 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.log_bot_stop()
         print("\nBot arrêté par l'utilisateur")
+        
+        # ARRÊTER LE MONITORING WEBSOCKET
+        if WEBSOCKET_AVAILABLE:
+            try:
+                from websocket_ohlc_monitor import stop_websocket_monitoring
+                stop_websocket_monitoring()
+                print("🛑 Monitoring WebSocket arrêté")
+            except Exception as e:
+                print(f"⚠️ Erreur arrêt monitoring WebSocket: {e}")
         
         # Sauvegarder les données de monitoring avant de quitter
         try:
