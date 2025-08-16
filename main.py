@@ -1017,7 +1017,6 @@ if __name__ == "__main__":
             print("🔌 Démarrage du monitoring WebSocket Kraken OHLC...")
             start_websocket_monitoring()
             print("✅ Monitoring WebSocket démarré avec succès")
-            # ✅ CORRECTION : Utiliser la bonne méthode du logger
         except Exception as e:
             print(f"⚠️ Erreur démarrage monitoring WebSocket: {e}")
             logger.log_warning(f"Erreur démarrage monitoring WebSocket: {e}")

@@ -59,27 +59,34 @@ class KrakenWebSocketMonitor:
     def _monitor_loop(self):
         """Boucle principale de monitoring WebSocket"""
         self.is_monitoring = True
+        reconnect_delay = 5  # Délai initial de reconnexion
         
         while self.is_monitoring:
             try:
                 if not self.is_connected:
+                    self.logger.info(f"🔄 Tentative de reconnexion WebSocket (délai: {reconnect_delay}s)")
                     self._connect()
                     
                 if self.is_connected:
                     # Maintenir la connexion active
                     time.sleep(1)
+                    reconnect_delay = 5  # Réinitialiser le délai si connecté
                     
             except Exception as e:
                 self.logger.error(f"Erreur dans la boucle de monitoring: {e}")
                 self.is_connected = False
-                time.sleep(5)  # Attendre avant de reconnecter
+                
+                # Délai de reconnexion progressif (max 60 secondes)
+                reconnect_delay = min(reconnect_delay * 2, 60)
+                self.logger.info(f"⏳ Attente de {reconnect_delay}s avant reconnexion...")
+                time.sleep(reconnect_delay)
                 
     def _connect(self):
         """Établit la connexion WebSocket"""
         try:
             self.logger.info("🔌 Connexion au WebSocket Kraken...")
             
-            # Créer la connexion WebSocket
+            # Créer la connexion WebSocket avec options de robustesse
             websocket.enableTrace(False)  # Désactiver les traces pour la production
             self.ws = websocket.WebSocketApp(
                 self.ws_url,
@@ -89,12 +96,20 @@ class KrakenWebSocketMonitor:
                 on_open=self._on_open
             )
             
-            # Démarrer la connexion dans un thread séparé
-            ws_thread = threading.Thread(target=self.ws.run_forever, daemon=True)
+            # Démarrer la connexion avec options de robustesse
+            ws_thread = threading.Thread(
+                target=lambda: self.ws.run_forever(
+                    ping_interval=30,      # Ping toutes les 30 secondes
+                    ping_timeout=10,       # Timeout ping 10 secondes
+                    ping_payload="ping",   # Payload ping
+                    sslopt={"cert_reqs": 0}  # Ignorer les erreurs SSL
+                ), 
+                daemon=True
+            )
             ws_thread.start()
             
-            # Attendre la connexion
-            timeout = 10
+            # Attendre la connexion avec timeout plus long
+            timeout = 20  # Augmenté à 20 secondes
             while not self.is_connected and timeout > 0:
                 time.sleep(0.1)
                 timeout -= 0.1
