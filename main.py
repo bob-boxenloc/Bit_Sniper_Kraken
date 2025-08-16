@@ -18,15 +18,6 @@ from core.monitor import SystemMonitor
 from core.notifications import BrevoNotifier
 from core.state_manager import StateManager
 
-# Import du module WebSocket pour comparaison OHLC (COMPLÈTEMENT ISOLÉ)
-try:
-    from websocket_ohlc_monitor import start_websocket_monitoring, websocket_monitor
-    WEBSOCKET_AVAILABLE = True
-    print("✅ Module WebSocket chargé avec succès")
-except ImportError as e:
-    print(f"⚠️ Module WebSocket non disponible: {e}")
-    WEBSOCKET_AVAILABLE = False
-
 # Variables globales
 logger = BitSniperLogger()
 system_monitor = SystemMonitor()
@@ -108,9 +99,9 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 120136  # BEARISH
-        vi2_n1 = 118605  # BEARISH
-        vi3_n1 = 117925  # BEARISH
+        vi1_n1 = 120094  # BEARISH
+        vi2_n1 = 118583  # BEARISH
+        vi3_n1 = 117911  # BEARISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
@@ -267,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 120136  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 118605  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 117925  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 120094  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 118583  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 117911  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
@@ -407,7 +398,6 @@ def _trading_loop_internal():
     """
     Implémentation interne de la boucle de trading.
     """
-    global websocket_monitor
     logger.log_scheduler_tick()
     
     # Vérifier la santé du système avant de commencer
@@ -506,41 +496,6 @@ def _trading_loop_internal():
             new_candle = new_candles[-1]  # L'avant-dernière bougie (la dernière fermée)
             # Note: data/market_data.py retourne déjà l'avant-dernière bougie quand limit=1
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
-            
-            # COMPARAISON SIMPLE WEBSOCKET vs REST API
-            print("="*50)
-            print("🔍 COMPARAISON WEBSOCKET vs REST API")
-            print("="*50)
-
-            # Données REST API (ce qu'on a déjà)
-            print(f" REST API - Bougie: {new_candle['datetime']}")
-            print(f"   Open: {new_candle['open']}")
-            print(f"   High: {new_candle['high']}")
-            print(f"   Low: {new_candle['low']}")
-            print(f"   Close: {new_candle['close']}")
-            print(f"   Volume: {new_candle.get('volume', 'N/A')}")
-
-            # Tentative WebSocket simple
-            try:
-                if WEBSOCKET_AVAILABLE and websocket_monitor:
-                    print("🔌 Tentative WebSocket...")
-                    websocket_candle = websocket_monitor.get_ohlc_snapshot()
-                    
-                    if websocket_candle:
-                        print(f" WEBSOCKET - Bougie: {websocket_candle.get('datetime', 'N/A')}")
-                        print(f"   Open: {websocket_candle.get('open', 'N/A')}")
-                        print(f"   High: {websocket_candle.get('high', 'N/A')}")
-                        print(f"   Low: {websocket_candle.get('low', 'N/A')}")
-                        print(f"   Close: {websocket_candle.get('close', 'N/A')}")
-                        print(f"   Volume: {websocket_candle.get('volume', 'N/A')}")
-                    else:
-                        print("❌ WebSocket: Aucune donnée reçue")
-                else:
-                    print("❌ WebSocket: Module non disponible")
-            except Exception as e:
-                print(f"❌ Erreur WebSocket: {e}")
-
-            print("="*50)
             
             print(f"🔄 DEBUG: new_candle time: {new_candle['time']}")
             print(f"🔄 DEBUG: buffer_times contient {new_candle['time']}: {new_candle['time'] in buffer_times}")
@@ -1039,19 +994,6 @@ if __name__ == "__main__":
     print("Synchronisé sur les bougies 15m. En attente de la prochaine clôture...")
     print("="*60)
     
-    # DÉMARRER LE MONITORING WEBSOCKET (COMPLÈTEMENT ISOLÉ)
-    websocket_monitor = None  # Variable globale pour main.py
-    if WEBSOCKET_AVAILABLE:
-        try:
-            print("🔌 Démarrage du monitoring WebSocket Kraken OHLC...")
-            websocket_monitor = start_websocket_monitoring()  # Récupérer l'instance
-            print("✅ Monitoring WebSocket démarré avec succès")
-        except Exception as e:
-            print(f"⚠️ Erreur démarrage monitoring WebSocket: {e}")
-            logger.log_warning(f"Erreur démarrage monitoring WebSocket: {e}")
-    else:
-        print("⚠️ Monitoring WebSocket non disponible")
-    
     # Affichage initial du statut système
     try:
         print("\n📊 STATUT SYSTÈME INITIAL")
@@ -1064,16 +1006,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         logger.log_bot_stop()
         print("\nBot arrêté par l'utilisateur")
-        
-        # ARRÊTER LE MONITORING WEBSOCKET
-        if WEBSOCKET_AVAILABLE:
-            try:
-                from websocket_ohlc_monitor import stop_websocket_monitoring
-                stop_websocket_monitoring()
-                print("🛑 Monitoring WebSocket arrêté")
-                # ✅ CORRECTION : Pas de log ici, juste print
-            except Exception as e:
-                print(f"⚠️ Erreur arrêt monitoring WebSocket: {e}")
         
         # Sauvegarder les données de monitoring avant de quitter
         try:
