@@ -506,13 +506,40 @@ def _trading_loop_internal():
             # Note: data/market_data.py retourne déjà l'avant-dernière bougie quand limit=1
             buffer_times = [c['time'] for c in candle_buffer.get_candles()]
             
-            # COMPARAISON WEBSOCKET vs REST API (COMPLÈTEMENT ISOLÉ)
-            if WEBSOCKET_AVAILABLE and websocket_monitor:
-                try:
-                    websocket_monitor.log_comparison(new_candle)
-                except Exception as e:
-                    print(f"⚠️ Erreur comparaison WebSocket: {e}")
-                    logger.log_warning(f"Erreur comparaison WebSocket: {e}")
+            # COMPARAISON SIMPLE WEBSOCKET vs REST API
+            print("="*50)
+            print("🔍 COMPARAISON WEBSOCKET vs REST API")
+            print("="*50)
+
+            # Données REST API (ce qu'on a déjà)
+            print(f" REST API - Bougie: {new_candle['datetime']}")
+            print(f"   Open: {new_candle['open']}")
+            print(f"   High: {new_candle['high']}")
+            print(f"   Low: {new_candle['low']}")
+            print(f"   Close: {new_candle['close']}")
+            print(f"   Volume: {new_candle.get('volume', 'N/A')}")
+
+            # Tentative WebSocket simple
+            try:
+                if WEBSOCKET_AVAILABLE and websocket_monitor:
+                    print("🔌 Tentative WebSocket...")
+                    websocket_candle = websocket_monitor.get_ohlc_snapshot()
+                    
+                    if websocket_candle:
+                        print(f" WEBSOCKET - Bougie: {websocket_candle.get('datetime', 'N/A')}")
+                        print(f"   Open: {websocket_candle.get('open', 'N/A')}")
+                        print(f"   High: {websocket_candle.get('high', 'N/A')}")
+                        print(f"   Low: {websocket_candle.get('low', 'N/A')}")
+                        print(f"   Close: {websocket_candle.get('close', 'N/A')}")
+                        print(f"   Volume: {websocket_candle.get('volume', 'N/A')}")
+                    else:
+                        print("❌ WebSocket: Aucune donnée reçue")
+                else:
+                    print("❌ WebSocket: Module non disponible")
+            except Exception as e:
+                print(f"❌ Erreur WebSocket: {e}")
+
+            print("="*50)
             
             print(f"🔄 DEBUG: new_candle time: {new_candle['time']}")
             print(f"🔄 DEBUG: buffer_times contient {new_candle['time']}: {new_candle['time'] in buffer_times}")
