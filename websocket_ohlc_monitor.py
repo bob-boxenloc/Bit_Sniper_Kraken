@@ -62,11 +62,16 @@ class KrakenWebSocketMonitor:
         """
         try:
             self.logger.info("📡 Connexion WebSocket ponctuelle pour snapshot OHLC...")
+            self.logger.info(f"🔍 DEBUG: État actuel - is_monitoring: {self.is_monitoring}, is_connected: {self.is_connected}")
             
             # Connexion ponctuelle
+            self.logger.info("🔌 DEBUG: Tentative de connexion ponctuelle...")
             if self._connect_ponctual():
+                self.logger.info("✅ DEBUG: Connexion ponctuelle réussie")
+                
                 # Attendre le snapshot
                 timeout = self.connection_timeout
+                self.logger.info(f"⏳ DEBUG: Attente snapshot (timeout: {timeout}s)...")
                 while not self.latest_candle and timeout > 0:
                     time.sleep(0.1)
                     timeout -= 0.1
@@ -86,6 +91,7 @@ class KrakenWebSocketMonitor:
             return None
         finally:
             # Fermer la connexion après utilisation
+            self.logger.info("🔌 DEBUG: Fermeture connexion ponctuelle...")
             self._disconnect()
                 
     def _connect_ponctual(self):
@@ -231,7 +237,10 @@ class KrakenWebSocketMonitor:
         NOUVEAU : Log de comparaison avec snapshot WebSocket ponctuel.
         À appeler depuis le code principal pour comparer les données.
         """
+        self.logger.info(f"🔍 DEBUG: log_comparison appelé avec bougie REST API: {rest_api_candle.get('datetime', 'N/A')}")
+        
         # Récupérer un snapshot WebSocket ponctuel
+        self.logger.info("📡 DEBUG: Début get_ohlc_snapshot...")
         websocket_candle = self.get_ohlc_snapshot()
         
         if not websocket_candle:
