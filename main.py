@@ -407,6 +407,7 @@ def _trading_loop_internal():
     """
     Implémentation interne de la boucle de trading.
     """
+    global websocket_monitor
     logger.log_scheduler_tick()
     
     # Vérifier la santé du système avant de commencer
@@ -1039,10 +1040,11 @@ if __name__ == "__main__":
     print("="*60)
     
     # DÉMARRER LE MONITORING WEBSOCKET (COMPLÈTEMENT ISOLÉ)
+    websocket_monitor = None  # Variable globale pour main.py
     if WEBSOCKET_AVAILABLE:
         try:
             print("🔌 Démarrage du monitoring WebSocket Kraken OHLC...")
-            start_websocket_monitoring()
+            websocket_monitor = start_websocket_monitoring()  # Récupérer l'instance
             print("✅ Monitoring WebSocket démarré avec succès")
         except Exception as e:
             print(f"⚠️ Erreur démarrage monitoring WebSocket: {e}")
