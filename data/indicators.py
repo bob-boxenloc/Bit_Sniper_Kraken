@@ -850,9 +850,9 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         return None
     
     # Valeurs de départ fournies par l'utilisateur (utilisées seulement si pas de valeurs précédentes)
-    vi1_n1 = 120131  # BEARISH
-    vi2_n1 = 118602  # BEARISH
-    vi3_n1 = 117923  # BEARISH
+    vi1_n1 = 120275  # BEARISH
+    vi2_n1 = 117777  # BEARISH
+    vi3_n1 = 116667  # BEARISH
     
     # États initiaux (utilisés seulement si pas d'états précédents)
     vi1_state_initial = "BEARISH"
@@ -931,19 +931,19 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 if vi1_crossing_direction == "UP":
                     # Explosion vers le HAUT (VI1 était passé au-dessus du close)
                     vi1_new = vi1_history[-1] + (atr_28_current * 19)
-                    vi1_state = "BEARISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    vi1_state = "BEARISH"  # ✅ État persistant jusqu'au prochain croisement
                     print(f"   🔥 VI1 CROISEMENT HAUT APPLIQUÉ ! {vi1_history[-1]:.2f} → {vi1_new:.2f}")
                 else:  # vi1_crossing_direction == "DOWN"
                     # Explosion vers le BAS (VI1 était passé en dessous du close)
                     vi1_new = vi1_history[-1] - (atr_28_current * 19)
-                    vi1_state = "BULLISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    vi1_state = "BULLISH"  # ✅ État persistant jusqu'au prochain croisement
                     print(f"   🔥 VI1 CROISEMENT BAS APPLIQUÉ ! {vi1_history[-1]:.2f} → {vi1_new:.2f}")
                 
                 # ✅ RÉINITIALISER le flag après application
                 vi1_crossed_last_candle = False
                 vi1_crossing_direction = None
             else:
-                # Pas de croisement - utiliser différence ATR (avec signe)
+                # Pas de croisement - garder l'état précédent
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
                 if vi1_state == "BEARISH":  # VI1 > close
                     # BEARISH: VI monte si ATR monte, baisse si ATR baisse
@@ -951,6 +951,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 else:  # vi1_state == "BULLISH" - VI1 < close
                     # BULLISH: VI baisse si ATR monte, monte si ATR baisse
                     vi1_new = vi1_history[-1] - (atr_diff * 19)
+                # vi1_state reste inchangé (persistance de l'état précédent)
             
             vi1_history.append(vi1_new)
             print(f"   VI1 calculé: {vi1_new:.2f} (État: {vi1_state})")
@@ -986,19 +987,19 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 if vi2_crossing_direction == "UP":
                     # Explosion vers le HAUT (VI2 était passé au-dessus du close)
                     vi2_new = vi2_history[-1] + (atr_28_current * 10)
-                    vi2_state = "BEARISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    vi2_state = "BEARISH"  # ✅ État persistant jusqu'au prochain croisement
                     print(f"   🔥 VI2 CROISEMENT HAUT APPLIQUÉ ! {vi2_history[-1]:.2f} → {vi2_new:.2f}")
                 else:  # vi2_crossing_direction == "DOWN"
                     # Explosion vers le BAS (VI2 était passé en dessous du close)
                     vi2_new = vi2_history[-1] - (atr_28_current * 10)
-                    vi2_state = "BULLISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    vi2_state = "BULLISH"  # ✅ État persistant jusqu'au prochain croisement
                     print(f"   🔥 VI2 CROISEMENT BAS APPLIQUÉ ! {vi2_history[-1]:.2f} → {vi2_new:.2f}")
                 
                 # ✅ RÉINITIALISER le flag après application
                 vi2_crossed_last_candle = False
                 vi2_crossing_direction = None
             else:
-                # Pas de croisement - utiliser différence ATR (avec signe)
+                # Pas de croisement - garder l'état précédent
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
                 if vi2_state == "BEARISH":  # VI2 > close
                     # BEARISH: VI monte si ATR monte, baisse si ATR baisse
@@ -1006,6 +1007,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 else:  # vi2_state == "BULLISH" - VI2 < close
                     # BULLISH: VI baisse si ATR monte, monte si ATR baisse
                     vi2_new = vi2_history[-1] - (atr_diff * 10)  # ✅ CORRECTION: Même logique que VI1
+                # vi2_state reste inchangé (persistance de l'état précédent)
             
             vi2_history.append(vi2_new)
             print(f"   VI2 calculé: {vi2_new:.2f} (État: {vi2_state})")
@@ -1041,19 +1043,19 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 if vi3_crossing_direction == "UP":
                     # Explosion vers le HAUT (VI3 était passé au-dessus du close)
                     vi3_new = vi3_history[-1] + (atr_28_current * 6)
-                    vi3_state = "BEARISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    vi3_state = "BEARISH"  # ✅ État persistant jusqu'au prochain croisement
                     print(f"   🔥 VI3 CROISEMENT HAUT APPLIQUÉ ! {vi3_history[-1]:.2f} → {vi3_new:.2f}")
                 else:  # vi3_crossing_direction == "DOWN"
                     # Explosion vers le BAS (VI3 était passé en dessous du close)
                     vi3_new = vi3_history[-1] - (atr_28_current * 6)
-                    vi3_state = "BULLISH"  # ✅ CHANGER L'ÉTAT MAINTENANT
+                    vi3_state = "BULLISH"  # ✅ État persistant jusqu'au prochain croisement
                     print(f"   🔥 VI3 CROISEMENT BAS APPLIQUÉ ! {vi3_history[-1]:.2f} → {vi3_new:.2f}")
                 
                 # ✅ RÉINITIALISER le flag après application
                 vi3_crossed_last_candle = False
                 vi3_crossing_direction = None
             else:
-                # Pas de croisement - utiliser différence ATR (avec signe)
+                # Pas de croisement - garder l'état précédent
                 atr_diff = atr_28_current - atr_28_previous  # Différence avec ATR précédent
                 if vi3_state == "BEARISH":  # VI3 > close
                     # BEARISH: VI monte si ATR monte, baisse si ATR baisse
@@ -1061,6 +1063,7 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
                 else:  # vi3_state == "BULLISH" - VI3 < close
                     # BULLISH: VI baisse si ATR monte, monte si ATR baisse
                     vi3_new = vi3_history[-1] - (atr_diff * 6)  # ✅ CORRECTION: Même logique que VI1
+                # vi3_state reste inchangé (persistance de l'état précédent)
     
             vi3_history.append(vi3_new)
             print(f"   VI3 calculé: {vi3_new:.2f} (État: {vi3_state})")
@@ -1069,6 +1072,12 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         'VI1': vi1_history[-1],
         'VI2': vi2_history[-1],
         'VI3': vi3_history[-1],
+        
+        # ✅ NOUVEAU : États calculés pour persistance
+        'vi1_state': vi1_state,
+        'vi2_state': vi2_state,
+        'vi3_state': vi3_state,
+        
         'VI1_upper': vi1_history[-1] + (atr_28_current * 19),
         'VI1_lower': vi1_history[-1] - (atr_28_current * 19),
         'VI2_upper': vi2_history[-1] + (atr_28_current * 10),

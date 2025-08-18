@@ -99,9 +99,9 @@ def initialize_indicator_history(candles):
         
         # CRITICAL FIX: Utiliser directement les valeurs de départ au lieu de recalculer
         # Les valeurs de départ fournies par l'utilisateur
-        vi1_n1 = 120131  # BEARISH
-        vi2_n1 = 118602  # BEARISH
-        vi3_n1 = 117923  # BEARISH
+        vi1_n1 = 120275  # BEARISH
+        vi2_n1 = 117777  # BEARISH
+        vi3_n1 = 116667  # BEARISH
         
         # Initialiser les phases VI avec les états de départ
         vi_phases_history = {
@@ -258,9 +258,9 @@ def update_indicator_history(new_candle):
     
     # Récupérer les VI précédents de l'historique global (si disponibles)
     # UTILISER LES VALEURS DE DÉPART FOURNIES PAR L'UTILISATEUR COMME BASE
-    vi1_n1 = 120131  # Valeur de départ fournie par l'utilisateur
-    vi2_n1 = 118602  # Valeur de départ fournie par l'utilisateur
-    vi3_n1 = 117923  # Valeur de départ fournie par l'utilisateur
+    vi1_n1 = 120275  # Valeur de départ fournie par l'utilisateur
+    vi2_n1 = 117777  # Valeur de départ fournie par l'utilisateur
+    vi3_n1 = 116667  # Valeur de départ fournie par l'utilisateur
     
     # Utiliser les valeurs de départ si pas d'historique, sinon utiliser l'historique
     previous_vi1 = indicator_history.get('vi1_history', [vi1_n1])[-1] if indicator_history.get('vi1_history') else vi1_n1
@@ -306,11 +306,11 @@ def update_indicator_history(new_candle):
         indicator_history['vi2_history'] = [vi_new_values['VI2']]
         indicator_history['vi3_history'] = [vi_new_values['VI3']]
         
-        # Stocker les états des VI pour la prochaine itération
-        # Les états sont calculés dynamiquement selon la position par rapport au close
-        indicator_history['vi1_state'] = "BEARISH" if vi_new_values['VI1'] > current_close else "BULLISH"
-        indicator_history['vi2_state'] = "BEARISH" if vi_new_values['VI2'] > current_close else "BULLISH"
-        indicator_history['vi3_state'] = "BEARISH" if vi_new_values['VI3'] > current_close else "BULLISH"
+        # ✅ CORRECTION : Utiliser les états calculés par data/indicators.py (avec fallback)
+        # Les états sont maintenant persistants entre les croisements
+        indicator_history['vi1_state'] = vi_new_values.get('vi1_state', indicator_history.get('vi1_state', "BEARISH"))
+        indicator_history['vi2_state'] = vi_new_values.get('vi2_state', indicator_history.get('vi2_state', "BEARISH"))
+        indicator_history['vi3_state'] = vi_new_values.get('vi3_state', indicator_history.get('vi3_state', "BEARISH"))
         
         # ✅ NOUVEAU : Stocker les flags de croisement pour la prochaine bougie
         indicator_history['vi1_crossed_last_candle'] = vi_new_values.get('vi1_crossed_last_candle', False)
