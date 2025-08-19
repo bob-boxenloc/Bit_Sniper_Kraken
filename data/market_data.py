@@ -56,8 +56,8 @@ class MarketData:
         try:
             self.logger.debug(f"Récupération {limit} bougies 15m pour {symbol}")
             
-            # Utiliser le SDK avec tick_type="mark" pour correspondre à Kraken web
-            ohlc_data = self.client.get_ohlc(tick_type="mark", symbol=symbol, resolution="15m")
+            # ✅ CORRECTION : Utiliser tick_type="trade" pour être cohérent avec RSI
+            ohlc_data = self.client.get_ohlc(tick_type="trade", symbol=symbol, resolution="15m")
             
             # data['candles'] est une liste de dicts avec time, open, high, low, close, volume
             ohlcv = ohlc_data.get('candles', [])
@@ -65,29 +65,29 @@ class MarketData:
             # On trie par timestamp croissant (du plus ancien au plus récent)
             ohlcv = sorted(ohlcv, key=lambda x: x['time'])
             
-            # FILTRER LES BOUGIES FERMÉES 
-            # Note: tick_type="mark" n'a pas de volume, donc on ne filtre pas sur le volume
-            closed_candles = ohlcv  # Prendre toutes les bougies pour tick_type="mark"
+            # ✅ CORRECTION : Filtrer les bougies fermées (volume > 0) comme pour RSI
+            # Maintenant que tick_type="trade", on peut filtrer sur le volume
+            closed_candles = [c for c in ohlcv if float(c.get('volume', 0)) > 0]
             
             if not closed_candles:
                 self.logger.warning("Aucune bougie fermée trouvée")
                 return []
             
-            # CORRECTION CRITIQUE : Récupérer la dernière bougie fermée
-            # En prenant l'avant-dernière bougie (la dernière fermée)
+            # ✅ CORRECTION : Récupérer la dernière bougie fermée (comme pour RSI)
             if limit == 1:
-                # Pour une seule bougie : prendre l'avant-dernière bougie (la dernière fermée)
-                if len(closed_candles) >= 2:
-                    # Prendre l'AVANT-dernière bougie (la dernière fermée)
-                    target_candle = closed_candles[-2]  # AVANT-dernière bougie = dernière fermée
+                # Pour une seule bougie : prendre la dernière bougie fermée
+                if len(closed_candles) >= 1:
+                    # Prendre la DERNIÈRE bougie fermée (comme RSI)
+                    target_candle = closed_candles[-1]  # Dernière bougie fermée
                     ohlcv = [target_candle]
                     target_datetime = datetime.utcfromtimestamp(target_candle['time']/1000)
-                    self.logger.info(f"✅ Récupéré la dernière bougie fermée: {target_datetime}")
+                    self.logger.info(f"✅ VI - Récupéré la dernière bougie fermée: {target_datetime}")
                     self.logger.info(f"   High: {target_candle['high']}, Low: {target_candle['low']}, Close: {target_candle['close']}")
                     self.logger.info(f"   Volume: {target_candle.get('volume', 'N/A')}, Count: {target_candle.get('count', 'N/A')}")
                     self.logger.info(f"   True Range: {float(target_candle['high']) - float(target_candle['low']):.2f}")
                 else:
                     self.logger.warning("Pas assez de bougies fermées pour récupérer la dernière fermée")
+                    return []
             else:
                 # Pour plusieurs bougies : garder les 'limit' dernières bougies fermées
                 ohlcv = closed_candles[-limit:]
@@ -121,7 +121,7 @@ class MarketData:
                 self.logger.info(f"   Close: {latest_candle['close']}")
                 self.logger.info(f"   Volume: {latest_candle.get('volume', 'N/A')}")
                 self.logger.info(f"   True Range calculé: {float(latest_candle['high']) - float(latest_candle['low']):.2f}")
-                self.logger.info(f"   Source: SDK Kraken avec tick_type=mark")
+                self.logger.info(f"   Source: SDK Kraken avec tick_type=trade (corrigé)")
             
             return ohlcv
             
