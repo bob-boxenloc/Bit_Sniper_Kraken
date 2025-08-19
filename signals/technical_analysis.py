@@ -74,9 +74,9 @@ def analyze_candles(candles, indicators):
     vi2_crossing_under = vi2_previous_above == True and vi2_current_above == False  # VI2 traverse vers le bas
     
     # NOUVELLE LOGIQUE - Phases VI
-    vi1_phase = indicators.get('VI1_phase', 'BULLISH')  # Par défaut BULLISH
-    vi2_phase = indicators.get('VI2_phase', 'BULLISH')  # Par défaut BULLISH
-    vi3_phase = indicators.get('VI3_phase', 'BULLISH')  # Par défaut BULLISH
+    vi1_phase = indicators.get('VI1_phase', 'BEARISH')  # Par défaut BEARISH
+    vi2_phase = indicators.get('VI2_phase', 'BEARISH')  # Par défaut BEARISH
+    vi3_phase = indicators.get('VI3_phase', 'BEARISH')  # Par défaut BEARISH
     
     # Analyse complète
     analysis = {
@@ -140,13 +140,14 @@ def analyze_candles(candles, indicators):
     
     return analysis
 
-def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=None, account_summary=None):
+def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=None, vi1_current_phase=None, account_summary=None):
     """
     Vérifie toutes les conditions pour chaque stratégie.
     
     :param analysis: dict retourné par analyze_candles()
     :param last_position_type: type de la dernière position (pour LONG_REENTRY)
     :param vi1_phase_timestamp: timestamp du dernier changement de phase VI1
+    :param vi1_current_phase: phase actuelle VI1 ('SHORT' ou 'LONG') pour la protection temporelle
     :param account_summary: résumé du compte pour vérifier les positions manuelles
     :return: dict avec les résultats des vérifications
     """
@@ -188,21 +189,24 @@ def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=
     
     # Vérification SHORT
     short_ready = all(short_conditions.values())
-    if vi1_protection_active and analysis['vi1_above_close']:
-        short_ready = False  # Interdire SHORT si protection active
-        logger.log_protection_activation("SHORT", "Bloqué par protection VI1 (72h)")
+    # ✅ CORRECTION: Bloquer SHORT si protection active ET phase VI1 = LONG
+    if vi1_protection_active and vi1_current_phase == "LONG":
+        short_ready = False  # Bloquer SHORT après prise d'une position LONG_VI1
+        logger.log_protection_activation("SHORT", "Bloqué par protection VI1 (72h) - Phase LONG active")
     
     # Vérification LONG_VI1
     long_vi1_ready = all(long_vi1_conditions.values())
-    if vi1_protection_active and not analysis['vi1_above_close']:
-        long_vi1_ready = False  # Interdire LONGS si protection active
-        logger.log_protection_activation("LONG_VI1", "Bloqué par protection VI1 (72h)")
+    # ✅ CORRECTION: Bloquer tous les LONGS si protection active ET phase VI1 = SHORT
+    if vi1_protection_active and vi1_current_phase == "SHORT":
+        long_vi1_ready = False  # Bloquer LONG_VI1 après prise d'une position SHORT
+        logger.log_protection_activation("LONG_VI1", "Bloqué par protection VI1 (72h) - Phase SHORT active")
     
     # Vérification LONG_VI2
     long_vi2_ready = all(long_vi2_conditions.values())
-    if vi1_protection_active and not analysis['vi1_above_close']:
-        long_vi2_ready = False  # Interdire LONGS si protection active
-        logger.log_protection_activation("LONG_VI2", "Bloqué par protection VI1 (72h)")
+    # ✅ CORRECTION: Bloquer tous les LONGS si protection active ET phase VI1 = SHORT
+    if vi1_protection_active and vi1_current_phase == "SHORT":
+        long_vi2_ready = False  # Bloquer LONG_VI2 après prise d'une position SHORT
+        logger.log_protection_activation("LONG_VI2", "Bloqué par protection VI1 (72h) - Phase SHORT active")
     # NOUVELLE PROTECTION: Bloquer LONG_VI2 si position précédente = LONG
     if last_position_type in ["LONG_VI1", "LONG_VI2", "LONG_REENTRY"]:
         long_vi2_ready = False  # Bloquer si on vient de faire un LONG
@@ -213,9 +217,10 @@ def check_all_conditions(analysis, last_position_type=None, vi1_phase_timestamp=
     if last_position_type == "LONG_REENTRY":
         long_reentry_ready = False  # Interdire LONG_REENTRY consécutif
         logger.log_protection_activation("LONG_REENTRY", "Bloqué: LONG_REENTRY consécutif interdit")
-    if vi1_protection_active and not analysis['vi1_above_close']:
-        long_reentry_ready = False  # Interdire LONGS si protection active
-        logger.log_protection_activation("LONG_REENTRY", "Bloqué par protection VI1 (72h)")
+    # ✅ CORRECTION: Bloquer tous les LONGS si protection active ET phase VI1 = SHORT
+    if vi1_protection_active and vi1_current_phase == "SHORT":
+        long_reentry_ready = False  # Bloquer LONG_REENTRY après prise d'une position SHORT
+        logger.log_protection_activation("LONG_REENTRY", "Bloqué par protection VI1 (72h) - Phase SHORT active")
     
     # NOUVELLE PROTECTION GLOBALE: Bloquer tous les LONGS après LONG_REENTRY
     if last_position_type == "LONG_REENTRY":
@@ -292,7 +297,7 @@ if __name__ == "__main__":
     }
     
     analysis = analyze_candles(test_candles, test_indicators)
-    conditions = check_all_conditions(analysis)
+    conditions = check_all_conditions(analysis, None, None, "LONG", None)
     summary = get_analysis_summary(analysis, conditions)
     
     print(summary) 

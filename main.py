@@ -836,7 +836,7 @@ def _trading_loop_internal():
     
     # ✅ NOUVEAU: Vérification des conditions de trading APRÈS récupération du compte
     print("\n🔍 VÉRIFICATION DES CONDITIONS DE TRADING")
-    conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp(), account_summary)
+    conditions_check = check_all_conditions(analysis, sm.get_last_position_type(), sm.get_vi1_phase_timestamp(), sm.get_vi1_current_phase(), account_summary)
     
     # Vérifier si le trading est autorisé
     if not conditions_check['trading_allowed']:

@@ -1078,6 +1078,11 @@ def calculate_volatility_indexes_corrected(closes, highs, lows, previous_vi1=Non
         'vi2_state': vi2_state,
         'vi3_state': vi3_state,
         
+        # ✅ CORRECTION : Ajouter les clés "phase" pour compatibilité
+        'VI1_phase': vi1_state,
+        'VI2_phase': vi2_state,
+        'VI3_phase': vi3_state,
+        
         'VI1_upper': vi1_history[-1] + (atr_28_current * 19),
         'VI1_lower': vi1_history[-1] - (atr_28_current * 19),
         'VI2_upper': vi2_history[-1] + (atr_28_current * 10),
